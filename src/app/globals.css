@@ -14,8 +14,10 @@
   }
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+/* [1] Updated Example */
+body, html {
+  margin: 0;
+  padding: 0;
+  /* Choose your preferred color, e.g., white, gray, or brand color */
+  background-color: #f5f5f5; 
 }
