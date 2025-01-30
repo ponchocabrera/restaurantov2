@@ -9,6 +9,7 @@ export default function BulkUpload({ onUploadSuccess }) {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
+  // [1] We do NOT assign any "id" here. We leave it blank, and the DB will handle it.
   const processFile = (file) => {
     Papa.parse(file, {
       header: true,
@@ -20,22 +21,24 @@ export default function BulkUpload({ onUploadSuccess }) {
           return;
         }
 
-        const menuItems = results.data.map(item => ({
-          id: Date.now() + Math.random(),
-          name: item.name || item.Name || '',
-          description: item.description || item.Description || '',
-          price: item.price || item.Price || '',
-          category: item.category || item.Category || '',
-          image: null
+        // Map CSV rows to menuItems. No 'id' property is assigned.
+        const menuItems = results.data.map((item) => ({
+          name: item.name || '',
+          description: item.description || '',
+          price: item.price || 0,
+          category: item.category || '',
+          image_url: item.image || '',
         }));
 
         onUploadSuccess(menuItems);
-        setSuccess('Menu items imported successfully!');
-        setTimeout(() => setSuccess(''), 3000);
+        setSuccess(
+          'Menu items imported successfully! Remember to "Save" to persist.'
+        );
+        setTimeout(() => setSuccess(''), 5000);
       },
       error: (error) => {
         setError('Failed to process file. Please try again.');
-      }
+      },
     });
   };
 
@@ -53,13 +56,14 @@ export default function BulkUpload({ onUploadSuccess }) {
     e.preventDefault();
     setIsDragging(false);
     setError('');
-    
+
     const file = e.dataTransfer.files[0];
+    if (!file) return;
+
     if (file.type !== 'text/csv') {
       setError('Please upload a CSV file');
       return;
     }
-    
     processFile(file);
   };
 
@@ -67,12 +71,11 @@ export default function BulkUpload({ onUploadSuccess }) {
     setError('');
     const file = e.target.files[0];
     if (!file) return;
-    
+
     if (file.type !== 'text/csv') {
       setError('Please upload a CSV file');
       return;
     }
-
     processFile(file);
   };
 
@@ -102,7 +105,8 @@ export default function BulkUpload({ onUploadSuccess }) {
           />
         </label>
         <p className="text-sm text-gray-500 mt-2">
-          Supports CSV files with columns: name, description, price, category
+          Supports CSV files with columns: name, description, price, category,
+          image
         </p>
       </div>
 
@@ -123,9 +127,9 @@ export default function BulkUpload({ onUploadSuccess }) {
       <div className="mt-4 p-4 bg-gray-50 rounded-md">
         <h3 className="font-medium mb-2">CSV Format Example:</h3>
         <code className="text-sm">
-          name,description,price,category<br />
-          "Margherita Pizza","Fresh tomatoes, mozzarella, basil",15.99,Pizza<br />
-          "Caesar Salad","Romaine lettuce, croutons, parmesan",8.99,Salads
+          name,description,price,category,image<br />
+          "Margherita Pizza","Fresh tomatoes, mozzarella, basil",15.99,Pizza,<br />
+          "Caesar Salad","Romaine lettuce, croutons, parmesan",8.99,Salads,
         </code>
       </div>
     </div>

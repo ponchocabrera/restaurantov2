@@ -1,9 +1,10 @@
+// file: /app/api/menuItems/route.js (or menuItems.ts if using TypeScript)
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 
 /**
- * GET /api/menuItems?menuId=123
- * -> Returns all items from menu_items where menu_id = 123,
+ * [1] GET /api/menuItems?menuId=123
+ *    Returns all items from menu_items where menu_id = 123,
  *    including the "menu_id" column in each row.
  */
 export async function GET(request) {
@@ -18,6 +19,9 @@ export async function GET(request) {
         { status: 400 }
       );
     }
+
+    // [2] Debug log: see if we got the correct menuId
+    console.log('[GET /api/menuItems] Fetching items for menuId=', menuId);
 
     // Fetch all items that belong to this menu_id
     const result = await query(
@@ -34,13 +38,13 @@ export async function GET(request) {
 }
 
 /**
- * POST /api/menuItems
- * Create or update (upsert) a single item in the menu_items table.
+ * [3] POST /api/menuItems
+ *    Create or update (upsert) a single item in the menu_items table.
  * 
  * Example JSON body:
  * {
- *   "id": 16,             // optional; if present we update instead of insert
- *   "menuId": 10,         // required
+ *   "id": 16,            // optional; if present we update instead of insert
+ *   "menuId": 10,        // required
  *   "name": "Burger",
  *   "description": "Tasty burger",
  *   "price": 8.99,
@@ -61,8 +65,12 @@ export async function POST(request) {
       image_url = '',
     } = body;
 
+    // [4] Debug log: show incoming data
+    console.log('[POST /api/menuItems] Incoming body:', body);
+
     // Basic validation
     if (!menuId || !name) {
+      console.warn('[POST /api/menuItems] Missing menuId or name');
       return NextResponse.json(
         { error: 'Missing required fields: menuId or name' },
         { status: 400 }
@@ -71,6 +79,26 @@ export async function POST(request) {
 
     if (id) {
       // ----- UPDATE existing item -----
+      // [5] Optional safety check: ensure the item belongs to the same menuId 
+      //    (If you want to forbid moving items to a different menu, keep this check.)
+      const checkResult = await query(
+        'SELECT menu_id FROM menu_items WHERE id = $1',
+        [id]
+      );
+      if (checkResult.rowCount === 0) {
+        return NextResponse.json({ error: 'Item not found' }, { status: 404 });
+      }
+      const existingItem = checkResult.rows[0];
+      if (existingItem.menu_id !== Number(menuId)) {
+        console.warn(
+          '[POST /api/menuItems] Mismatched menuId. ' +
+          `Item belongs to menu_id=${existingItem.menu_id}, but got menuId=${menuId}.`
+        );
+        // Decide if you want to allow re-assigning the menu. If not, return 400:
+        return NextResponse.json({ error: 'Cannot change menuId of an existing item.' }, { status: 400 });
+      }
+
+      // [6] Perform UPDATE
       const updateResult = await query(
         `
           UPDATE menu_items
@@ -85,6 +113,9 @@ export async function POST(request) {
         return NextResponse.json({ error: 'Item not found' }, { status: 404 });
       }
 
+      // [7] Debug log: show updated item
+      console.log('[POST /api/menuItems] Updated item:', updateResult.rows[0]);
+
       return NextResponse.json({ item: updateResult.rows[0] });
     } else {
       // ----- INSERT new item -----
@@ -96,6 +127,8 @@ export async function POST(request) {
         `,
         [menuId, name, description, price, category, image_url]
       );
+
+      console.log('[POST /api/menuItems] Created new item:', insertResult.rows[0]);
 
       return NextResponse.json({ item: insertResult.rows[0] }, { status: 201 });
     }
@@ -120,6 +153,9 @@ export async function DELETE(request) {
         { status: 400 }
       );
     }
+
+    // Debug log
+    console.log('[DELETE /api/menuItems] Deleting itemId=', itemId);
 
     const deleteResult = await query(
       'DELETE FROM menu_items WHERE id = $1 RETURNING *',
