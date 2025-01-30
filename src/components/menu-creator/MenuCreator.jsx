@@ -6,7 +6,7 @@ import { Eye, Trash2, Maximize2, Minimize2 } from 'lucide-react';
 import BulkUpload from './BulkUpload';
 import { MenuPreview } from '../menu-preview/MenuPreview';
 
-// [A] Example sidebar
+// Example sidebar
 function Sidebar() {
   return (
     <aside className="w-60 bg-white border-r border-gray-200 min-h-screen">
@@ -65,6 +65,11 @@ export default function MenuCreator() {
   const [newItemDescription, setNewItemDescription] = useState('');
   const [newItemPrice, setNewItemPrice] = useState('');
 
+  // Additional fields
+  const [newItemSalesPerformance, setNewItemSalesPerformance] = useState('');
+  const [newItemMarginLevel, setNewItemMarginLevel] = useState('');
+  const [newItemBoostDesired, setNewItemBoostDesired] = useState(false);
+
   // AI settings
   const [brandVoice, setBrandVoice] = useState('');
   const [styleWanted, setStyleWanted] = useState('modern');
@@ -120,7 +125,6 @@ export default function MenuCreator() {
   // -------------------------------------------------------------------------
   const handleMenuSelect = (menuId) => {
     if (!menuId) {
-      // Creating a new menu
       setSelectedMenuId(null);
       setMenuName('');
       setSelectedTemplate('modern');
@@ -129,7 +133,6 @@ export default function MenuCreator() {
       return;
     }
 
-    // Load existing menu
     const existingMenu = savedMenus.find((m) => m.id === menuId);
     setSelectedMenuId(menuId);
     setMenuName(existingMenu?.name || '');
@@ -144,7 +147,6 @@ export default function MenuCreator() {
       const res = await fetch(`/api/menuItems?menuId=${menuId}`);
       if (!res.ok) throw new Error('Failed to fetch menu items');
       const data = await res.json();
-      // [2] For existing items, we DO have an id from the DB
       setMenuItems(
         data.menuItems.map((item) => ({
           id: item.id,
@@ -153,6 +155,9 @@ export default function MenuCreator() {
           price: item.price,
           category: item.category,
           image_url: item.image_url || '',
+          sales_performance: item.sales_performance || '',
+          margin_level: item.margin_level || '',
+          boost_desired: item.boost_desired || false,
         }))
       );
     } catch (err) {
@@ -174,7 +179,7 @@ export default function MenuCreator() {
 
       setIsLoading(true);
 
-      // (A) Upsert the menu
+      // Upsert the menu
       const menuRes = await fetch('/api/menus', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -194,15 +199,14 @@ export default function MenuCreator() {
       const menuData = await menuRes.json();
       const menuId = menuData.menu.id;
 
-      // (B) If it's a new menu, add it to savedMenus
+      // If it's a new menu, add it to savedMenus
       if (!selectedMenuId) {
         setSavedMenus((prev) => [...prev, menuData.menu]);
       }
       setSelectedMenuId(menuId);
 
-      // (C) Save items (create/update)
+      // Save items (create/update)
       for (const item of menuItems) {
-        // [3] Only send `id` if the item is from DB. If `item.id` is null/undefined, we skip it.
         const payload = {
           menuId,
           name: item.name,
@@ -210,9 +214,12 @@ export default function MenuCreator() {
           price: item.price || 0,
           category: item.category || '',
           image_url: item.image_url || '',
+          sales_performance: item.sales_performance || '',
+          margin_level: item.margin_level || '',
+          boost_desired: item.boost_desired || false,
         };
         if (item.id) {
-          payload.id = item.id; // So the backend does UPDATE
+          payload.id = item.id;
         }
 
         const itemRes = await fetch('/api/menuItems', {
@@ -241,27 +248,30 @@ export default function MenuCreator() {
   // -------------------------------------------------------------------------
   // 6) ADD / DELETE ITEMS MANUALLY
   // -------------------------------------------------------------------------
-  // [4] No ID for new items. The DB will generate one when we do the POST.
   const addMenuItem = () => {
     if (!newItemName) return;
     setMenuItems((prev) => [
       ...prev,
       {
-        // No 'id' here
         name: newItemName,
         description: newItemDescription,
         price: newItemPrice,
         category: '',
         image_url: '',
+        sales_performance: newItemSalesPerformance,
+        margin_level: newItemMarginLevel,
+        boost_desired: newItemBoostDesired,
       },
     ]);
     setNewItemName('');
     setNewItemDescription('');
     setNewItemPrice('');
+    setNewItemSalesPerformance('');
+    setNewItemMarginLevel('');
+    setNewItemBoostDesired(false);
     setIsMenuChanged(true);
   };
 
-  // If removing an item that already has an ID, we also do a DELETE call to the server
   const deleteMenuItem = async (itemId) => {
     try {
       const res = await fetch(`/api/menuItems?itemId=${itemId}`, {
@@ -278,13 +288,10 @@ export default function MenuCreator() {
 
   const removeMenuItem = async (index) => {
     const item = menuItems[index];
-    // If item.id is numeric, it's presumably from the DB
     if (item.id && typeof item.id === 'number') {
       const success = await deleteMenuItem(item.id);
-      if (!success) return; // Stop if server deletion fails
+      if (!success) return;
     }
-
-    // Remove from local state
     setMenuItems((prev) => {
       const updated = [...prev];
       updated.splice(index, 1);
@@ -306,7 +313,6 @@ export default function MenuCreator() {
   // 7) BULK UPLOAD
   // -------------------------------------------------------------------------
   const handleBulkUpload = (items) => {
-    // [5] Merge CSV items with existing. None of these have 'id'.
     setMenuItems((prev) => [...prev, ...items]);
     setIsMenuChanged(true);
   };
@@ -360,12 +366,9 @@ export default function MenuCreator() {
       if (!res.ok) throw new Error('Failed to generate image');
 
       const data = await res.json();
-      const imageUrl = data.imageUrl;
-      updateMenuItem(index, 'image_url', imageUrl);
+      updateMenuItem(index, 'image_url', data.imageUrl);
 
-      alert(
-        'Image generated successfully! (Remember to Save Menu if you want to persist this!)'
-      );
+      alert('Image generated successfully! (Remember to Save Menu if you want to persist this!)');
     } catch (err) {
       console.error(err);
       alert(err.message);
@@ -424,7 +427,6 @@ export default function MenuCreator() {
   // -------------------------------------------------------------------------
   return (
     <div className="flex min-h-screen bg-gray-50">
-      
       {/* Left Sidebar */}
       <Sidebar />
 
@@ -436,15 +438,23 @@ export default function MenuCreator() {
           </div>
         </header>
 
-        <div className="p-4 md:p-6 max-w-4xl mx-auto">
-          {/* SELECT RESTAURANT */}
-          <div className="bg-white rounded-lg shadow-sm mb-6">
-            <div className="p-6">
+        {/* Container width, remove or change max-w-7xl if you want full screen */}
+        <div className="p-4 md:p-6 max-w-7xl mx-auto">
+
+          {/* 
+            [A] SINGLE ROW FOR 
+            1) Select Restaurant 
+            2) Select/Create Menu 
+            3) Template Style 
+          */}
+          <div className="grid grid-cols-3 gap-4 mb-6">
+            {/* SELECT RESTAURANT */}
+            <div className="bg-white rounded-lg shadow-sm p-6">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Select a Restaurant
               </label>
               <select
-                className="p-2 border rounded-md text-gray-700 w-full max-w-xs"
+                className="p-2 border rounded-md text-gray-700 w-full"
                 value={selectedRestaurantId || ''}
                 onChange={(e) => {
                   const val = e.target.value;
@@ -459,11 +469,9 @@ export default function MenuCreator() {
                 ))}
               </select>
             </div>
-          </div>
 
-          {/* SELECT OR CREATE MENU */}
-          <div className="bg-white rounded-lg shadow-sm mb-6">
-            <div className="p-6">
+            {/* SELECT OR CREATE MENU */}
+            <div className="bg-white rounded-lg shadow-sm p-6">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Select or Create Menu
               </label>
@@ -474,7 +482,7 @@ export default function MenuCreator() {
                     const val = e.target.value;
                     handleMenuSelect(val ? Number(val) : null);
                   }}
-                  className="flex-1 p-2 border rounded-md text-gray-700 max-w-xs"
+                  className="flex-1 p-2 border rounded-md text-gray-700"
                   disabled={!selectedRestaurantId}
                 >
                   <option value="">-- New Menu --</option>
@@ -485,7 +493,6 @@ export default function MenuCreator() {
                   ))}
                 </select>
 
-                {/* Delete Menu button if selected */}
                 {selectedMenuId && (
                   <button
                     onClick={deleteMenuFromDB}
@@ -497,15 +504,13 @@ export default function MenuCreator() {
                 )}
               </div>
             </div>
-          </div>
 
-          {/* TEMPLATE SELECTION */}
-          <div className="bg-white rounded-lg shadow-sm mb-6">
-            <div className="p-6">
-              <h2 className="text-lg font-medium text-gray-800 mb-4">
+            {/* TEMPLATE SELECTION */}
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <h2 className="text-sm font-medium text-gray-700 mb-2">
                 Template Style
               </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 gap-4">
                 {[
                   { id: 'modern', name: 'Modern', description: 'Clean & contemporary' },
                   { id: 'classic', name: 'Classic', description: 'Traditional design' },
@@ -534,6 +539,11 @@ export default function MenuCreator() {
               </div>
             </div>
           </div>
+
+          {/* 
+            If you ONLY want the below "Menu Details" to appear for new menus,
+            you can keep it outside that row, or rearrange as you wish.
+          */}
 
           {/* MENU DETAILS (for new menu) */}
           {selectedMenuId === null && (
@@ -628,10 +638,9 @@ export default function MenuCreator() {
                 Menu Items
               </h2>
 
-              {/* Items Table */}
               {menuItems.length > 0 && (
                 <div className="mb-6 overflow-x-auto rounded-lg border border-gray-200">
-                  <table className="w-full min-w-[600px]">
+                  <table className="w-full min-w-full">
                     <thead className="bg-gray-50">
                       <tr>
                         <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">
@@ -640,16 +649,25 @@ export default function MenuCreator() {
                         <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">
                           Description
                         </th>
-                        <th className="px-6 py-3 text-left text-sm font-medium text-gray-700 w-24">
+                        <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">
                           Price
                         </th>
-                        <th className="px-6 py-3 text-left text-sm font-medium text-gray-700 w-28">
+                        <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">
                           Category
                         </th>
-                        <th className="px-6 py-3 text-left text-sm font-medium text-gray-700 w-28">
+                        <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">
+                          Performance
+                        </th>
+                        <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">
+                          Margin
+                        </th>
+                        <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">
+                          Boost
+                        </th>
+                        <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">
                           Image
                         </th>
-                        <th className="px-6 py-3 text-left text-sm font-medium text-gray-700 w-32">
+                        <th className="px-6 py-3 text-left text-sm font-medium text-gray-700">
                           Actions
                         </th>
                       </tr>
@@ -670,6 +688,45 @@ export default function MenuCreator() {
                             </td>
                             <td className="px-6 py-4 text-sm text-gray-700">
                               {item.category || '-'}
+                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-700">
+                              <select
+                                value={item.sales_performance || ''}
+                                onChange={(e) =>
+                                  updateMenuItem(idx, 'sales_performance', e.target.value)
+                                }
+                                className="p-2 border rounded-md text-gray-700 min-w-[8rem]"
+                              >
+                                <option value="">Select Performance</option>
+                                <option value="best_seller">Best Seller</option>
+                                <option value="regular_seller">Regular Seller</option>
+                                <option value="not_selling">Not Selling</option>
+                              </select>
+                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-700">
+                              <select
+                                value={item.margin_level || ''}
+                                onChange={(e) =>
+                                  updateMenuItem(idx, 'margin_level', e.target.value)
+                                }
+                                className="p-2 border rounded-md text-gray-700 min-w-[8rem]"
+                              >
+                                <option value="">Select Margin</option>
+                                <option value="high_margin">High Margin</option>
+                                <option value="mid_margin">Mid Margin</option>
+                                <option value="low_margin">Low Margin</option>
+                                <option value="red_margin">Red Margin</option>
+                              </select>
+                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-700">
+                              <input
+                                type="checkbox"
+                                checked={item.boost_desired || false}
+                                onChange={(e) =>
+                                  updateMenuItem(idx, 'boost_desired', e.target.checked)
+                                }
+                                className="w-4 h-4 rounded border-gray-300 text-blue-600"
+                              />
                             </td>
                             <td className="px-6 py-4 text-sm text-gray-700">
                               {item.image_url ? (
@@ -750,6 +807,38 @@ export default function MenuCreator() {
                   className="w-full p-2 border rounded-md text-gray-700"
                   rows="2"
                 />
+                <div className="grid grid-cols-3 gap-4">
+                  <select
+                    value={newItemSalesPerformance}
+                    onChange={(e) => setNewItemSalesPerformance(e.target.value)}
+                    className="p-2 border rounded-md text-gray-700 min-w-[8rem]"
+                  >
+                    <option value="">Select Performance</option>
+                    <option value="best_seller">Best Seller</option>
+                    <option value="regular_seller">Regular Seller</option>
+                    <option value="not_selling">Not Selling</option>
+                  </select>
+                  <select
+                    value={newItemMarginLevel}
+                    onChange={(e) => setNewItemMarginLevel(e.target.value)}
+                    className="p-2 border rounded-md text-gray-700 min-w-[8rem]"
+                  >
+                    <option value="">Select Margin</option>
+                    <option value="high_margin">High Margin</option>
+                    <option value="mid_margin">Mid Margin</option>
+                    <option value="low_margin">Low Margin</option>
+                    <option value="red_margin">Red Margin</option>
+                  </select>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={newItemBoostDesired}
+                      onChange={(e) => setNewItemBoostDesired(e.target.checked)}
+                      className="rounded border-gray-300 text-blue-600"
+                    />
+                    <label className="text-sm text-gray-700">Want to Boost?</label>
+                  </div>
+                </div>
                 <button
                   onClick={addMenuItem}
                   className="w-full bg-[#FF7A5C] text-white py-2 rounded-md hover:bg-[#ff6647]"
