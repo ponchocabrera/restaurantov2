@@ -147,8 +147,10 @@ export default function MenuCreator() {
       const res = await fetch(`/api/menuItems?menuId=${menuId}`);
       if (!res.ok) throw new Error('Failed to fetch menu items');
       const data = await res.json();
+      
+      // Changed from data.menuItems to data.items to match API response
       setMenuItems(
-        data.menuItems.map((item) => ({
+        data.items.map((item) => ({
           id: item.id,
           name: item.name,
           description: item.description,
@@ -377,11 +379,11 @@ export default function MenuCreator() {
     }
   };
 
-  const deleteImageForItem = (index) => {
+  const handleRemoveImage = (index) => {
     const yes = confirm('Are you sure you want to remove this image?');
     if (!yes) return;
     updateMenuItem(index, 'image_url', '');
-    alert('Image removed. Don’t forget to click Save Menu!');
+    alert("Image removed. Don't forget to click Save Menu!");
   };
 
   const enlargeImage = (imageUrl) => {
@@ -739,7 +741,7 @@ export default function MenuCreator() {
                                     title="Click to enlarge"
                                   />
                                   <button
-                                    onClick={() => deleteImageForItem(idx)}
+                                    onClick={() => handleRemoveImage(idx)}
                                     className="text-red-600 hover:text-red-700 text-xs"
                                   >
                                     Delete Image
