@@ -15,7 +15,7 @@ export default function Hero() {
               Optimization
             </h1>
             <p className="mt-4 text-base text-[#21263E]/90 font-libre-baskerville">
-              Carte.ai is the intelligent menu optimization platform that transforms restaurant menus from static documents into
+              Carte.ai is the intelligent menu optimization platform that transforms restaurant menus from static documents into a source of revenue
             </p>
             <div className="mt-6">
               <a

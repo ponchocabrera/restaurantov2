@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { AlertCircle, RefreshCw, ArrowLeft, Palette, Droplet, Layout, Lightbulb, Wand2, LayoutTemplate, Code } from 'lucide-react';
+import { AlertCircle, RefreshCw, ArrowLeft, Palette, Droplet, Layout, Lightbulb, Wand2, LayoutTemplate, Code, Maximize2 } from 'lucide-react';
 import {
   Alert,
   AlertDescription,
@@ -232,110 +232,104 @@ export default function AIMenuGenerator() {
   // [14] Step 2: AI Configuration
   const StepAIConfig = () => {
     return (
-      <section className="bg-white border rounded-lg p-4 shadow-sm">
-        <h3 className="text-xl font-semibold mb-4">Step 2: AI Configuration</h3>
-
-        {/* Paper Size */}
-        <div className="mb-4">
-          <label className="block text-sm font-medium mb-1">Paper Size</label>
-          <select
-            value={menuConfig.paperSize}
-            onChange={(e) => setMenuConfig({ ...menuConfig, paperSize: e.target.value })}
-            className="w-full p-2 border rounded"
-          >
-            <option value="letter">Letter (8.5" × 11")</option>
-            <option value="a4">A4 (210 × 297 mm)</option>
-            <option value="legal">Legal (8.5" × 14")</option>
-          </select>
+      <section className="space-y-8">
+        {/* Header */}
+        <div className="mb-8">
+          <h2 className="text-2xl font-semibold text-gray-900 mb-2">AI Configuration</h2>
+          <p className="text-gray-600">Customize how AI will generate your menu layout</p>
         </div>
 
-        {/* Page Count */}
-        <div className="mb-4">
-          <label className="block text-sm font-medium mb-1">Number of Pages</label>
-          <input
-            type="number"
-            min="1"
-            max="10"
-            value={menuConfig.pageCount}
-            onChange={(e) => setMenuConfig({ ...menuConfig, pageCount: parseInt(e.target.value) })}
-            className="w-full p-2 border rounded"
-          />
+        {/* Basic Settings Grid */}
+        <div className="grid grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Paper Size</label>
+            <select
+              value={menuConfig.paperSize}
+              onChange={(e) => setMenuConfig({...menuConfig, paperSize: e.target.value})}
+              className="w-full p-3 border border-gray-200 rounded-lg bg-white focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+            >
+              <option value="letter">Letter (8.5" × 11")</option>
+              <option value="a4">A4 (210 × 297 mm)</option>
+              <option value="legal">Legal (8.5" × 14")</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Menu Style</label>
+            <select
+              value={styleWanted}
+              onChange={(e) => setStyleWanted(e.target.value)}
+              className="w-full p-3 border border-gray-200 rounded-lg bg-white focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+            >
+              <option value="modern">Modern & Clean</option>
+              <option value="classic">Classic & Elegant</option>
+              <option value="rustic">Rustic & Warm</option>
+            </select>
+          </div>
         </div>
 
-        {/* Menu Style */}
-        <div className="mb-4">
-          <label className="block text-sm font-medium mb-1">Menu Style</label>
-          <select
-            value={styleWanted}
-            onChange={(e) => setStyleWanted(e.target.value)}
-            className="w-full p-2 border rounded"
-          >
-            <option value="modern">Modern &amp; Clean</option>
-            <option value="classic">Classic &amp; Elegant</option>
-            <option value="rustic">Rustic &amp; Warm</option>
-            <option value="minimalist">Minimalist</option>
-          </select>
-        </div>
-
-        {/* Colors */}
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Brand Colors
-          </label>
-          <div className="grid grid-cols-2 gap-4">
+        {/* Brand Colors Section */}
+        <div className="bg-gray-50 rounded-xl p-6">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Brand Colors</h3>
+          <div className="grid grid-cols-2 gap-6">
             <div>
-              <label className="block text-xs text-gray-500 mb-1">Primary Color</label>
-              <div className="flex items-center gap-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Primary Color</label>
+              <div className="flex items-center gap-3">
                 <input
                   type="color"
                   value={menuConfig.primaryColor}
-                  onChange={(e) => setMenuConfig({ ...menuConfig, primaryColor: e.target.value })}
-                  className="w-12 h-12 rounded border border-gray-200 cursor-pointer"
+                  onChange={(e) => setMenuConfig({...menuConfig, primaryColor: e.target.value})}
+                  className="h-10 w-16 rounded cursor-pointer"
                 />
-                <span className="text-sm text-gray-600">{menuConfig.primaryColor}</span>
+                <input
+                  type="text"
+                  value={menuConfig.primaryColor}
+                  onChange={(e) => setMenuConfig({...menuConfig, primaryColor: e.target.value})}
+                  className="flex-1 p-2 border border-gray-200 rounded-md"
+                />
               </div>
             </div>
+
             <div>
-              <label className="block text-xs text-gray-500 mb-1">Secondary Color</label>
-              <div className="flex items-center gap-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Secondary Color</label>
+              <div className="flex items-center gap-3">
                 <input
                   type="color"
                   value={menuConfig.secondaryColor}
-                  onChange={(e) => setMenuConfig({ ...menuConfig, secondaryColor: e.target.value })}
-                  className="w-12 h-12 rounded border border-gray-200 cursor-pointer"
+                  onChange={(e) => setMenuConfig({...menuConfig, secondaryColor: e.target.value})}
+                  className="h-10 w-16 rounded cursor-pointer"
                 />
-                <span className="text-sm text-gray-600">{menuConfig.secondaryColor}</span>
+                <input
+                  type="text"
+                  value={menuConfig.secondaryColor}
+                  onChange={(e) => setMenuConfig({...menuConfig, secondaryColor: e.target.value})}
+                  className="flex-1 p-2 border border-gray-200 rounded-md"
+                />
               </div>
             </div>
           </div>
         </div>
 
-        {/* Custom Instructions */}
-        <div className="mb-4">
-          <label className="block text-sm font-medium mb-1">Additional Instructions</label>
+        {/* Additional Instructions Section - Highlighted */}
+        <div className="bg-orange-50 border-l-4 border-orange-500 rounded-xl p-6">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Additional Instructions</h3>
           <textarea
             value={menuConfig.customInstructions}
-            onChange={(e) => setMenuConfig({ ...menuConfig, customInstructions: e.target.value })}
-            className="w-full p-2 border rounded"
-            rows={3}
-            placeholder="Any specific requirements or preferences..."
+            onChange={(e) => setMenuConfig({...menuConfig, customInstructions: e.target.value})}
+            placeholder="Add any specific requirements or preferences for your menu design..."
+            className="w-full h-32 p-4 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
           />
         </div>
 
         {/* Navigation Buttons */}
-        <div className="mt-6 flex justify-between">
+        <div className="flex justify-between pt-6">
           <button
             onClick={goPrevStep}
-            className="px-4 py-2 bg-gradient-to-r from-[#e4983b] to-[#f5bf66] text-white rounded-lg hover:opacity-90 transition-opacity"
+            className="px-4 py-2 text-gray-600 hover:text-gray-900 flex items-center gap-2"
           >
-            Back
+            <ArrowLeft className="w-4 h-4" /> Back
           </button>
-          <button
-            onClick={goNextStep}
-            className="px-4 py-2 bg-gradient-to-r from-[#e4983b] to-[#f5bf66] text-white rounded-lg hover:opacity-90 transition-opacity"
-          >
-            Next
-          </button>
+          <NextStepButton />
         </div>
       </section>
     );
@@ -568,7 +562,12 @@ export default function AIMenuGenerator() {
           </button>
           <button
             onClick={goNextStep}
-            className="px-6 py-2.5 bg-gradient-to-r from-[#e4983b] to-[#f5bf66] text-white rounded-lg hover:opacity-90 transition-opacity"
+            disabled={!generatedPrompt}
+            className={`px-6 py-2.5 ${
+              !generatedPrompt 
+                ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                : 'bg-gradient-to-r from-[#e4983b] to-[#f5bf66] text-white hover:opacity-90 transition-opacity'
+            }`}
           >
             Continue to Preview
           </button>
@@ -579,140 +578,36 @@ export default function AIMenuGenerator() {
 
   // [16] Step 4: Generate Menu & Preview
   const StepMenuPreview = () => {
-    const [isGenerating, setIsGenerating] = useState(false);
-    const requestInProgress = useRef(false);
-    const [generationStats, setGenerationStats] = useState({
-      pagesGenerated: 0,
-      totalPages: menuConfig.pageCount
-    });
-
-    const generateMenuHTML = async () => {
-      if (isGenerating || requestInProgress.current) {
-        return;
-      }
-
-      setIsGenerating(true);
-      requestInProgress.current = true;
-      const startTime = Date.now();
-
-      try {
-        if (!generatedPrompt) {
-          throw new Error('Please generate a prompt first');
-        }
-
-        setGenerationStats({
-          pagesGenerated: 0,
-          totalPages: menuConfig.pageCount
-        });
-
-        const response = await fetch('/api/ai/generateHTML', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            prompt: generatedPrompt,
-            menuItems,
-            config: {
-              ...menuConfig,
-              style: styleWanted,
-              styles: {
-                primary: menuConfig.primaryColor,
-                secondary: menuConfig.secondaryColor,
-              },
-              images: {
-                'dark-wood': '/assets/textures/dark-wood.png',
-                'cheese-pattern': '/assets/textures/cheese-pattern.png',
-                'citrus-slices': '/assets/textures/citrus-slices.png',
-                'bubbles': '/assets/textures/bubbles.png'
-              }
-            }
-          }),
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || 'Failed to generate menu HTML');
-        }
-
-        const data = await response.json();
-        if (!data.html) {
-          throw new Error('No HTML content received');
-        }
-        setGeneratedHTML(data.html);
-
-      } catch (err) {
-        console.error('Error generating menu:', err);
-        setError(err.message);
-      } finally {
-        setIsGenerating(false);
-        requestInProgress.current = false;
-        setProgress(prev => ({
-          ...prev,
-          menu: { 
-            status: 'complete', 
-            time: Date.now() - startTime 
-          }
-        }));
-      }
-    };
-
-    const handleDownloadPDF = async () => {
-      if (!generatedHTML) {
-        setError('Please generate a menu first');
-        return;
-      }
-      try {
-        const response = await fetch('/api/downloadPDF', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ html: generatedHTML })
-        });
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'menu.pdf';
-        a.click();
-      } catch (err) {
-        setError('Failed to download PDF');
-        console.error(err);
-      }
-    };
-
-    const handlePreviewClick = (e) => {
-      if (e.target.tagName === 'IMG') {
-        setModalImageSrc(e.target.src);
-        setShowImageModal(true);
-      }
-    };
-
     return (
-      <section className="bg-white border rounded-lg p-4 shadow-sm flex flex-col">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xl font-semibold">Step 4: Menu Preview</h3>
-          <div className="flex gap-2">
+      <section className="space-y-8">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-semibold text-gray-900 mb-2">Menu Preview</h2>
+            <p className="text-gray-600">Review your AI-generated menu design</p>
+          </div>
+          <div className="flex gap-3">
             <button
               onClick={() => setShowMenuModal(true)}
-              disabled={!generatedHTML}
-              className="px-4 py-2 bg-gradient-to-r from-[#e4983b] to-[#f5bf66] text-white rounded-lg hover:opacity-90 disabled:opacity-50 transition-opacity"
+              className="px-4 py-2 bg-white border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 flex items-center gap-2"
             >
+              <Maximize2 className="w-4 h-4" />
               View Fullscreen
             </button>
             <button
-              onClick={generateMenuHTML}
-              disabled={isGenerating || !generatedPrompt || requestInProgress.current}
-              className={`px-4 py-2 rounded-lg text-white transition-opacity ${
-                isGenerating || requestInProgress.current
-                  ? 'bg-gradient-to-r from-[#e4983b] to-[#f5bf66] cursor-not-allowed opacity-50'
-                  : !generatedPrompt
-                    ? 'bg-gradient-to-r from-[#e4983b] to-[#f5bf66] cursor-not-allowed'
-                    : 'bg-gradient-to-r from-[#e4983b] to-[#f5bf66] hover:opacity-90'
+              onClick={generateMenu}
+              disabled={isLoading}
+              className={`px-6 py-2.5 rounded-lg flex items-center gap-2 transition-all ${
+                isLoading
+                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                  : 'bg-gradient-to-r from-[#e4983b] to-[#f5bf66] text-white hover:opacity-90'
               }`}
             >
-              {isGenerating || requestInProgress.current ? (
-                <span className="flex items-center gap-2">
+              {isLoading ? (
+                <>
                   <RefreshCw className="w-4 h-4 animate-spin" />
                   Generating...
-                </span>
+                </>
               ) : (
                 'Generate Menu'
               )}
@@ -720,41 +615,37 @@ export default function AIMenuGenerator() {
           </div>
         </div>
 
-        <EnhancedProgressBar
-          type="menu"
-          progress={progress.menu}
-          estimatedTime={ESTIMATED_TIMES.menu}
-          steps={progress.menu.steps}
-          currentProgress={generationStats}
-        />
+        {/* Progress Bar when generating */}
+        {isLoading && (
+          <EnhancedProgressBar
+            type="menu"
+            progress={progress.menu}
+            estimatedTime={ESTIMATED_TIMES.menu}
+            steps={progress.menu.steps}
+          />
+        )}
 
+        {/* Preview Area */}
         {generatedHTML ? (
           <div 
-            className="mt-4 border rounded-lg p-4 overflow-auto"
-            dangerouslySetInnerHTML={{ __html: generatedHTML }}
-            onClick={handlePreviewClick}
+            className="bg-white rounded-xl shadow-sm p-8"
+            dangerouslySetInnerHTML={{ __html: generatedHTML }} 
           />
         ) : (
-          <div className="mt-4 text-gray-500 text-center p-8">
-            Generated menu will appear here...
+          <div className="text-center py-16 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
+            <Layout className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+            <p className="text-gray-600 mb-2">Your menu preview will appear here</p>
+            <p className="text-sm text-gray-400">Generate your menu to see the final design</p>
           </div>
         )}
 
-        {generatedHTML && (
-          <button
-            onClick={handleDownloadPDF}
-            className="mt-4 px-4 py-2 bg-gradient-to-r from-[#e4983b] to-[#f5bf66] text-white rounded-lg hover:opacity-90 transition-opacity"
-          >
-            Download PDF
-          </button>
-        )}
-
-        <div className="mt-6 flex justify-between">
+        {/* Navigation */}
+        <div className="flex justify-between pt-6">
           <button
             onClick={goPrevStep}
-            className="px-4 py-2 bg-gradient-to-r from-[#e4983b] to-[#f5bf66] text-white rounded-lg hover:opacity-90 transition-opacity"
+            className="px-4 py-2 text-gray-600 hover:text-gray-900 flex items-center gap-2"
           >
-            Back
+            <ArrowLeft className="w-4 h-4" /> Back
           </button>
         </div>
       </section>
@@ -834,6 +725,72 @@ export default function AIMenuGenerator() {
         </span>
       </button>
     );
+  };
+
+  // Add this before StepMenuPreview
+  const generateMenu = async () => {
+    setIsLoading(true);
+    setError('');
+    try {
+      const requestBody = {
+        prompt: generatedPrompt,
+        menuItems,
+        config: {
+          style: styleWanted,
+          paperSize: menuConfig.paperSize,
+          pageCount: menuConfig.pageCount || 1,
+          primaryColor: menuConfig.primaryColor,
+          secondaryColor: menuConfig.secondaryColor,
+          customInstructions: menuConfig.customInstructions
+        }
+      };
+  
+      setProgress(prev => ({
+        ...prev,
+        menu: {
+          ...prev.menu,
+          status: 'generating',
+          startTime: Date.now(),
+          step: 0
+        }
+      }));
+  
+      const response = await fetch('/api/ai/generateHTML', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody)
+      });
+  
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to generate menu');
+      }
+  
+      const data = await response.json();
+      setGeneratedHTML(data.html);
+  
+      setProgress(prev => ({
+        ...prev,
+        menu: {
+          ...prev.menu,
+          status: 'complete',
+          time: Date.now() - prev.menu.startTime,
+          step: prev.menu.steps.length - 1
+        }
+      }));
+    } catch (err) {
+      console.error('Error generating menu:', err);
+      setError(err.message);
+      setProgress(prev => ({
+        ...prev,
+        menu: {
+          ...prev.menu,
+          status: 'error'
+        }
+      }));
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // [18] Main return
