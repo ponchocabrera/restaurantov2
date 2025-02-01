@@ -280,7 +280,7 @@ Before submitting your response, verify that:
   while (attempts < maxRetries) {
     try {
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Request timeout')), 90000);
+        setTimeout(() => reject(new Error('Request timeout')), 180000);
       });
 
       const responsePromise = anthropic.messages.create({

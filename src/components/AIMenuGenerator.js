@@ -230,7 +230,23 @@ export default function AIMenuGenerator() {
   };
 
   // [14] Step 2: AI Configuration
+  // We now use an uncontrolled textarea for Additional Instructions via a ref,
+  // so that typing does not trigger parent's state updates (which were causing focus loss).
   const StepAIConfig = () => {
+    // Create a ref for the instructions textarea.
+    const instructionsRef = useRef(null);
+
+    // When the user clicks "Next", update the parent's state from the ref.
+    const handleNext = () => {
+      if (instructionsRef.current) {
+        setMenuConfig(prev => ({
+          ...prev,
+          customInstructions: instructionsRef.current.value,
+        }));
+      }
+      goNextStep();
+    };
+
     return (
       <section className="space-y-8">
         {/* Header */}
@@ -245,7 +261,7 @@ export default function AIMenuGenerator() {
             <label className="block text-sm font-medium text-gray-700 mb-2">Paper Size</label>
             <select
               value={menuConfig.paperSize}
-              onChange={(e) => setMenuConfig({...menuConfig, paperSize: e.target.value})}
+              onChange={(e) => setMenuConfig({ ...menuConfig, paperSize: e.target.value })}
               className="w-full p-3 border border-gray-200 rounded-lg bg-white focus:ring-2 focus:ring-orange-500 focus:border-transparent"
             >
               <option value="letter">Letter (8.5" × 11")</option>
@@ -278,13 +294,13 @@ export default function AIMenuGenerator() {
                 <input
                   type="color"
                   value={menuConfig.primaryColor}
-                  onChange={(e) => setMenuConfig({...menuConfig, primaryColor: e.target.value})}
+                  onChange={(e) => setMenuConfig({ ...menuConfig, primaryColor: e.target.value })}
                   className="h-10 w-16 rounded cursor-pointer"
                 />
                 <input
                   type="text"
                   value={menuConfig.primaryColor}
-                  onChange={(e) => setMenuConfig({...menuConfig, primaryColor: e.target.value})}
+                  onChange={(e) => setMenuConfig({ ...menuConfig, primaryColor: e.target.value })}
                   className="flex-1 p-2 border border-gray-200 rounded-md"
                 />
               </div>
@@ -296,13 +312,13 @@ export default function AIMenuGenerator() {
                 <input
                   type="color"
                   value={menuConfig.secondaryColor}
-                  onChange={(e) => setMenuConfig({...menuConfig, secondaryColor: e.target.value})}
+                  onChange={(e) => setMenuConfig({ ...menuConfig, secondaryColor: e.target.value })}
                   className="h-10 w-16 rounded cursor-pointer"
                 />
                 <input
                   type="text"
                   value={menuConfig.secondaryColor}
-                  onChange={(e) => setMenuConfig({...menuConfig, secondaryColor: e.target.value})}
+                  onChange={(e) => setMenuConfig({ ...menuConfig, secondaryColor: e.target.value })}
                   className="flex-1 p-2 border border-gray-200 rounded-md"
                 />
               </div>
@@ -314,8 +330,18 @@ export default function AIMenuGenerator() {
         <div className="bg-orange-50 border-l-4 border-orange-500 rounded-xl p-6">
           <h3 className="text-lg font-medium text-gray-900 mb-4">Additional Instructions</h3>
           <textarea
-            value={menuConfig.customInstructions}
-            onChange={(e) => setMenuConfig({...menuConfig, customInstructions: e.target.value})}
+            // Use defaultValue (uncontrolled) and a ref to avoid re-rendering on every keystroke.
+            defaultValue={menuConfig.customInstructions}
+            ref={instructionsRef}
+            onBlur={() => {
+              // Update parent state when the user leaves the textarea.
+              if (instructionsRef.current) {
+                setMenuConfig(prev => ({
+                  ...prev,
+                  customInstructions: instructionsRef.current.value,
+                }));
+              }
+            }}
             placeholder="Add any specific requirements or preferences for your menu design..."
             className="w-full h-32 p-4 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
           />
@@ -329,13 +355,38 @@ export default function AIMenuGenerator() {
           >
             <ArrowLeft className="w-4 h-4" /> Back
           </button>
-          <NextStepButton />
+          <button
+            onClick={handleNext}
+            // We still rely on canProceed (from paperSize and pageCount) for step 2.
+            disabled={!(menuConfig.paperSize && menuConfig.pageCount > 0)}
+            className={`group relative px-6 py-3 rounded-lg overflow-hidden ${
+              !(menuConfig.paperSize && menuConfig.pageCount > 0)
+                ? 'opacity-50 cursor-not-allowed'
+                : 'cursor-pointer'
+            }`}
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-[#e4983b] to-[#f5bf66] transition-transform group-hover:scale-105" />
+            <span className="relative text-white flex items-center gap-2">
+              Next Step
+              <svg 
+                className="w-4 h-4" 
+                viewBox="0 0 24 24" 
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M5 12h14M12 5l7 7-7 7"/>
+              </svg>
+            </span>
+          </button>
         </div>
       </section>
     );
   };
 
-  // [15] Step 3: Generate & View Recommendations (no duplication)
+  // [15] Step 3: Generate & View Recommendations
   const StepRecommendations = () => {
     // generateRecommendations from previous code
     const generateRecommendations = async () => {
@@ -560,17 +611,8 @@ export default function AIMenuGenerator() {
           >
             <ArrowLeft className="w-4 h-4" /> Back
           </button>
-          <button
-            onClick={goNextStep}
-            disabled={!generatedPrompt}
-            className={`px-6 py-2.5 ${
-              !generatedPrompt 
-                ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-                : 'bg-gradient-to-r from-[#e4983b] to-[#f5bf66] text-white hover:opacity-90 transition-opacity'
-            }`}
-          >
-            Continue to Preview
-          </button>
+          {/* Use the generic NextStepButton so that for step 3 it is disabled when no recommendation is generated */}
+          <NextStepButton />
         </div>
       </section>
     );
@@ -606,7 +648,7 @@ export default function AIMenuGenerator() {
               {isLoading ? (
                 <>
                   <RefreshCw className="w-4 h-4 animate-spin" />
-                  Generating...
+                  This may take a few minutes...
                 </>
               ) : (
                 'Generate Menu'
@@ -706,7 +748,9 @@ export default function AIMenuGenerator() {
       <button
         onClick={goNextStep}
         disabled={!canProceed()}
-        className={`group relative px-6 py-3 rounded-lg overflow-hidden ${!canProceed() ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+        className={`group relative px-6 py-3 rounded-lg overflow-hidden ${
+          !canProceed() ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+        }`}
       >
         <div className="absolute inset-0 bg-gradient-to-r from-[#e4983b] to-[#f5bf66] transition-transform group-hover:scale-105" />
         <span className="relative text-white flex items-center gap-2">
@@ -727,7 +771,7 @@ export default function AIMenuGenerator() {
     );
   };
 
-  // Add this before StepMenuPreview
+  // [17A] generateMenu function (used in Step 4)
   const generateMenu = async () => {
     setIsLoading(true);
     setError('');

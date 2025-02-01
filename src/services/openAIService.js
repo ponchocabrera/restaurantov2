@@ -7,8 +7,10 @@ const openai = new OpenAI({
 });
 
 async function generateOpenAIPrompt(menuData, researchData, config) {
-  const { pageCount, paperSize, primaryColor, secondaryColor, style } = config;
+  // Destructure config including customInstructions
+  const { pageCount, paperSize, primaryColor, secondaryColor, style, customInstructions } = config;
   
+  // Build the system prompt, including custom instructions if provided.
   const systemPrompt = `You are MenuGPT, an advanced AI menu design system. 
 Generate SPECIFIC and DETAILED recommendations for each section:
 
@@ -18,6 +20,7 @@ Provide a detailed design approach for a ${style} ${pageCount}-page menu, includ
 - Visual hierarchy strategy
 - Space utilization approach
 - Texture and pattern recommendations
+${customInstructions ? `- Additional Instructions: ${customInstructions}` : ''}
 
 COLOR SCHEME
 Brand Colors:
@@ -51,8 +54,10 @@ DESIGN RECOMMENDATIONS
 3. Visual hierarchy implementation
 4. Category organization strategy`;
 
+  // Destructure menu data
   const { menuItems, itemsAnalysis } = menuData;
   
+  // Build the user prompt using the menu items and performance metrics.
   const userPrompt = `ANALYZING MENU STRUCTURE...
 
 MENU COMPOSITION:
