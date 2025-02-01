@@ -5,6 +5,7 @@ import Testimonials from '@/components/landing/Testimonials';
 import CTASection from '@/components/landing/CTASection';
 import Navbar from '@/components/shared/Navbar';
 import Footer from '@/components/shared/Footer';
+import Link from 'next/link';
 
 export default function Home() {
   return (
@@ -18,6 +19,12 @@ export default function Home() {
         <CTASection />
       </main>
       <Footer />
+      <Link 
+        href="/dashboard" 
+        className="px-4 py-2 bg-gradient-to-r from-[#e4983b] to-[#f5bf66] text-white rounded-lg hover:opacity-90 transition-opacity"
+      >
+        Go to Dashboard
+      </Link>
     </div>
   );
 }

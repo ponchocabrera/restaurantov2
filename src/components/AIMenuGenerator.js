@@ -1,13 +1,13 @@
 'use client';
 
-
 import { useState, useEffect, useRef } from 'react';
-import { AlertCircle, RefreshCw, ArrowLeft } from 'lucide-react';
+import { AlertCircle, RefreshCw, ArrowLeft, Palette, Droplet, Layout, Lightbulb, Wand2, LayoutTemplate, Code } from 'lucide-react';
 import {
   Alert,
   AlertDescription,
   AlertTitle,
 } from "@/components/ui/alert";
+import EnhancedProgressBar from './shared/EnhancedProgressBar';
 
 // [1] AIMenuGenerator: a step-based wizard with clickable steps
 export default function AIMenuGenerator() {
@@ -28,10 +28,7 @@ export default function AIMenuGenerator() {
   const [error, setError] = useState('');
 
   // [3] Wizard step
-  // 1 => Select Menu
-  // 2 => Configure AI
-  // 3 => Generate & View Recommendations
-  // 4 => Generate Menu & Preview
+  // 1 => Select Menu, 2 => Configure AI, 3 => Generate & View Recommendations, 4 => Generate Menu & Preview
   const [currentStep, setCurrentStep] = useState(1);
 
   // [4] Menu config
@@ -62,8 +59,20 @@ export default function AIMenuGenerator() {
 
   // [6] Progress tracking
   const [progress, setProgress] = useState({
-    prompt: { status: 'idle', time: 0, startTime: 0 },
-    menu: { status: 'idle', time: 0, startTime: 0 }
+    prompt: { 
+      status: 'idle', 
+      time: 0, 
+      startTime: 0,
+      step: 0,
+      steps: ['Analyzing Menu', 'Processing Data', 'Generating Recommendations', 'Finalizing']
+    },
+    menu: { 
+      status: 'idle', 
+      time: 0, 
+      startTime: 0,
+      step: 0,
+      steps: ['Loading Data', 'Processing Layout', 'Generating Content', 'Applying Styles']
+    }
   });
   const ESTIMATED_TIMES = { prompt: 15000, menu: 30000 };
 
@@ -169,10 +178,13 @@ export default function AIMenuGenerator() {
     );
   };
 
-  // Custom gradient style for circles
-  const progressCircleStyle = `
-    background: linear-gradient(90deg, #e4983b 0%, #f5bf66 100%);
-  `;
+  // Custom gradient style for circles (wizard step indicators)
+  const getProgressCircleStyle = (isActive) => ({
+    background: isActive 
+      ? 'linear-gradient(90deg, #e4983b 0%, #f5bf66 100%)'
+      : '#f3f4f6',
+    boxShadow: isActive ? '0 2px 4px rgba(228, 152, 59, 0.2)' : 'none'
+  });
 
   // [13] Step 1: menu selection
   const StepSelectMenu = () => {
@@ -183,9 +195,7 @@ export default function AIMenuGenerator() {
           <select
             value={selectedMenuId || ''}
             onChange={(e) => setSelectedMenuId(e.target.value)}
-            className="w-full p-4 border border-gray-200 rounded-lg appearance-none bg-white
-                     focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
-                     text-gray-700 text-lg"
+            className="w-full p-4 border border-gray-200 rounded-lg appearance-none bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-gray-700 text-lg"
           >
             <option value="">Choose a menu to optimize...</option>
             {menus.map((menu) => (
@@ -210,8 +220,7 @@ export default function AIMenuGenerator() {
               setError('');
               goNextStep();
             }}
-            className="px-6 py-3 bg-gradient-to-r from-[#e4983b] to-[#f5bf66] 
-                     text-white rounded-lg hover:opacity-90 transition-opacity"
+            className="px-6 py-3 bg-gradient-to-r from-[#e4983b] to-[#f5bf66] text-white rounded-lg hover:opacity-90 transition-opacity"
           >
             Next Step
           </button>
@@ -314,18 +323,16 @@ export default function AIMenuGenerator() {
         </div>
 
         {/* Navigation Buttons */}
-        <div className="mt-6 flex justify-between gap-2">
+        <div className="mt-6 flex justify-between">
           <button
             onClick={goPrevStep}
-            className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
+            className="px-4 py-2 bg-gradient-to-r from-[#e4983b] to-[#f5bf66] text-white rounded-lg hover:opacity-90 transition-opacity"
           >
             Back
           </button>
           <button
-            onClick={() => {
-              goNextStep();
-            }}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            onClick={goNextStep}
+            className="px-4 py-2 bg-gradient-to-r from-[#e4983b] to-[#f5bf66] text-white rounded-lg hover:opacity-90 transition-opacity"
           >
             Next
           </button>
@@ -381,6 +388,16 @@ export default function AIMenuGenerator() {
         const data = await response.json();
         setGeneratedPrompt(data.prompt);
         setSuggestions(data.suggestions);
+
+        setProgress(prev => ({
+          ...prev,
+          prompt: {
+            ...prev.prompt,
+            status: 'generating',
+            startTime: Date.now(),
+            step: 0
+          }
+        }));
       } catch (err) {
         console.error('Error generating recommendations:', err);
         setError(err.message);
@@ -388,102 +405,172 @@ export default function AIMenuGenerator() {
         setIsLoading(false);
         setProgress(prev => ({
           ...prev,
-          prompt: { status: 'complete', time: 0, startTime: 0 }
+          prompt: {
+            ...prev.prompt,
+            status: 'complete',
+            time: Date.now() - prev.prompt.startTime,
+            step: prev.prompt.steps.length - 1
+          }
         }));
       }
     };
 
     return (
-      <section className="bg-white border rounded-lg p-4 shadow-sm flex flex-col">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xl font-semibold">Step 3: AI Recommendations</h3>
+      <section className="space-y-6">
+        {/* Header with Generate Button */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-xl font-semibold text-gray-900">AI Menu Design Plan</h3>
+            <p className="text-sm text-gray-600 mt-1">Get AI-powered recommendations for your menu layout</p>
+          </div>
           <button
             onClick={generateRecommendations}
             disabled={isLoading || !menuItems.length}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400"
+            className={`px-6 py-2.5 rounded-lg flex items-center gap-2 transition-all ${
+              isLoading || !menuItems.length
+                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                : 'bg-gradient-to-r from-[#e4983b] to-[#f5bf66] text-white hover:opacity-90'
+            }`}
           >
-            Generate
+            {isLoading ? (
+              <>
+                <RefreshCw className="w-4 h-4 animate-spin" />
+                Analyzing...
+              </>
+            ) : (
+              'Generate Plan'
+            )}
           </button>
         </div>
 
-        <ProgressBar
+        {/* Progress Bar */}
+        <EnhancedProgressBar
           type="prompt"
           progress={progress.prompt}
           estimatedTime={ESTIMATED_TIMES.prompt}
+          steps={progress.prompt.steps}
         />
 
-        {/* 1) Show the parsed sections from generatedPrompt */}
-        <div className="prose max-w-none whitespace-pre-wrap flex-1 overflow-auto mb-4">
-          {generatedPrompt ? (
-            <div className="space-y-4">
-              <section>
-                <h4 className="font-bold">DESIGN OVERVIEW</h4>
-                <p>
-                  {generatedPrompt.match(/DESIGN OVERVIEW(.*?)(?=COLOR SCHEME)/s)?.[1]?.trim()}
-                </p>
-              </section>
-              <section>
-                <h4 className="font-bold">COLOR SCHEME</h4>
-                <p>
-                  {generatedPrompt.match(/COLOR SCHEME(.*?)(?=LAYOUT STRUCTURE)/s)?.[1]?.trim()}
-                </p>
-              </section>
-              <section>
-                <h4 className="font-bold">LAYOUT STRUCTURE</h4>
-                <p>
-                  {generatedPrompt.match(/LAYOUT STRUCTURE(.*?)(?=DESIGN RECOMMENDATIONS)/s)?.[1]?.trim()}
-                </p>
-              </section>
-              <section>
-                <h4 className="font-bold">DESIGN RECOMMENDATIONS</h4>
-                <p>
-                  {generatedPrompt.match(/DESIGN RECOMMENDATIONS(.*?)$/s)?.[1]?.trim()}
-                </p>
-              </section>
+        {/* Recommendations Display */}
+        {generatedPrompt ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Design Overview */}
+            <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
+              <h4 className="flex items-center gap-2 text-lg font-semibold text-gray-900 mb-4">
+                <LayoutTemplate className="w-5 h-5 text-orange-500" />
+                Design Overview
+              </h4>
+              <div className="prose prose-sm">
+                <div className="text-gray-600 space-y-2">
+                  {generatedPrompt
+                    .substring(
+                      generatedPrompt.indexOf('DESIGN OVERVIEW'),
+                      generatedPrompt.indexOf('COLOR SCHEME')
+                    )
+                    .split('\n')
+                    .filter(line => line.trim() && !line.includes('DESIGN OVERVIEW'))
+                    .map((line, i) => (
+                      <p key={i} className="flex items-start gap-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-orange-400 mt-2" />
+                        {line.replace(/^[-*]\s*/, '')}
+                      </p>
+                    ))}
+                </div>
+              </div>
             </div>
-          ) : (
-            <p className="text-gray-500">AI recommendations will appear here...</p>
-          )}
-        </div>
 
-        {/* 2) If suggestions exist but are not accepted, show only the Accept button (no repeated text) */}
-        {suggestions && !acceptedSuggestions && (
-          <div className="bg-gray-50 border rounded-lg shadow-sm p-4 mb-4">
-            <h4 className="text-lg font-semibold mb-2">Apply AI Suggestions?</h4>
-            <p className="text-sm text-gray-600">
-              We have recommended page count and colors based on the above design. 
-              Click "Accept" to apply them.
-            </p>
-            <button
-              onClick={() => {
-                setMenuConfig(prev => ({
-                  ...prev,
-                  pageCount: suggestions.pageCount,
-                  primaryColor: suggestions.primaryColor,
-                  secondaryColor: suggestions.secondaryColor
-                }));
-                setAcceptedSuggestions(true);
-              }}
-              className="mt-4 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-            >
-              Accept
-            </button>
+            {/* Color Scheme */}
+            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
+              <h4 className="flex items-center gap-2 text-lg font-semibold text-gray-900 mb-4">
+                <Layout className="w-5 h-5 text-blue-500" />
+                Color Scheme
+              </h4>
+              <div className="prose prose-sm">
+                <div className="text-gray-600 space-y-2">
+                  {generatedPrompt
+                    .substring(
+                      generatedPrompt.indexOf('COLOR SCHEME'),
+                      generatedPrompt.indexOf('LAYOUT STRUCTURE')
+                    )
+                    .split('\n')
+                    .filter(line => line.trim() && !line.includes('COLOR SCHEME'))
+                    .map((line, i) => (
+                      <p key={i} className="flex items-start gap-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-blue-400 mt-2" />
+                        {line.replace(/^[-*]\s*/, '')}
+                      </p>
+                    ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Layout Structure */}
+            <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
+              <h4 className="flex items-center gap-2 text-lg font-semibold text-gray-900 mb-4">
+                <Palette className="w-5 h-5 text-green-500" />
+                Layout Structure
+              </h4>
+              <div className="prose prose-sm">
+                <div className="text-gray-600 space-y-2">
+                  {generatedPrompt
+                    .substring(
+                      generatedPrompt.indexOf('LAYOUT STRUCTURE'),
+                      generatedPrompt.indexOf('DESIGN RECOMMENDATIONS')
+                    )
+                    .split('\n')
+                    .filter(line => line.trim() && !line.includes('LAYOUT STRUCTURE'))
+                    .map((line, i) => (
+                      <p key={i} className="flex items-start gap-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-green-400 mt-2" />
+                        {line.replace(/^[-*]\s*/, '')}
+                      </p>
+                    ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Design Recommendations */}
+            <div className="bg-gradient-to-br from-purple-50 to-fuchsia-50 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
+              <h4 className="flex items-center gap-2 text-lg font-semibold text-gray-900 mb-4">
+                <Code className="w-5 h-5 text-purple-500" />
+                Design Recommendations
+              </h4>
+              <div className="prose prose-sm">
+                <div className="text-gray-600 space-y-2">
+                  {generatedPrompt
+                    .substring(generatedPrompt.indexOf('DESIGN RECOMMENDATIONS'))
+                    .split('\n')
+                    .filter(line => line.trim() && !line.includes('DESIGN RECOMMENDATIONS'))
+                    .map((line, i) => (
+                      <p key={i} className="flex items-start gap-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-purple-400 mt-2" />
+                        {line.replace(/^\d+\.\s*/, '')}
+                      </p>
+                    ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="text-center py-12 bg-gray-50 rounded-xl">
+            <Wand2 className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+            <p className="text-gray-600">Click Generate to see AI recommendations</p>
           </div>
         )}
 
-        {/* Step Navigation */}
-        <div className="flex justify-between gap-2">
+        {/* Navigation */}
+        <div className="flex justify-between pt-6">
           <button
             onClick={goPrevStep}
-            className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
+            className="px-4 py-2 text-gray-600 hover:text-gray-900 flex items-center gap-2"
           >
-            Back
+            <ArrowLeft className="w-4 h-4" /> Back
           </button>
           <button
             onClick={goNextStep}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            className="px-6 py-2.5 bg-gradient-to-r from-[#e4983b] to-[#f5bf66] text-white rounded-lg hover:opacity-90 transition-opacity"
           >
-            Next
+            Continue to Preview
           </button>
         </div>
       </section>
@@ -513,7 +600,6 @@ export default function AIMenuGenerator() {
           throw new Error('Please generate a prompt first');
         }
 
-        // Reset stats with correct page count at the start
         setGenerationStats({
           pagesGenerated: 0,
           totalPages: menuConfig.pageCount
@@ -607,22 +693,22 @@ export default function AIMenuGenerator() {
             <button
               onClick={() => setShowMenuModal(true)}
               disabled={!generatedHTML}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400"
+              className="px-4 py-2 bg-gradient-to-r from-[#e4983b] to-[#f5bf66] text-white rounded-lg hover:opacity-90 disabled:opacity-50 transition-opacity"
             >
               View Fullscreen
             </button>
             <button
               onClick={generateMenuHTML}
               disabled={isGenerating || !generatedPrompt || requestInProgress.current}
-              className={`px-4 py-2 rounded text-white transition-colors
-                ${(isGenerating || requestInProgress.current)
-                  ? 'bg-gray-400 cursor-not-allowed opacity-50'
+              className={`px-4 py-2 rounded-lg text-white transition-opacity ${
+                isGenerating || requestInProgress.current
+                  ? 'bg-gradient-to-r from-[#e4983b] to-[#f5bf66] cursor-not-allowed opacity-50'
                   : !generatedPrompt
-                    ? 'bg-gray-400 cursor-not-allowed'
-                    : 'bg-blue-600 hover:bg-blue-700'
-                }`}
+                    ? 'bg-gradient-to-r from-[#e4983b] to-[#f5bf66] cursor-not-allowed'
+                    : 'bg-gradient-to-r from-[#e4983b] to-[#f5bf66] hover:opacity-90'
+              }`}
             >
-              {(isGenerating || requestInProgress.current) ? (
+              {isGenerating || requestInProgress.current ? (
                 <span className="flex items-center gap-2">
                   <RefreshCw className="w-4 h-4 animate-spin" />
                   Generating...
@@ -634,14 +720,14 @@ export default function AIMenuGenerator() {
           </div>
         </div>
 
-        <ProgressBar
+        <EnhancedProgressBar
           type="menu"
           progress={progress.menu}
           estimatedTime={ESTIMATED_TIMES.menu}
+          steps={progress.menu.steps}
           currentProgress={generationStats}
         />
 
-        {/* Menu Preview */}
         {generatedHTML ? (
           <div 
             className="mt-4 border rounded-lg p-4 overflow-auto"
@@ -654,11 +740,10 @@ export default function AIMenuGenerator() {
           </div>
         )}
 
-        {/* Download button */}
         {generatedHTML && (
           <button
             onClick={handleDownloadPDF}
-            className="mt-4 px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"
+            className="mt-4 px-4 py-2 bg-gradient-to-r from-[#e4983b] to-[#f5bf66] text-white rounded-lg hover:opacity-90 transition-opacity"
           >
             Download PDF
           </button>
@@ -667,7 +752,7 @@ export default function AIMenuGenerator() {
         <div className="mt-6 flex justify-between">
           <button
             onClick={goPrevStep}
-            className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
+            className="px-4 py-2 bg-gradient-to-r from-[#e4983b] to-[#f5bf66] text-white rounded-lg hover:opacity-90 transition-opacity"
           >
             Back
           </button>
@@ -678,32 +763,24 @@ export default function AIMenuGenerator() {
 
   // [17] Step indicator with clickable steps
   const StepIndicator = () => {
-    const steps = [
-      { step: 1, label: 'Select Menu' },
-      { step: 2, label: 'AI Config' },
-      { step: 3, label: 'Recommendations' },
-      { step: 4, label: 'Menu Preview' }
-    ];
-
     return (
       <div className="flex items-center justify-center mb-4">
-        {steps.map(({ step, label }, idx) => {
-          const isActive = currentStep === step;
+        {steps.map(({ id, name }, idx) => {
+          const isActive = currentStep === id;
           return (
-            <div key={step} className="flex items-center">
+            <div key={id} className="flex items-center">
               <button
-                onClick={() => goToStep(step)}
-                className={`rounded-full w-8 h-8 flex items-center justify-center
-                  ${isActive ? 'bg-blue-600 text-white' : 'bg-gray-300 text-gray-700'}
-                `}
+                onClick={() => goToStep(id)}
+                className={`w-8 h-8 aspect-square rounded-full flex items-center justify-center text-white font-medium ${isActive ? '' : 'bg-gray-300 text-gray-700'}`}
+                style={getProgressCircleStyle(isActive)}
               >
-                {step}
+                {id}
               </button>
               <button
-                onClick={() => goToStep(step)}
-                className="ml-2 mr-4 text-sm font-medium text-left"
+                onClick={() => goToStep(id)}
+                className="ml-2 mr-4 text-sm font-medium text-gray-700"
               >
-                {label}
+                {name}
               </button>
               {idx < steps.length - 1 && (
                 <div className="border-t-2 border-gray-300 w-8 mr-4" />
@@ -715,15 +792,7 @@ export default function AIMenuGenerator() {
     );
   };
 
-  // Progress circle styles with better gradient implementation
-  const getProgressCircleStyle = (isActive) => ({
-    background: isActive 
-      ? 'linear-gradient(90deg, #e4983b 0%, #f5bf66 100%)'
-      : '#f3f4f6',
-    boxShadow: isActive ? '0 2px 4px rgba(228, 152, 59, 0.2)' : 'none'
-  });
-
-  // Add this function near the other utility functions
+  // Utility: canProceed
   const canProceed = () => {
     switch (currentStep) {
       case 1:
@@ -739,18 +808,14 @@ export default function AIMenuGenerator() {
     }
   };
 
-  // Update the Next Step button implementation
+  // NextStepButton component
   const NextStepButton = () => {
     const buttonText = currentStep === steps.length ? 'Generate Menu' : 'Next Step';
-    
     return (
       <button
         onClick={goNextStep}
         disabled={!canProceed()}
-        className={`
-          group relative px-6 py-3 rounded-lg overflow-hidden
-          ${!canProceed() ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
-        `}
+        className={`group relative px-6 py-3 rounded-lg overflow-hidden ${!canProceed() ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
       >
         <div className="absolute inset-0 bg-gradient-to-r from-[#e4983b] to-[#f5bf66] transition-transform group-hover:scale-105" />
         <span className="relative text-white flex items-center gap-2">
@@ -789,41 +854,21 @@ export default function AIMenuGenerator() {
         </p>
 
         {/* Progress Steps */}
-        <div className="flex justify-between mb-12 max-w-3xl mx-auto">
-          {steps.map((step, index) => (
-            <div key={step.id} className="flex items-center">
-              <div 
-                className="w-8 h-8 rounded-full flex items-center justify-center text-white font-medium"
-                style={getProgressCircleStyle(currentStep === index + 1)}
-              >
-                {index + 1}
-              </div>
-              <span className="ml-2 text-sm font-medium text-gray-600">{step.name}</span>
-              {index < steps.length - 1 && (
-                <div className="h-px w-24 bg-gray-200 mx-4" />
-              )}
-            </div>
-          ))}
-        </div>
+        <StepIndicator />
 
         {/* Main Content Grid */}
         <div className="grid grid-cols-12 gap-8">
-          {/* Left Column: Help Text */}
-          <div className="col-span-4 space-y-6">
+          {/* Left Column: Help Text (Combined into one container) */}
+          <div className="col-span-4">
             <div className="bg-white/70 backdrop-blur-sm rounded-lg p-6 border border-gray-100">
               <h3 className="text-lg font-semibold text-gray-900 mb-3">
                 What to expect in this step
               </h3>
-              <p className="text-gray-700">
-                {getStepDescription(currentStep)}
-              </p>
-            </div>
-
-            <div className="bg-white/70 backdrop-blur-sm rounded-lg p-6 border border-gray-100">
-              <h3 className="text-lg font-semibold text-gray-900 mb-3">
+              <p className="text-gray-700">{getStepDescription(currentStep)}</p>
+              <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-3">
                 Tips & Best Practices
               </h3>
-              <ul className="list-disc list-inside text-gray-700 space-y-2">
+              <ul className="list-disc list-inside text-gray-700">
                 {getStepTips(currentStep).map((tip, index) => (
                   <li key={index}>{tip}</li>
                 ))}
@@ -849,7 +894,7 @@ export default function AIMenuGenerator() {
           <div className="bg-white p-4 rounded shadow-lg max-w-3xl max-h-[80vh] overflow-auto">
             <img src={modalImageSrc} alt="Preview" className="w-full h-auto" />
             <button
-              className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              className="mt-4 px-4 py-2 bg-gradient-to-r from-[#e4983b] to-[#f5bf66] text-white rounded-lg hover:opacity-90 transition-opacity"
               onClick={() => setShowImageModal(false)}
             >
               Close
@@ -864,13 +909,11 @@ export default function AIMenuGenerator() {
           <div className="bg-white p-6 rounded shadow-lg max-w-4xl w-full max-h-[90vh] overflow-auto relative">
             <button
               onClick={() => setShowMenuModal(false)}
-              className="absolute top-4 right-4 px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-800"
+              className="absolute top-4 right-4 px-4 py-2 bg-gradient-to-r from-[#e4983b] to-[#f5bf66] text-white rounded-lg hover:opacity-90 transition-opacity"
             >
               Close
             </button>
-            <div
-              dangerouslySetInnerHTML={{ __html: generatedHTML }}
-            />
+            <div dangerouslySetInnerHTML={{ __html: generatedHTML }} />
           </div>
         </div>
       )}
