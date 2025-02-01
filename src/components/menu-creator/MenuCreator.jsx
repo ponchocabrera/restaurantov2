@@ -6,44 +6,6 @@ import { Eye, Trash2, Maximize2, Minimize2 } from 'lucide-react';
 import BulkUpload from './BulkUpload';
 import { MenuPreview } from '../menu-preview/MenuPreview';
 
-// Example sidebar
-function Sidebar() {
-  return (
-    <aside className="w-60 bg-white border-r border-gray-200 min-h-screen">
-      <div className="p-4 font-bold text-lg border-b border-gray-100">
-        My Project
-      </div>
-      <nav className="flex flex-col p-2 space-y-2">
-        <Link href="/my-restaurant">
-          <span className="block px-3 py-2 rounded hover:bg-gray-100 cursor-pointer">
-            My Restaurant
-          </span>
-        </Link>
-        <Link href="/templates">
-          <span className="block px-3 py-2 rounded hover:bg-gray-100 cursor-pointer">
-            Templates
-          </span>
-        </Link>
-        <Link href="/restaurant-admin">
-          <span className="block px-3 py-2 rounded hover:bg-gray-100 cursor-pointer">
-            Restaurant Creation
-          </span>
-        </Link>
-        <Link href="/menu-publisher">
-          <span className="block px-3 py-2 rounded hover:bg-gray-100 cursor-pointer">
-            Menu Publisher
-          </span>
-        </Link>
-        <Link href="/menu-creator">
-          <span className="block px-3 py-2 rounded hover:bg-gray-100 cursor-pointer">
-            Menu Creator
-          </span>
-        </Link>
-      </nav>
-    </aside>
-  );
-}
-
 export default function MenuCreator() {
   // -------------------------------------------------------------------------
   // 1) STATE
@@ -429,9 +391,6 @@ export default function MenuCreator() {
   // -------------------------------------------------------------------------
   return (
     <div className="flex min-h-screen bg-gray-50">
-      {/* Left Sidebar */}
-      <Sidebar />
-
       {/* Main content on the right */}
       <div className="flex flex-col flex-grow">
         <header className="bg-white border-b px-6 py-4 shadow-sm">

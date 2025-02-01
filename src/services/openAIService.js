@@ -7,49 +7,73 @@ const openai = new OpenAI({
 });
 
 async function generateOpenAIPrompt(menuData, researchData, config) {
+  const { pageCount, paperSize, primaryColor, secondaryColor, style } = config;
+  
   const systemPrompt = `You are MenuGPT, an advanced AI menu design system. 
-Analyze the menu data and provide specific recommendations in the following format:
+Generate SPECIFIC and DETAILED recommendations for each section:
 
 DESIGN OVERVIEW
-[Provide a brief overview of the recommended design approach]
+Provide a detailed design approach for a ${style} ${pageCount}-page menu, including:
+- Overall aesthetic direction
+- Visual hierarchy strategy
+- Space utilization approach
+- Texture and pattern recommendations
 
 COLOR SCHEME
-Primary: [use specific color name like 'Slate Gray', 'Navy Blue', etc.] - [brief explanation]
-Secondary: [use specific color name like 'Mustard Yellow', 'Burgundy', etc.] - [brief explanation]
+Brand Colors:
+- Primary: ${primaryColor || '#000000'} 
+- Secondary: ${secondaryColor || '#666666'}
+Required Color Details:
+- Background color for menu pages
+- Background colors for sections
+- Accent colors (provide exact hex codes):
+  * Highlight color for best sellers
+  * Border colors for sections
+  * Background colors for item cards
+- Texture specifications:
+  * Pattern types for backgrounds
+  * Opacity levels for overlays
+  * Gradient definitions if applicable
 
 LAYOUT STRUCTURE
-- [Key layout recommendations]
-- [Spacing and organization details]
+Pages: ${pageCount}
+Size: ${paperSize}
+Provide specific details for:
+- Background patterns and textures per section
+- Section divider styles and colors
+- Card/container background colors
+- Shadow specifications
+- Border styles and colors
 
 DESIGN RECOMMENDATIONS
-1. [First recommendation]
-2. [Second recommendation]
-3. [Third recommendation]
-
-Use clear, specific color names that can be easily translated to hex values.`;
+1. Specific typography choices (fonts, sizes, weights)
+2. Exact spacing measurements
+3. Visual hierarchy implementation
+4. Category organization strategy`;
 
   const { menuItems, itemsAnalysis } = menuData;
-  const { style } = config;
-
+  
   const userPrompt = `ANALYZING MENU STRUCTURE...
 
 MENU COMPOSITION:
-${menuItems.map(item => `[ITEM] ${item.name} (${item.category})`).join('\n')}
+${menuItems.map(item => `[ITEM] ${item.name} (${item.category})
+- Price: ${typeof item.price === 'number' ? `$${item.price.toFixed(2)}` : `$${item.price}`}
+- Description: ${item.description || 'No description available'}
+- Sales Performance: ${item.sales_performance || 'standard'}
+- Margin Level: ${item.margin_level || 'standard'}
+- Boost Desired: ${item.boost_desired ? 'Yes' : 'No'}`).join('\n')}
 
 PERFORMANCE METRICS:
-- Best Sellers: ${itemsAnalysis.bestSellers.length} items
-- High Margin: ${itemsAnalysis.highMargin.length} items
-- Priority Items: ${itemsAnalysis.boostedItems.length} items
+- Best Sellers: ${itemsAnalysis.bestSellers.map(item => item.name).join(', ')}
+- High Margin: ${itemsAnalysis.highMargin.map(item => item.name).join(', ')}
+- Priority Items: ${itemsAnalysis.boostedItems.map(item => item.name).join(', ')}
 
-STYLE PREFERENCE: ${style}
-
-Based on this data and menu psychology research, provide recommendations that:
-1. Define an optimal layout structure
-2. Suggest a cohesive color palette
-3. Outline category organization
-4. Establish visual hierarchy
-
-Format your response using the structure defined above, focusing on clear, natural language descriptions.`;
+Based on this data and menu psychology research, provide detailed recommendations for:
+1. Item-specific placement and highlighting strategies
+2. Visual hierarchy optimization
+3. Psychological pricing strategies
+4. Category organization
+5. Custom styling requirements for each item type`;
 
   return { systemPrompt, userPrompt };
 }

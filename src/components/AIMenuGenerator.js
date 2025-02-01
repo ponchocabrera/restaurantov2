@@ -1,73 +1,88 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { 
-  FileText, 
-  BookOpen, 
-  Download, 
-  RefreshCw, 
-  Send, 
-  Edit3,
-  AlertCircle
-} from 'lucide-react';
+
+import { useState, useEffect, useRef } from 'react';
+import { AlertCircle, RefreshCw, ArrowLeft } from 'lucide-react';
 import {
   Alert,
   AlertDescription,
   AlertTitle,
 } from "@/components/ui/alert";
 
+// [1] AIMenuGenerator: a step-based wizard with clickable steps
 export default function AIMenuGenerator() {
-  // State management
+  // Add steps definition
+  const steps = [
+    { id: 1, name: 'Select Your Menu' },
+    { id: 2, name: 'AI Configurations' },
+    { id: 3, name: 'AI Menu Recommendations' },
+    { id: 4, name: 'Generate Your Menu' }
+  ];
+
+  // [2] Overall states
   const [menuItems, setMenuItems] = useState([]);
-  const [generatedPrompt, setGeneratedPrompt] = useState('');
-  const [generatedHTML, setGeneratedHTML] = useState('');
+  const [menus, setMenus] = useState([]);
+  const [selectedMenuId, setSelectedMenuId] = useState(null);
+
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  
-  // Menu configuration
+
+  // [3] Wizard step
+  // 1 => Select Menu
+  // 2 => Configure AI
+  // 3 => Generate & View Recommendations
+  // 4 => Generate Menu & Preview
+  const [currentStep, setCurrentStep] = useState(1);
+
+  // [4] Menu config
   const [menuConfig, setMenuConfig] = useState({
     paperSize: 'letter',
     pageCount: 1,
     primaryColor: '#000000',
     secondaryColor: '#666666',
-    inspirationURL: '',
+    backgroundColor: '#ffffff',
+    sectionBackground: '#f8f8f8',
+    style: 'modern',
+    logoUrl: '',
+    restaurantInfo: {
+      name: '',
+      address: '',
+      phone: '',
+      website: ''
+    },
     customInstructions: ''
   });
-
-  // Add separate style state
   const [styleWanted, setStyleWanted] = useState('modern');
 
-  // Add selectedMenuId state
-  const [selectedMenuId, setSelectedMenuId] = useState(null);
-  const [menus, setMenus] = useState([]);
+  // [5] AI states
+  const [generatedPrompt, setGeneratedPrompt] = useState('');
+  const [generatedHTML, setGeneratedHTML] = useState('');
+  const [suggestions, setSuggestions] = useState(null);
+  const [acceptedSuggestions, setAcceptedSuggestions] = useState(false);
 
-  // Add new state for progress tracking
+  // [6] Progress tracking
   const [progress, setProgress] = useState({
     prompt: { status: 'idle', time: 0, startTime: 0 },
     menu: { status: 'idle', time: 0, startTime: 0 }
   });
+  const ESTIMATED_TIMES = { prompt: 15000, menu: 30000 };
 
-  // Add new state for suggestions
-  const [suggestions, setSuggestions] = useState(null);
-  const [acceptedSuggestions, setAcceptedSuggestions] = useState(false);
+  // [7] Modals: image & fullscreen
+  const [showImageModal, setShowImageModal] = useState(false);
+  const [modalImageSrc, setModalImageSrc] = useState('');
+  const [showMenuModal, setShowMenuModal] = useState(false);
 
-  // Add at the top of the component, after the useState declarations (around line 52)
-  const ESTIMATED_TIMES = {
-    prompt: 15000,  // 15 seconds for prompt generation
-    menu: 30000     // 30 seconds for menu generation
-  };
-
-  // Load menu items on mount
+  // [8] On mount, load menus
   useEffect(() => {
     fetchMenus();
   }, []);
 
-  // Fetch menus from database
+  // [9] Fetch menus
   const fetchMenus = async () => {
     try {
-      const response = await fetch('/api/menus');
-      if (!response.ok) throw new Error('Failed to fetch menus');
-      const data = await response.json();
+      const res = await fetch('/api/menus');
+      if (!res.ok) throw new Error('Failed to fetch menus');
+      const data = await res.json();
       setMenus(data.menus);
     } catch (err) {
       setError('Failed to load menus');
@@ -75,16 +90,14 @@ export default function AIMenuGenerator() {
     }
   };
 
-  // Add useEffect for loading menu items when menu is selected
+  // [10] Load items when we pick a menu
   useEffect(() => {
+    if (!selectedMenuId) return;
+
     const loadMenuItems = async () => {
-      if (!selectedMenuId) return;
-      
       try {
         const response = await fetch(`/api/menuItems?menuId=${selectedMenuId}`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch menu items');
-        }
+        if (!response.ok) throw new Error('Failed to fetch menu items');
         const data = await response.json();
         setMenuItems(data.items || []);
       } catch (err) {
@@ -96,218 +109,22 @@ export default function AIMenuGenerator() {
     loadMenuItems();
   }, [selectedMenuId]);
 
-  // Fetch menu items from database
-  const fetchMenuItems = async () => {
-    try {
-      if (!selectedMenuId) {
-        return; // Just return without setting error
-      }
-
-      const response = await fetch(`/api/menuItems?menuId=${selectedMenuId}`);
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
-      }
-      const data = await response.json();
-      
-      if (!data || !data.items || !Array.isArray(data.items)) {
-        throw new Error('Invalid response format from server');
-      }
-      
-      setMenuItems(data.items.map(item => ({
-        id: item.id,
-        name: item.name || '',
-        description: item.description || '',
-        price: item.price || 0,
-        category: item.category || '',
-        sales_performance: item.sales_performance || '',
-        margin_level: item.margin_level || '',
-        boost_desired: item.boost_desired || false
-      })));
-      setError(''); // Clear error on successful fetch
-    } catch (err) {
-      setError(`Failed to load menu items: ${err.message}`);
-      console.error('Error fetching menu items:', err);
-      setMenuItems([]);
-    }
+  // [11] Step navigation
+  const goNextStep = () => setCurrentStep(prev => Math.min(prev + 1, steps.length));
+  const goPrevStep = () => setCurrentStep(prev => Math.max(prev - 1, 1));
+  
+  // [11A] Jump to a specific step (clicked from step indicator)
+  const goToStep = (stepNumber) => {
+    setCurrentStep(stepNumber);
   };
 
-  // Add this function after the state declarations
-  const handleMenuSelect = async (menuId) => {
-    setSelectedMenuId(menuId);
-    setMenuItems([]); // Clear existing items
-    
-    if (!menuId) return;
-    
-    try {
-      // Fetch menu items for the selected menu
-      const response = await fetch(`/api/menus/${menuId}/items`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch menu items');
-      }
-      const data = await response.json();
-      setMenuItems(data.items);
-    } catch (err) {
-      console.error('Error loading menu items:', err);
-      setError(err.message);
-    }
-  };
-
-  // Modify the generateInitialPrompt function
-  const generateInitialPrompt = async () => {
-    const startTime = Date.now();
-    setProgress(prev => ({
-      ...prev,
-      prompt: { status: 'generating', time: 0, startTime }
-    }));
-    
-    try {
-      if (!selectedMenuId) {
-        throw new Error('Please select a menu first');
-      }
-
-      // Add a check for items loading
-      if (!menuItems || menuItems.length === 0) {
-        throw new Error('Loading menu items... Please try again in a moment.');
-      }
-
-      console.log('Processing menu items...');
-      const itemsAnalysis = {
-        bestSellers: menuItems.filter(item => item.sales_performance === 'best_seller') || [],
-        highMargin: menuItems.filter(item => item.margin_level === 'high_margin') || [],
-        boostedItems: menuItems.filter(item => item.boost_desired) || []
-      };
-
-      const requestBody = {
-        menuItems,
-        config: { style: styleWanted },
-        itemsAnalysis
-      };
-
-      console.log('Sending request to API...', requestBody);
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
-
-      const response = await fetch('/api/ai/generatePrompt', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody),
-        signal: controller.signal
-      });
-      
-      clearTimeout(timeoutId);
-      
-      if (!response.ok) {
-        throw new Error('Failed to generate suggestions');
-      }
-      
-      const data = await response.json();
-      setSuggestions(data.suggestions);
-      setGeneratedPrompt(data.prompt);
-      
-    } catch (err) {
-      if (err.name === 'AbortError') {
-        setError('Request timed out. Please try again.');
-      } else {
-        setError(err.message);
-      }
-    } finally {
-      setProgress(prev => ({
-        ...prev,
-        prompt: { status: 'complete', time: Date.now() - startTime }
-      }));
-    }
-  };
-
-  // Add suggestion acceptance handler
-  const handleAcceptSuggestions = () => {
-    if (!suggestions) return;
-    
-    setMenuConfig(prev => ({
-      ...prev,
-      pageCount: suggestions.pageCount,
-      primaryColor: suggestions.primaryColor,
-      secondaryColor: suggestions.secondaryColor
-    }));
-    setAcceptedSuggestions(true);
-  };
-
-  // Generate HTML using Claude AI
-  const generateMenuHTML = async () => {
-    console.log('Starting menu HTML generation...');
-    const startTime = Date.now();
-    setProgress(prev => ({
-      ...prev,
-      menu: { status: 'generating', time: 0, startTime }
-    }));
-    
-    try {
-      if (!generatedPrompt) {
-        throw new Error('Please generate a prompt first');
-      }
-
-      console.log('Sending request to generate HTML...');
-      const response = await fetch('/api/ai/generateHTML', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          prompt: generatedPrompt,
-          menuItems,
-          config: menuConfig
-        }),
-      });
-      
-      console.log('Received response:', response.status);
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to generate menu HTML');
-      }
-      
-      const data = await response.json();
-      console.log('Generated HTML successfully');
-      setGeneratedHTML(data.html);
-    } catch (err) {
-      console.error('Error generating menu:', err);
-      setError(err.message);
-    } finally {
-      setProgress(prev => ({
-        ...prev,
-        menu: { status: 'complete', time: Date.now() - startTime }
-      }));
-    }
-  };
-
-  // Download as PDF
-  const downloadPDF = async () => {
-    try {
-      const response = await fetch('/api/downloadPDF', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          html: generatedHTML
-        }),
-      });
-      
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'menu.pdf';
-      a.click();
-    } catch (err) {
-      setError('Failed to download PDF');
-      console.error(err);
-    }
-  };
-
-  // Add progress bar component to the JSX
-  const ProgressBar = ({ type, progress, estimatedTime }) => {
+  // [12] ProgressBar component
+  const ProgressBar = ({ type, progress, estimatedTime, currentProgress }) => {
     const getProgressPercentage = () => {
       if (progress.status === 'complete') return 100;
+      if (progress.status === 'generating' && currentProgress) {
+        return Math.min((currentProgress.pagesGenerated / currentProgress.totalPages) * 100, 95);
+      }
       if (progress.status === 'generating') {
         const elapsed = Date.now() - progress.startTime;
         return Math.min((elapsed / estimatedTime) * 100, 95);
@@ -322,9 +139,9 @@ export default function AIMenuGenerator() {
             {type === 'prompt' ? 'Prompt Generation' : 'Menu Generation'}
           </span>
           <div className="flex gap-2 text-sm">
-            {progress.status === 'generating' && (
+            {progress.status === 'generating' && currentProgress && (
               <span className="text-blue-600">
-                {Math.round((Date.now() - progress.startTime) / 1000)}s / {estimatedTime / 1000}s
+                Page {currentProgress.pagesGenerated} of {currentProgress.totalPages}
               </span>
             )}
             {progress.status === 'complete' && (
@@ -335,14 +152,14 @@ export default function AIMenuGenerator() {
           </div>
         </div>
         <div className="w-full bg-gray-200 rounded-full h-2.5">
-          <div 
+          <div
             className={`h-2.5 rounded-full transition-all duration-500 ${
               progress.status === 'error' ? 'bg-red-600' :
               progress.status === 'complete' ? 'bg-green-600' :
               progress.status === 'generating' ? 'bg-blue-600' :
               'bg-gray-300'
             }`}
-            style={{ 
+            style={{
               width: `${getProgressPercentage()}%`,
               transition: 'width 0.5s ease-in-out'
             }}
@@ -352,213 +169,135 @@ export default function AIMenuGenerator() {
     );
   };
 
-  // Add these button handlers
-  const handleGeneratePrompt = async () => {
-    setIsLoading(true);
-    setError('');
-    try {
-      await generateInitialPrompt();
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // Custom gradient style for circles
+  const progressCircleStyle = `
+    background: linear-gradient(90deg, #e4983b 0%, #f5bf66 100%);
+  `;
 
-  const handleGenerateMenu = async () => {
-    const startTime = Date.now();
-    setProgress(prev => ({
-      ...prev,
-      menu: { status: 'generating', time: 0, startTime }
-    }));
-    
-    try {
-      if (!generatedPrompt) {
-        throw new Error('Please generate a prompt first');
-      }
-
-      const response = await fetch('/api/ai/generateHTML', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          prompt: generatedPrompt,
-          menuItems,
-          config: {
-            ...menuConfig,
-            style: styleWanted,
-            styles: {
-              primary: menuConfig.primaryColor,
-              secondary: menuConfig.secondaryColor,
-            }
-          }
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to generate menu HTML');
-      }
-      
-      const data = await response.json();
-      // Inject styles directly into HTML to avoid external CSS dependency
-      const htmlWithStyles = `
-        <style>
-          .menu-container {
-            font-family: 'Arial', sans-serif;
-            max-width: ${menuConfig.paperSize === 'letter' ? '8.5in' : '210mm'};
-            margin: 0 auto;
-            padding: 2rem;
-            color: ${menuConfig.primaryColor};
-          }
-          .menu-item {
-            margin-bottom: 1rem;
-            padding: 0.5rem;
-            border-bottom: 1px solid ${menuConfig.secondaryColor};
-          }
-          /* Add more styles as needed */
-        </style>
-        ${data.html}
-      `;
-      
-      setGeneratedHTML(htmlWithStyles);
-    } catch (err) {
-      console.error('Error generating menu:', err);
-      setError(err.message);
-    } finally {
-      setProgress(prev => ({
-        ...prev,
-        menu: { status: 'complete', time: Date.now() - startTime }
-      }));
-    }
-  };
-
-  const handleDownloadPDF = async () => {
-    if (!generatedHTML) {
-      setError('Please generate a menu first');
-      return;
-    }
-    // PDF download logic here
-  };
-
-  // Generate recommendations using OpenAI
-  const generateRecommendations = async () => {
-    setIsLoading(true);
-    try {
-      const itemsAnalysis = {
-        bestSellers: menuItems.filter(item => item.sales_performance === 'best_seller') || [],
-        highMargin: menuItems.filter(item => item.margin_level === 'high_margin') || [],
-        boostedItems: menuItems.filter(item => item.boost_desired) || []
-      };
-
-      const requestBody = {
-        menuItems,
-        config: { 
-          style: styleWanted,
-          paperSize: menuConfig.paperSize,
-          pageCount: menuConfig.pageCount
-        },
-        itemsAnalysis
-      };
-
-      const response = await fetch('/api/ai/generatePrompt', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody)
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to generate recommendations');
-      }
-
-      const data = await response.json();
-      setGeneratedPrompt(data.prompt);
-    } catch (err) {
-      console.error('Error generating recommendations:', err);
-      setError(err.message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  return (
-    <div className="container mx-auto p-6">
-      {/* Menu Selection */}
-      <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-        <h2 className="text-xl font-semibold mb-4">Select Menu</h2>
-        <select 
-          value={selectedMenuId || ''}
-          onChange={(e) => handleMenuSelect(e.target.value)}
-          className="w-full p-2 border rounded"
-        >
-          <option value="">Choose a menu...</option>
-          {menus.map((menu) => (
-            <option key={menu.id} value={menu.id}>
-              {menu.name}
-            </option>
-          ))}
-        </select>
-        {error && <p className="text-red-500 mt-2">{error}</p>}
+  // [13] Step 1: menu selection
+  const StepSelectMenu = () => {
+    return (
+      <div>
+        <h3 className="text-xl font-semibold mb-6">Select your Menu</h3>
+        <div className="relative">
+          <select
+            value={selectedMenuId || ''}
+            onChange={(e) => setSelectedMenuId(e.target.value)}
+            className="w-full p-4 border border-gray-200 rounded-lg appearance-none bg-white
+                     focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent
+                     text-gray-700 text-lg"
+          >
+            <option value="">Choose a menu to optimize...</option>
+            {menus.map((menu) => (
+              <option key={menu.id} value={menu.id}>
+                {menu.name}
+              </option>
+            ))}
+          </select>
+          <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none">
+            <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
+        </div>
+        <div className="mt-8 flex justify-end">
+          <button
+            onClick={() => {
+              if (!selectedMenuId) {
+                setError('Please select a menu before continuing.');
+                return;
+              }
+              setError('');
+              goNextStep();
+            }}
+            className="px-6 py-3 bg-gradient-to-r from-[#e4983b] to-[#f5bf66] 
+                     text-white rounded-lg hover:opacity-90 transition-opacity"
+          >
+            Next Step
+          </button>
+        </div>
       </div>
+    );
+  };
 
-      {/* Configuration Panel */}
-      <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-        <h2 className="text-xl font-semibold mb-4">Menu Configuration</h2>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-          {/* Paper Size */}
-          <div>
-            <label className="block text-sm font-medium mb-1">Paper Size</label>
-            <select 
-              value={menuConfig.paperSize}
-              onChange={(e) => setMenuConfig({...menuConfig, paperSize: e.target.value})}
-              className="w-full p-2 border rounded"
-            >
-              <option value="letter">Letter (8.5" × 11")</option>
-              <option value="a4">A4 (210 × 297 mm)</option>
-              <option value="legal">Legal (8.5" × 14")</option>
-            </select>
-          </div>
+  // [14] Step 2: AI Configuration
+  const StepAIConfig = () => {
+    return (
+      <section className="bg-white border rounded-lg p-4 shadow-sm">
+        <h3 className="text-xl font-semibold mb-4">Step 2: AI Configuration</h3>
 
-          {/* Page Count */}
-          <div>
-            <label className="block text-sm font-medium mb-1">Number of Pages</label>
-            <input 
-              type="number"
-              min="1"
-              max="10"
-              value={menuConfig.pageCount}
-              onChange={(e) => setMenuConfig({...menuConfig, pageCount: parseInt(e.target.value)})}
-              className="w-full p-2 border rounded"
-            />
-          </div>
+        {/* Paper Size */}
+        <div className="mb-4">
+          <label className="block text-sm font-medium mb-1">Paper Size</label>
+          <select
+            value={menuConfig.paperSize}
+            onChange={(e) => setMenuConfig({ ...menuConfig, paperSize: e.target.value })}
+            className="w-full p-2 border rounded"
+          >
+            <option value="letter">Letter (8.5" × 11")</option>
+            <option value="a4">A4 (210 × 297 mm)</option>
+            <option value="legal">Legal (8.5" × 14")</option>
+          </select>
+        </div>
 
-          {/* Style */}
-          <div>
-            <label className="block text-sm font-medium mb-1">Menu Style</label>
-            <select 
-              value={styleWanted}
-              onChange={(e) => setStyleWanted(e.target.value)}
-              className="w-full p-2 border rounded"
-            >
-              <option value="modern">Modern & Clean</option>
-              <option value="classic">Classic & Elegant</option>
-              <option value="rustic">Rustic & Warm</option>
-              <option value="minimalist">Minimalist</option>
-            </select>
-          </div>
+        {/* Page Count */}
+        <div className="mb-4">
+          <label className="block text-sm font-medium mb-1">Number of Pages</label>
+          <input
+            type="number"
+            min="1"
+            max="10"
+            value={menuConfig.pageCount}
+            onChange={(e) => setMenuConfig({ ...menuConfig, pageCount: parseInt(e.target.value) })}
+            className="w-full p-2 border rounded"
+          />
+        </div>
 
-          {/* Colors */}
-          <div>
-            <label className="block text-sm font-medium mb-1">Primary Color</label>
-            <input 
-              type="color"
-              value={menuConfig.primaryColor}
-              onChange={(e) => setMenuConfig({...menuConfig, primaryColor: e.target.value})}
-              className="w-full p-1 border rounded"
-            />
+        {/* Menu Style */}
+        <div className="mb-4">
+          <label className="block text-sm font-medium mb-1">Menu Style</label>
+          <select
+            value={styleWanted}
+            onChange={(e) => setStyleWanted(e.target.value)}
+            className="w-full p-2 border rounded"
+          >
+            <option value="modern">Modern &amp; Clean</option>
+            <option value="classic">Classic &amp; Elegant</option>
+            <option value="rustic">Rustic &amp; Warm</option>
+            <option value="minimalist">Minimalist</option>
+          </select>
+        </div>
+
+        {/* Colors */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Brand Colors
+          </label>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Primary Color</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={menuConfig.primaryColor}
+                  onChange={(e) => setMenuConfig({ ...menuConfig, primaryColor: e.target.value })}
+                  className="w-12 h-12 rounded border border-gray-200 cursor-pointer"
+                />
+                <span className="text-sm text-gray-600">{menuConfig.primaryColor}</span>
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Secondary Color</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={menuConfig.secondaryColor}
+                  onChange={(e) => setMenuConfig({ ...menuConfig, secondaryColor: e.target.value })}
+                  className="w-12 h-12 rounded border border-gray-200 cursor-pointer"
+                />
+                <span className="text-sm text-gray-600">{menuConfig.secondaryColor}</span>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -567,164 +306,611 @@ export default function AIMenuGenerator() {
           <label className="block text-sm font-medium mb-1">Additional Instructions</label>
           <textarea
             value={menuConfig.customInstructions}
-            onChange={(e) => setMenuConfig({...menuConfig, customInstructions: e.target.value})}
+            onChange={(e) => setMenuConfig({ ...menuConfig, customInstructions: e.target.value })}
             className="w-full p-2 border rounded"
-            rows="3"
+            rows={3}
             placeholder="Any specific requirements or preferences..."
           />
         </div>
-      </div>
 
-      {/* Action Buttons */}
-      <div className="flex gap-4 mb-6">
-        <button
-          onClick={handleGenerateMenu}
-          disabled={isLoading || !generatedPrompt}
-          className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
-        >
-          Generate Menu
-        </button>
-        
-        <button
-          onClick={handleDownloadPDF}
-          disabled={isLoading || !generatedHTML}
-          className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 disabled:opacity-50"
-        >
-          Download PDF
-        </button>
-      </div>
+        {/* Navigation Buttons */}
+        <div className="mt-6 flex justify-between gap-2">
+          <button
+            onClick={goPrevStep}
+            className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
+          >
+            Back
+          </button>
+          <button
+            onClick={() => {
+              goNextStep();
+            }}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            Next
+          </button>
+        </div>
+      </section>
+    );
+  };
 
-      {/* Error Display */}
-      {error && (
-        <Alert variant="destructive" className="mb-6">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
+  // [15] Step 3: Generate & View Recommendations (no duplication)
+  const StepRecommendations = () => {
+    // generateRecommendations from previous code
+    const generateRecommendations = async () => {
+      setIsLoading(true);
+      setError('');
+      try {
+        if (!selectedMenuId) {
+          throw new Error('Please select a menu first');
+        }
+        if (!menuItems || menuItems.length === 0) {
+          throw new Error('Loading menu items... Please try again in a moment.');
+        }
 
-      {/* Generated Content Display */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* AI Recommendations Panel */}
-        <div className="bg-white rounded-lg shadow-sm p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold">AI Recommendations</h3>
-            <button
-              onClick={generateRecommendations}
-              disabled={isLoading || !menuItems.length}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400"
-            >
-              Generate Recommendation
-            </button>
-          </div>
-          <div className="prose max-w-none whitespace-pre-wrap">
-            {generatedPrompt ? (
-              <div className="space-y-4">
-                <section>
-                  <h4 className="font-bold">DESIGN OVERVIEW</h4>
-                  <p>{generatedPrompt.match(/DESIGN OVERVIEW(.*?)(?=COLOR SCHEME)/s)?.[1]?.trim()}</p>
-                </section>
-                
-                <section>
-                  <h4 className="font-bold">COLOR SCHEME</h4>
-                  <p>{generatedPrompt.match(/COLOR SCHEME(.*?)(?=LAYOUT STRUCTURE)/s)?.[1]?.trim()}</p>
-                </section>
-                
-                <section>
-                  <h4 className="font-bold">LAYOUT STRUCTURE</h4>
-                  <p>{generatedPrompt.match(/LAYOUT STRUCTURE(.*?)(?=DESIGN RECOMMENDATIONS)/s)?.[1]?.trim()}</p>
-                </section>
-                
-                <section>
-                  <h4 className="font-bold">DESIGN RECOMMENDATIONS</h4>
-                  <p>{generatedPrompt.match(/DESIGN RECOMMENDATIONS(.*?)$/s)?.[1]?.trim()}</p>
-                </section>
-              </div>
-            ) : (
-              <p className="text-gray-500">AI recommendations will appear here...</p>
-            )}
-          </div>
+        const itemsAnalysis = {
+          bestSellers: menuItems.filter(item => item.sales_performance === 'best_seller') || [],
+          highMargin: menuItems.filter(item => item.margin_level === 'high_margin') || [],
+          boostedItems: menuItems.filter(item => item.boost_desired) || []
+        };
+
+        const requestBody = {
+          menuItems,
+          config: {
+            style: styleWanted,
+            paperSize: menuConfig.paperSize,
+            pageCount: menuConfig.pageCount || 1,
+            primaryColor: menuConfig.primaryColor,
+            secondaryColor: menuConfig.secondaryColor,
+            customInstructions: menuConfig.customInstructions
+          },
+          itemsAnalysis
+        };
+
+        const response = await fetch('/api/ai/generatePrompt', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(requestBody)
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to generate recommendations');
+        }
+
+        const data = await response.json();
+        setGeneratedPrompt(data.prompt);
+        setSuggestions(data.suggestions);
+      } catch (err) {
+        console.error('Error generating recommendations:', err);
+        setError(err.message);
+      } finally {
+        setIsLoading(false);
+        setProgress(prev => ({
+          ...prev,
+          prompt: { status: 'complete', time: 0, startTime: 0 }
+        }));
+      }
+    };
+
+    return (
+      <section className="bg-white border rounded-lg p-4 shadow-sm flex flex-col">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-xl font-semibold">Step 3: AI Recommendations</h3>
+          <button
+            onClick={generateRecommendations}
+            disabled={isLoading || !menuItems.length}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400"
+          >
+            Generate
+          </button>
         </div>
 
-        {/* Menu Preview Panel */}
-        <div className="bg-white rounded-lg shadow-sm p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold">Menu Preview</h3>
-            <button
-              onClick={handleGenerateMenu}
-              disabled={isLoading || !generatedPrompt}
-              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-400"
-            >
-              Generate Menu
-            </button>
-          </div>
-          <div className="menu-preview-container overflow-auto max-h-[800px] print:max-h-none">
-            {generatedHTML ? (
-              <div dangerouslySetInnerHTML={{ __html: generatedHTML }} />
-            ) : (
-              <p className="text-gray-500">Preview will appear here...</p>
-            )}
-          </div>
-          <div className="mt-4 flex justify-end">
-            <button
-              onClick={handleDownloadPDF}
-              disabled={isLoading || !generatedHTML}
-              className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 disabled:opacity-50"
-            >
-              Download PDF
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Progress Tracking */}
-      <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-        <h2 className="text-xl font-semibold mb-4">Generation Progress</h2>
-        <ProgressBar 
-          type="prompt" 
-          progress={progress.prompt} 
+        <ProgressBar
+          type="prompt"
+          progress={progress.prompt}
           estimatedTime={ESTIMATED_TIMES.prompt}
         />
-        <ProgressBar 
-          type="menu" 
-          progress={progress.menu} 
+
+        {/* 1) Show the parsed sections from generatedPrompt */}
+        <div className="prose max-w-none whitespace-pre-wrap flex-1 overflow-auto mb-4">
+          {generatedPrompt ? (
+            <div className="space-y-4">
+              <section>
+                <h4 className="font-bold">DESIGN OVERVIEW</h4>
+                <p>
+                  {generatedPrompt.match(/DESIGN OVERVIEW(.*?)(?=COLOR SCHEME)/s)?.[1]?.trim()}
+                </p>
+              </section>
+              <section>
+                <h4 className="font-bold">COLOR SCHEME</h4>
+                <p>
+                  {generatedPrompt.match(/COLOR SCHEME(.*?)(?=LAYOUT STRUCTURE)/s)?.[1]?.trim()}
+                </p>
+              </section>
+              <section>
+                <h4 className="font-bold">LAYOUT STRUCTURE</h4>
+                <p>
+                  {generatedPrompt.match(/LAYOUT STRUCTURE(.*?)(?=DESIGN RECOMMENDATIONS)/s)?.[1]?.trim()}
+                </p>
+              </section>
+              <section>
+                <h4 className="font-bold">DESIGN RECOMMENDATIONS</h4>
+                <p>
+                  {generatedPrompt.match(/DESIGN RECOMMENDATIONS(.*?)$/s)?.[1]?.trim()}
+                </p>
+              </section>
+            </div>
+          ) : (
+            <p className="text-gray-500">AI recommendations will appear here...</p>
+          )}
+        </div>
+
+        {/* 2) If suggestions exist but are not accepted, show only the Accept button (no repeated text) */}
+        {suggestions && !acceptedSuggestions && (
+          <div className="bg-gray-50 border rounded-lg shadow-sm p-4 mb-4">
+            <h4 className="text-lg font-semibold mb-2">Apply AI Suggestions?</h4>
+            <p className="text-sm text-gray-600">
+              We have recommended page count and colors based on the above design. 
+              Click "Accept" to apply them.
+            </p>
+            <button
+              onClick={() => {
+                setMenuConfig(prev => ({
+                  ...prev,
+                  pageCount: suggestions.pageCount,
+                  primaryColor: suggestions.primaryColor,
+                  secondaryColor: suggestions.secondaryColor
+                }));
+                setAcceptedSuggestions(true);
+              }}
+              className="mt-4 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+            >
+              Accept
+            </button>
+          </div>
+        )}
+
+        {/* Step Navigation */}
+        <div className="flex justify-between gap-2">
+          <button
+            onClick={goPrevStep}
+            className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
+          >
+            Back
+          </button>
+          <button
+            onClick={goNextStep}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            Next
+          </button>
+        </div>
+      </section>
+    );
+  };
+
+  // [16] Step 4: Generate Menu & Preview
+  const StepMenuPreview = () => {
+    const [isGenerating, setIsGenerating] = useState(false);
+    const requestInProgress = useRef(false);
+    const [generationStats, setGenerationStats] = useState({
+      pagesGenerated: 0,
+      totalPages: menuConfig.pageCount
+    });
+
+    const generateMenuHTML = async () => {
+      if (isGenerating || requestInProgress.current) {
+        return;
+      }
+
+      setIsGenerating(true);
+      requestInProgress.current = true;
+      const startTime = Date.now();
+
+      try {
+        if (!generatedPrompt) {
+          throw new Error('Please generate a prompt first');
+        }
+
+        // Reset stats with correct page count at the start
+        setGenerationStats({
+          pagesGenerated: 0,
+          totalPages: menuConfig.pageCount
+        });
+
+        const response = await fetch('/api/ai/generateHTML', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            prompt: generatedPrompt,
+            menuItems,
+            config: {
+              ...menuConfig,
+              style: styleWanted,
+              styles: {
+                primary: menuConfig.primaryColor,
+                secondary: menuConfig.secondaryColor,
+              },
+              images: {
+                'dark-wood': '/assets/textures/dark-wood.png',
+                'cheese-pattern': '/assets/textures/cheese-pattern.png',
+                'citrus-slices': '/assets/textures/citrus-slices.png',
+                'bubbles': '/assets/textures/bubbles.png'
+              }
+            }
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to generate menu HTML');
+        }
+
+        const data = await response.json();
+        if (!data.html) {
+          throw new Error('No HTML content received');
+        }
+        setGeneratedHTML(data.html);
+
+      } catch (err) {
+        console.error('Error generating menu:', err);
+        setError(err.message);
+      } finally {
+        setIsGenerating(false);
+        requestInProgress.current = false;
+        setProgress(prev => ({
+          ...prev,
+          menu: { 
+            status: 'complete', 
+            time: Date.now() - startTime 
+          }
+        }));
+      }
+    };
+
+    const handleDownloadPDF = async () => {
+      if (!generatedHTML) {
+        setError('Please generate a menu first');
+        return;
+      }
+      try {
+        const response = await fetch('/api/downloadPDF', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ html: generatedHTML })
+        });
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'menu.pdf';
+        a.click();
+      } catch (err) {
+        setError('Failed to download PDF');
+        console.error(err);
+      }
+    };
+
+    const handlePreviewClick = (e) => {
+      if (e.target.tagName === 'IMG') {
+        setModalImageSrc(e.target.src);
+        setShowImageModal(true);
+      }
+    };
+
+    return (
+      <section className="bg-white border rounded-lg p-4 shadow-sm flex flex-col">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-xl font-semibold">Step 4: Menu Preview</h3>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowMenuModal(true)}
+              disabled={!generatedHTML}
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400"
+            >
+              View Fullscreen
+            </button>
+            <button
+              onClick={generateMenuHTML}
+              disabled={isGenerating || !generatedPrompt || requestInProgress.current}
+              className={`px-4 py-2 rounded text-white transition-colors
+                ${(isGenerating || requestInProgress.current)
+                  ? 'bg-gray-400 cursor-not-allowed opacity-50'
+                  : !generatedPrompt
+                    ? 'bg-gray-400 cursor-not-allowed'
+                    : 'bg-blue-600 hover:bg-blue-700'
+                }`}
+            >
+              {(isGenerating || requestInProgress.current) ? (
+                <span className="flex items-center gap-2">
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  Generating...
+                </span>
+              ) : (
+                'Generate Menu'
+              )}
+            </button>
+          </div>
+        </div>
+
+        <ProgressBar
+          type="menu"
+          progress={progress.menu}
           estimatedTime={ESTIMATED_TIMES.menu}
+          currentProgress={generationStats}
         />
+
+        {/* Menu Preview */}
+        {generatedHTML ? (
+          <div 
+            className="mt-4 border rounded-lg p-4 overflow-auto"
+            dangerouslySetInnerHTML={{ __html: generatedHTML }}
+            onClick={handlePreviewClick}
+          />
+        ) : (
+          <div className="mt-4 text-gray-500 text-center p-8">
+            Generated menu will appear here...
+          </div>
+        )}
+
+        {/* Download button */}
+        {generatedHTML && (
+          <button
+            onClick={handleDownloadPDF}
+            className="mt-4 px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"
+          >
+            Download PDF
+          </button>
+        )}
+
+        <div className="mt-6 flex justify-between">
+          <button
+            onClick={goPrevStep}
+            className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
+          >
+            Back
+          </button>
+        </div>
+      </section>
+    );
+  };
+
+  // [17] Step indicator with clickable steps
+  const StepIndicator = () => {
+    const steps = [
+      { step: 1, label: 'Select Menu' },
+      { step: 2, label: 'AI Config' },
+      { step: 3, label: 'Recommendations' },
+      { step: 4, label: 'Menu Preview' }
+    ];
+
+    return (
+      <div className="flex items-center justify-center mb-4">
+        {steps.map(({ step, label }, idx) => {
+          const isActive = currentStep === step;
+          return (
+            <div key={step} className="flex items-center">
+              <button
+                onClick={() => goToStep(step)}
+                className={`rounded-full w-8 h-8 flex items-center justify-center
+                  ${isActive ? 'bg-blue-600 text-white' : 'bg-gray-300 text-gray-700'}
+                `}
+              >
+                {step}
+              </button>
+              <button
+                onClick={() => goToStep(step)}
+                className="ml-2 mr-4 text-sm font-medium text-left"
+              >
+                {label}
+              </button>
+              {idx < steps.length - 1 && (
+                <div className="border-t-2 border-gray-300 w-8 mr-4" />
+              )}
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
+  // Progress circle styles with better gradient implementation
+  const getProgressCircleStyle = (isActive) => ({
+    background: isActive 
+      ? 'linear-gradient(90deg, #e4983b 0%, #f5bf66 100%)'
+      : '#f3f4f6',
+    boxShadow: isActive ? '0 2px 4px rgba(228, 152, 59, 0.2)' : 'none'
+  });
+
+  // Add this function near the other utility functions
+  const canProceed = () => {
+    switch (currentStep) {
+      case 1:
+        return selectedMenuId !== null;
+      case 2:
+        return menuConfig.paperSize && menuConfig.pageCount > 0;
+      case 3:
+        return generatedPrompt !== '';
+      case 4:
+        return true;
+      default:
+        return false;
+    }
+  };
+
+  // Update the Next Step button implementation
+  const NextStepButton = () => {
+    const buttonText = currentStep === steps.length ? 'Generate Menu' : 'Next Step';
+    
+    return (
+      <button
+        onClick={goNextStep}
+        disabled={!canProceed()}
+        className={`
+          group relative px-6 py-3 rounded-lg overflow-hidden
+          ${!canProceed() ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+        `}
+      >
+        <div className="absolute inset-0 bg-gradient-to-r from-[#e4983b] to-[#f5bf66] transition-transform group-hover:scale-105" />
+        <span className="relative text-white flex items-center gap-2">
+          {buttonText}
+          <svg 
+            className="w-4 h-4" 
+            viewBox="0 0 24 24" 
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M5 12h14M12 5l7 7-7 7"/>
+          </svg>
+        </span>
+      </button>
+    );
+  };
+
+  // [18] Main return
+  return (
+    <div className="min-h-screen bg-white">
+      <div className="container mx-auto px-4 py-8">
+        {/* Header */}
+        <a href="/" className="text-purple-600 hover:text-purple-700 flex items-center gap-2 mb-6">
+          <ArrowLeft className="w-4 h-4" />
+          Go Back
+        </a>
+        
+        <h1 className="text-4xl font-bold text-gray-900 mb-2">
+          Generate your Menu Layout with AI
+        </h1>
+        <p className="text-lg text-gray-600 mb-8">
+          Use AI to boost your revenue by creating the perfect Menu for your business
+        </p>
+
+        {/* Progress Steps */}
+        <div className="flex justify-between mb-12 max-w-3xl mx-auto">
+          {steps.map((step, index) => (
+            <div key={step.id} className="flex items-center">
+              <div 
+                className="w-8 h-8 rounded-full flex items-center justify-center text-white font-medium"
+                style={getProgressCircleStyle(currentStep === index + 1)}
+              >
+                {index + 1}
+              </div>
+              <span className="ml-2 text-sm font-medium text-gray-600">{step.name}</span>
+              {index < steps.length - 1 && (
+                <div className="h-px w-24 bg-gray-200 mx-4" />
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-12 gap-8">
+          {/* Left Column: Help Text */}
+          <div className="col-span-4 space-y-6">
+            <div className="bg-white/70 backdrop-blur-sm rounded-lg p-6 border border-gray-100">
+              <h3 className="text-lg font-semibold text-gray-900 mb-3">
+                What to expect in this step
+              </h3>
+              <p className="text-gray-700">
+                {getStepDescription(currentStep)}
+              </p>
+            </div>
+
+            <div className="bg-white/70 backdrop-blur-sm rounded-lg p-6 border border-gray-100">
+              <h3 className="text-lg font-semibold text-gray-900 mb-3">
+                Tips & Best Practices
+              </h3>
+              <ul className="list-disc list-inside text-gray-700 space-y-2">
+                {getStepTips(currentStep).map((tip, index) => (
+                  <li key={index}>{tip}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          {/* Right Column: Main Content */}
+          <div className="col-span-8">
+            <div className="bg-white rounded-lg p-6 border border-gray-200">
+              {currentStep === 1 && <StepSelectMenu />}
+              {currentStep === 2 && <StepAIConfig />}
+              {currentStep === 3 && <StepRecommendations />}
+              {currentStep === 4 && <StepMenuPreview />}
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* AI Suggestions Display */}
-      {suggestions && !acceptedSuggestions && (
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4">AI Design Recommendations</h2>
-          <div className="prose max-w-none whitespace-pre-wrap">
-            {suggestions.content}
-          </div>
-          <div className="mt-4">
+      {/* [22] Image Modal (for individual images) */}
+      {showImageModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white p-4 rounded shadow-lg max-w-3xl max-h-[80vh] overflow-auto">
+            <img src={modalImageSrc} alt="Preview" className="w-full h-auto" />
             <button
-              onClick={handleAcceptSuggestions}
-              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+              className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              onClick={() => setShowImageModal(false)}
             >
-              Accept Recommendations
+              Close
             </button>
           </div>
         </div>
       )}
 
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700">Select Menu</label>
-        <select 
-          value={selectedMenuId || ''} 
-          onChange={(e) => handleMenuSelect(e.target.value)}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-        >
-          <option value="">Select a menu</option>
-          {menus.map((menu) => (
-            <option key={menu.id} value={menu.id}>
-              {menu.name}
-            </option>
-          ))}
-        </select>
-      </div>
+      {/* [23] Fullscreen Menu Modal */}
+      {showMenuModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white p-6 rounded shadow-lg max-w-4xl w-full max-h-[90vh] overflow-auto relative">
+            <button
+              onClick={() => setShowMenuModal(false)}
+              className="absolute top-4 right-4 px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-800"
+            >
+              Close
+            </button>
+            <div
+              dangerouslySetInnerHTML={{ __html: generatedHTML }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
+}
+
+// Helper functions for the right column content
+function getStepDescription(step) {
+  const descriptions = {
+    1: "Select the menu you want to optimize. We'll analyze its current structure and performance metrics.",
+    2: "Configure AI parameters to match your brand style and design preferences.",
+    3: "Review AI-generated recommendations for layout, colors, and item placement.",
+    4: "Generate your final menu layout with optimized design and structure."
+  };
+  return descriptions[step];
+}
+
+function getStepTips(step) {
+  const tips = {
+    1: [
+      "Choose a menu with complete item information",
+      "Ensure prices are up to date",
+      "Include all categories you want to feature"
+    ],
+    2: [
+      "Select colors that match your brand",
+      "Consider your target audience when choosing style",
+      "Think about the atmosphere of your restaurant"
+    ],
+    3: [
+      "Pay attention to item placement suggestions",
+      "Review color scheme recommendations",
+      "Consider the psychological factors mentioned"
+    ],
+    4: [
+      "Double-check all menu items are included",
+      "Verify pricing accuracy",
+      "Review the visual hierarchy of items"
+    ]
+  };
+  return tips[step];
 }

@@ -1,19 +1,22 @@
-// app/api/ai/generateHTML/route.js
 import { NextResponse } from 'next/server';
 import { generateClaudeHTML } from '@/services/claudeService';
 
 export async function POST(request) {
-  console.log('Starting HTML generation with Claude...');
   try {
     const { prompt, menuItems, config } = await request.json();
-    
-    // Use the Claude service to generate HTML
+    if (!menuItems || !config) {
+      throw new Error('Missing required data: menuItems or config');
+    }
     const generatedHTML = await generateClaudeHTML(prompt, { menuItems }, config);
-    
-    // Return Claude's generated HTML directly without modification
+    if (!generatedHTML) {
+      throw new Error('No HTML was generated');
+    }
     return NextResponse.json({ html: generatedHTML });
   } catch (error) {
     console.error('Error generating HTML:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { error: error.message || 'Failed to generate menu HTML' },
+      { status: 500 }
+    );
   }
 }

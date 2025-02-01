@@ -1,19 +1,18 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { query } from '@/lib/db';
 
 export async function GET(request, { params }) {
-  const { id } = params; // read [id] from the URL
+  const { id } = params;
   try {
-    const restaurant = await prisma.restaurant.findUnique({
-      where: { id: Number(id) },
-    });
-    if (!restaurant) {
+    const result = await query('SELECT * FROM restaurants WHERE id = $1', [id]);
+    
+    if (result.rows.length === 0) {
       return NextResponse.json(
         { error: 'Restaurant not found' },
         { status: 404 }
       );
     }
-    return NextResponse.json({ restaurant });
+    return NextResponse.json({ restaurant: result.rows[0] });
   } catch (error) {
     return NextResponse.json(
       { error: 'Failed to fetch restaurant' },
@@ -27,11 +26,18 @@ export async function PUT(request, { params }) {
   const { id } = params;
   try {
     const { name } = await request.json();
-    const updated = await prisma.restaurant.update({
-      where: { id: Number(id) },
-      data: { name },
-    });
-    return NextResponse.json({ restaurant: updated });
+    const result = await query(
+      'UPDATE restaurants SET name = $2 WHERE id = $1 RETURNING *',
+      [id, name]
+    );
+    
+    if (result.rows.length === 0) {
+      return NextResponse.json(
+        { error: 'Restaurant not found' },
+        { status: 404 }
+      );
+    }
+    return NextResponse.json({ restaurant: result.rows[0] });
   } catch (error) {
     return NextResponse.json(
       { error: 'Failed to update restaurant' },
@@ -44,13 +50,44 @@ export async function PUT(request, { params }) {
 export async function DELETE(request, { params }) {
   const { id } = params;
   try {
-    await prisma.restaurant.delete({
-      where: { id: Number(id) },
-    });
-    return NextResponse.json({ message: 'Restaurant deleted' });
+    // First, get all menus for this restaurant
+    const menusResult = await query(
+      'SELECT id FROM menus WHERE restaurant_id = $1',
+      [id]
+    );
+
+    // Delete all menu items for each menu
+    for (const menu of menusResult.rows) {
+      await query(
+        'DELETE FROM menu_items WHERE menu_id = $1',
+        [menu.id]
+      );
+    }
+
+    // Then delete all menus
+    await query(
+      'DELETE FROM menus WHERE restaurant_id = $1',
+      [id]
+    );
+
+    // Finally delete the restaurant
+    const result = await query(
+      'DELETE FROM restaurants WHERE id = $1 RETURNING *',
+      [id]
+    );
+    
+    if (result.rowCount === 0) {
+      return NextResponse.json(
+        { error: 'Restaurant not found' },
+        { status: 404 }
+      );
+    }
+    
+    return NextResponse.json({ success: true });
   } catch (error) {
+    console.error('Error deleting restaurant:', error);
     return NextResponse.json(
-      { error: 'Failed to delete restaurant' },
+      { error: 'Failed to delete restaurant: ' + error.message },
       { status: 500 }
     );
   }

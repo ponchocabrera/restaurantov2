@@ -1,9 +1,11 @@
-import { Inter } from 'next/font/google';
-import './globals.css';
+import { Inter, Libre_Baskerville } from 'next/font/google';
+import '@/styles/globals.css';
 
-const inter = Inter({
+const inter = Inter({ subsets: ['latin'] });
+
+const libreBaskerville = Libre_Baskerville({
   subsets: ['latin'],
-  display: 'swap',
+  weight: ['400', '700'],
 });
 
 export const metadata = {
@@ -13,10 +15,8 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className={inter.className}>
-      <body className="min-h-screen bg-gray-50">
-        {children}
-      </body>
+    <html lang="en">
+      <body className={inter.className}>{children}</body>
     </html>
   );
 }
