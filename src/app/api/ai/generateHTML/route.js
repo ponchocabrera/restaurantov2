@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { generateClaudeHTML } from '@/services/claudeService';
+import { generateMenuHTML } from '@/services/openAIMenuService';
 
 export async function POST(request) {
   try {
@@ -7,7 +7,7 @@ export async function POST(request) {
     if (!menuItems || !config) {
       throw new Error('Missing required data: menuItems or config');
     }
-    const generatedHTML = await generateClaudeHTML(prompt, { menuItems }, config);
+    const generatedHTML = await generateMenuHTML(prompt, { menuItems }, config);
     if (!generatedHTML) {
       throw new Error('No HTML was generated');
     }
