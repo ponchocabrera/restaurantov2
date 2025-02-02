@@ -11,14 +11,6 @@ export default function StepAnalysis({
   onAnalyze,
   onNext
 }) {
-  useEffect(() => {
-    console.log('StepAnalysis mounted with:', { menuData, analysis, isAnalyzing });
-    if (menuData && !analysis && !isAnalyzing) {
-      console.log('Triggering analysis...');
-      onAnalyze();
-    }
-  }, [menuData, analysis, isAnalyzing, onAnalyze]);
-
   return (
     <section className="space-y-6">
       {/* Header with Generate Button */}
@@ -55,46 +47,64 @@ export default function StepAnalysis({
         steps={progress?.steps || []}
       />
 
-      {/* Analysis Results with Image */}
+      {/* Analysis Results */}
       {analysis && (
-        <>
-          <div className="space-y-6 mt-8">
-            <div className="grid grid-cols-3 gap-6">
-              {/* Uploaded Image */}
-              <div className="col-span-1">
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <h4 className="font-medium text-gray-900 mb-4">Uploaded Menu</h4>
-                  <div className="relative aspect-[3/4] w-full overflow-hidden rounded-lg">
-                    <img
-                      src={menuData}
-                      alt="Uploaded menu"
-                      className="absolute inset-0 h-full w-full object-contain"
-                    />
-                  </div>
+        <div className="space-y-6 mt-8">
+          <div className="grid grid-cols-3 gap-6">
+            {/* Uploaded Image */}
+            <div className="col-span-1">
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h4 className="font-medium text-gray-900 mb-4">Uploaded Menu</h4>
+                <div className="relative aspect-[3/4] w-full overflow-hidden rounded-lg">
+                  <img
+                    src={menuData}
+                    alt="Uploaded menu"
+                    className="absolute inset-0 h-full w-full object-contain"
+                  />
                 </div>
               </div>
+            </div>
 
-              {/* Analysis Content */}
-              <div className="col-span-2 space-y-6">
-                {/* Menu Structure */}
-                <div className="bg-gray-50 rounded-lg p-6">
-                  <h4 className="font-medium text-gray-900 mb-4">Menu Structure</h4>
-                  <ul className="space-y-2">
-                    {analysis.structure.map((item, index) => (
-                      <li key={index} className="text-gray-700">{item}</li>
-                    ))}
-                  </ul>
-                </div>
+            {/* Analysis Content */}
+            <div className="col-span-2 space-y-6">
+              {/* Menu Structure */}
+              <div className="bg-gray-50 rounded-lg p-6">
+                <h4 className="font-medium text-gray-900 mb-4">Menu Structure</h4>
+                <ul className="space-y-2">
+                  {analysis.structure.map((item, index) => (
+                    <li key={index} className="text-gray-700">{item}</li>
+                  ))}
+                </ul>
+              </div>
 
-                {/* Design Analysis */}
-                <div className="bg-gray-50 rounded-lg p-6">
-                  <h4 className="font-medium text-gray-900 mb-4">Design Analysis</h4>
-                  <ul className="space-y-2">
-                    {analysis.design.map((item, index) => (
-                      <li key={index} className="text-gray-700">{item}</li>
-                    ))}
-                  </ul>
-                </div>
+              {/* Design Analysis */}
+              <div className="bg-gray-50 rounded-lg p-6">
+                <h4 className="font-medium text-gray-900 mb-4">Design Analysis</h4>
+                <ul className="space-y-2">
+                  {analysis.design.map((item, index) => (
+                    <li key={index} className="text-gray-700">{item}</li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Color Analysis */}
+              <div className="bg-gray-50 rounded-lg p-6">
+                <h4 className="font-medium text-gray-900 mb-4">Color Analysis</h4>
+                <ul className="space-y-2">
+                  {analysis.color.map((item, index) => (
+                    <li key={index} className="text-gray-700">{item}</li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Visual Elements */}
+              <div className="bg-gray-50 rounded-lg p-6">
+                <h4 className="font-medium text-gray-900 mb-4">Visual Elements</h4>
+                <ul className="space-y-2">
+                  {analysis.visualElements.map((item, index) => (
+                    <li key={index} className="text-gray-700">{item}</li>
+                  ))}
+                </ul>
               </div>
             </div>
           </div>
@@ -109,7 +119,7 @@ export default function StepAnalysis({
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>
-        </>
+        </div>
       )}
     </section>
   );

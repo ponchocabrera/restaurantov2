@@ -1,5 +1,4 @@
-import { OpenAI } from 'openai';
-import { generateAnalysisRecommendations } from '@/utils/menuAnalysisProcessor';
+import OpenAI from 'openai';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
@@ -7,93 +6,83 @@ const openai = new OpenAI({
 
 export async function POST(request) {
   console.log('Received analysis request');
-  const { type, imageData, menuText } = await request.json();
-  console.log('Analysis type:', type);
+  try {
+    const { type, imageData } = await request.json();
+    console.log('Analysis type:', type);
 
-  if (type === 'image') {
-    try {
+    if (type === 'image') {
       console.log('Starting OpenAI analysis...');
       const response = await openai.chat.completions.create({
         model: "gpt-4o-mini",
         messages: [
           {
             role: "system",
-            content: `You are a menu design expert. Analyze the menu and provide structured feedback in these sections:
-              STRUCTURE: List the menu's structural elements and organization
-              DESIGN: Analyze visual design elements, typography, and layout
-              PSYCHOLOGY: Evaluate menu psychology factors and their implementation
-              ENGINEERING: Assess menu engineering principles and item placement
-              PRICING: Review pricing strategies and presentation
-              COLOR: Analyze color usage and psychological impact`
+            content: `You are an expert menu design analyst with deep knowledge of restaurant psychology, design principles, and menu engineering. Analyze this menu and provide an extremely detailed analysis in these exact sections:
+
+STRUCTURE:
+- List all menu sections and categories
+- Detail the hierarchy and organization
+- Analyze section placement and flow
+- Note any special features or callouts
+- Evaluate the information architecture
+
+DESIGN:
+- Typography analysis (fonts, sizes, weights, spacing)
+- Layout patterns and grid system used
+- Visual hierarchy implementation
+- White space utilization
+- Decorative elements and their purpose
+- Text alignment and justification
+- Headers and subheaders treatment
+- Overall composition balance
+
+PRICING:
+- Price presentation style and formatting
+- Price positioning relative to items
+- Price anchoring techniques used
+- Value perception indicators
+- Price clustering analysis
+- Premium item placement
+
+COLOR:
+- Detailed color palette analysis
+- Primary, secondary, and accent colors
+- Color psychology implications
+- Background/foreground color relationships
+- Color contrast and readability
+- Texture and pattern usage
+- Brand color consistency
+- Color temperature and mood
+
+VISUAL ELEMENTS:
+- Image usage and quality
+- Icons and symbols
+- Borders and dividers
+- Boxes and containers
+- Decorative flourishes
+- Background elements
+- Logo integration
+- Special callouts or highlights`
           },
           {
             role: "user",
             content: [
-              { type: "text", text: "Analyze this menu comprehensively based on menu psychology research and design principles." },
+              { type: "text", text: "Analyze this menu image in detail following the specified sections." },
               { type: "image_url", image_url: { url: imageData } }
             ]
           }
         ],
         max_tokens: 4096
       });
+
       console.log('OpenAI response received');
-
-      const rawAnalysis = response.choices[0].message.content;
-      const parsedAnalysis = {
-        structure: [],
-        design: [],
-        recommendations: {
-          psychology: [],
-          engineering: [],
-          pricing: [],
-          color: []
-        }
-      };
-
-      // Parse sections using regex
-      const sections = rawAnalysis.split(/STRUCTURE:|DESIGN:|PSYCHOLOGY:|ENGINEERING:|PRICING:|COLOR:/);
-      if (sections.length >= 7) {
-        parsedAnalysis.structure = sections[1].trim().split('\n').filter(line => line.trim()).map(item => item.replace(/^[•-]\s*/, ''));
-        parsedAnalysis.design = sections[2].trim().split('\n').filter(line => line.trim()).map(item => item.replace(/^[•-]\s*/, ''));
-        parsedAnalysis.recommendations.psychology = sections[3].trim().split('\n').filter(line => line.trim()).map(item => item.replace(/^[•-]\s*/, ''));
-        parsedAnalysis.recommendations.engineering = sections[4].trim().split('\n').filter(line => line.trim()).map(item => item.replace(/^[•-]\s*/, ''));
-        parsedAnalysis.recommendations.pricing = sections[5].trim().split('\n').filter(line => line.trim()).map(item => item.replace(/^[•-]\s*/, ''));
-        parsedAnalysis.recommendations.color = sections[6].trim().split('\n').filter(line => line.trim()).map(item => item.replace(/^[•-]\s*/, ''));
-      }
-
-      return Response.json(parsedAnalysis);
-    } catch (error) {
-      console.error('Analysis failed:', error);
-      return Response.json({ error: 'Analysis failed', details: error.message }, { status: 500 });
+      return Response.json({ analysis: response.choices[0].message.content });
     }
-  }
-  
-  // If text analysis is needed
-  try {
-    const textAnalysis = await openai.chat.completions.create({
-      model: "gpt-4",
-      messages: [
-        {
-          role: "system",
-          content: "You are a menu design expert. Analyze the provided menu text."
-        },
-        {
-          role: "user",
-          content: menuText
-        }
-      ]
-    });
 
-    const analysis = textAnalysis.choices[0].message.content;
-    const recommendations = generateAnalysisRecommendations(analysis);
-    
-    return Response.json({ analysis, recommendations });
-  } catch (openAIError) {
-    console.error('OpenAI API Error:', openAIError);
-    return Response.json({ 
-      error: 'Failed to analyze menu text',
-      details: openAIError.message 
-    }, { status: 500 });
+    return Response.json({ error: 'Invalid type' });
+  } catch (error) {
+    console.error('Analysis failed:', error);
+    return Response.json({ error: error.message }, { status: 500 });
   }
 }
 

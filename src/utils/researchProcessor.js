@@ -100,7 +100,7 @@ const MENU_RESEARCH = {
     };
   }
   
-  function generateDesignRecommendations(menuStyle, itemsAnalysis) {
+  function generateDesignRecommendations(menuStyle, itemsAnalysis = {}) {
     const recommendations = [];
     
     // Add style-specific recommendations
@@ -126,14 +126,20 @@ const MENU_RESEARCH = {
           'Consider handwritten-style fonts for headers'
         );
         break;
+      default:
+        recommendations.push(
+          'Use clean, readable typography',
+          'Maintain consistent spacing',
+          'Create clear visual hierarchy'
+        );
     }
     
-    // Add data-driven recommendations
-    if (itemsAnalysis.bestSellers.length > 0) {
+    // Add data-driven recommendations with null checks
+    if (itemsAnalysis?.bestSellers?.length > 0) {
       recommendations.push('Highlight best sellers with subtle visual cues');
     }
     
-    if (itemsAnalysis.boostedItems.length > 0) {
+    if (itemsAnalysis?.boostedItems?.length > 0) {
       recommendations.push('Place boosted items in prime visual locations');
     }
     

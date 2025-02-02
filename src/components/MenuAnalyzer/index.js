@@ -44,30 +44,32 @@ export default function MenuAnalyzer() {
 
       const response = await fetch('/api/ai/analyzeMenu', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          type: 'image',
-          imageData: imageData
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'image', imageData })
       });
 
       if (!response.ok) throw new Error('Analysis failed');
-      
       const data = await response.json();
-      console.log('API Response:', data);
-
+      
       if (data.error) throw new Error(data.details || 'Analysis failed');
 
-      setAnalysis({
-        structure: data.structure || [],
-        design: data.design || []
-      });
+      // Parse the raw analysis text into sections
+      const rawText = data.analysis;
       
-      setRecommendations(data.recommendations || {});
-      setCurrentStep(3);
+      // Set analysis state with all sections
+      const analysisResult = {
+        raw: rawText,
+        structure: extractSection(rawText, 'STRUCTURE'),
+        design: extractSection(rawText, 'DESIGN'),
+        pricing: extractSection(rawText, 'PRICING'),
+        color: extractSection(rawText, 'COLOR'),
+        visualElements: extractSection(rawText, 'VISUAL ELEMENTS')
+      };
       
+      console.log('Parsed analysis:', analysisResult);
+      setAnalysis(analysisResult);
+      setCurrentStep(2);
+
       setProgress(prev => ({
         analysis: {
           ...prev.analysis,
@@ -75,7 +77,6 @@ export default function MenuAnalyzer() {
           step: 4
         }
       }));
-      
     } catch (error) {
       console.error('Analysis failed:', error);
       setProgress(prev => ({
@@ -89,9 +90,47 @@ export default function MenuAnalyzer() {
     }
   };
 
+  // Helper function to extract sections from the analysis text
+  const extractSection = (text, sectionName) => {
+    const sectionRegex = new RegExp(`${sectionName}:([\\s\\S]*?)(?=\\n\\n|$)`);
+    const match = text.match(sectionRegex);
+    if (!match) return [];
+    
+    return match[1]
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => line && !line.includes(`${sectionName}:`))
+      .map(line => line.replace(/^[-•*]\s*/, ''));
+  };
+
   const handleUploadComplete = (data) => {
     setMenuData(data);
     setCurrentStep(2);
+  };
+
+  const handleNextStep = async () => {
+    if (currentStep === 2) {
+      setIsAnalyzing(true);
+      try {
+        const recommendationsResponse = await fetch('/api/ai/generateRecommendations', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ analysis: analysis.raw })
+        });
+
+        if (!recommendationsResponse.ok) throw new Error('Recommendations failed');
+        const data = await recommendationsResponse.json();
+        
+        if (data.error) throw new Error(data.details || 'Recommendations failed');
+
+        setRecommendations(data.recommendations);
+        setCurrentStep(3);
+      } catch (error) {
+        console.error('Recommendations failed:', error);
+      } finally {
+        setIsAnalyzing(false);
+      }
+    }
   };
 
   return (
@@ -142,7 +181,7 @@ export default function MenuAnalyzer() {
                     onStepComplete={() => setCurrentStep(2)} 
                   />
                 )}
-                 {currentStep === 2 && (
+                {currentStep === 2 && (
                   <StepAnalysis 
                     menuData={menuData}
                     analysis={analysis}
@@ -150,7 +189,7 @@ export default function MenuAnalyzer() {
                     progress={progress.analysis}
                     estimatedTime={ESTIMATED_TIMES.analysis}
                     onAnalyze={handleAnalyze}
-                    onNext={() => setCurrentStep(3)}
+                    onNext={handleNextStep}
                   />
                 )}
                 {currentStep === 3 && (

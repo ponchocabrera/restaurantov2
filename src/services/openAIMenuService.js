@@ -7,7 +7,7 @@ const openai = new OpenAI({
 
 export const AI_MODELS = {
   MENU_GENERATION: 'ft:gpt-3.5-turbo-0125:restaurantos:restaurantos:AwLDI561',
-  MENU_FALLBACK: 'gpt-4-0125-preview',
+  MENU_FALLBACK: 'gpt-4o-mini',
   DESCRIPTION_ENHANCEMENT: 'gpt-3.5-turbo-0125'
 };
 
