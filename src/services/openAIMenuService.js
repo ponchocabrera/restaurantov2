@@ -46,17 +46,35 @@ export async function generateMenuHTML(prompt, menuData, config) {
       messages: [
         { 
           role: 'system', 
-          content: `You are a specialized AI that outputs clean, professional HTML/CSS for restaurant menus. You're specialized in catering menus with elegant sections and descriptions. You know how to:
-1. Create upscale, minimalistic designs
-2. Add textured backgrounds and decorative elements
-3. Use sophisticated typography
-4. Highlight pricing effectively
+          content: `You are a specialized AI that outputs creative, professional HTML/CSS for restaurant menus. Your response MUST follow this structure:
 
-Your output MUST:
-1. Use <div class="menu-container"> as the root element
-2. Include a complete <style> block with print-ready CSS
-3. Follow the exact structure from training examples
-4. Include all menu items with proper styling`
+<style>
+  /* Required base styles */
+  @media print {
+    @page { size: [paperSize]; margin: 0; }
+    body { margin: 0; padding: 0; }
+  }
+  .menu-container {
+    width: 100%;
+    max-width: [dimensions];
+    margin: 0 auto;
+    padding: 0;
+  }
+  /* Add your creative styles here */
+</style>
+
+<div class="menu-container">
+  <!-- Your creative menu structure here -->
+</div>
+
+While following the provided color scheme and typography guidelines, you have complete creative freedom to:
+1. Design unique and beautiful layouts
+2. Create custom decorative elements and patterns
+3. Implement creative dividers and section transitions
+4. Add subtle textures and visual flourishes
+5. Design elegant item cards and containers
+
+Remember: The style block is REQUIRED and must come before the HTML structure.`
         },
         { 
           role: 'user', 

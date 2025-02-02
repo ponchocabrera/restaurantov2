@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { AlertCircle, RefreshCw, ArrowLeft, Palette, Droplet, Layout, Lightbulb, Wand2, LayoutTemplate, Code, Maximize2 } from 'lucide-react';
+import { AlertCircle, RefreshCw, ArrowLeft, Palette, Droplet, Layout, Lightbulb, Wand2, LayoutTemplate, Code, Maximize2, ArrowRight } from 'lucide-react';
 import {
   Alert,
   AlertDescription,
@@ -387,79 +387,33 @@ export default function AIMenuGenerator() {
   };
 
   // [15] Step 3: Generate & View Recommendations
+  const ColorSwatch = ({ color, name }) => (
+    <div className="flex items-center gap-2 mb-2">
+      <div 
+        className="w-6 h-6 rounded border border-gray-200" 
+        style={{ backgroundColor: color }}
+      />
+      <span>
+        <strong>{name}</strong> - <code>{color}</code>
+      </span>
+    </div>
+  );
+
+  const FontPreview = ({ fontFamily, size, text }) => (
+    <div className="mb-2">
+      <span 
+        style={{ 
+          fontFamily, 
+          fontSize: size,
+          display: 'block'
+        }}
+      >
+        <strong>{text}</strong> - {fontFamily}, {size}
+      </span>
+    </div>
+  );
+
   const StepRecommendations = () => {
-    // generateRecommendations from previous code
-    const generateRecommendations = async () => {
-      setIsLoading(true);
-      setError('');
-      try {
-        if (!selectedMenuId) {
-          throw new Error('Please select a menu first');
-        }
-        if (!menuItems || menuItems.length === 0) {
-          throw new Error('Loading menu items... Please try again in a moment.');
-        }
-
-        const itemsAnalysis = {
-          bestSellers: menuItems.filter(item => item.sales_performance === 'best_seller') || [],
-          highMargin: menuItems.filter(item => item.margin_level === 'high_margin') || [],
-          boostedItems: menuItems.filter(item => item.boost_desired) || []
-        };
-
-        const requestBody = {
-          menuItems,
-          config: {
-            style: styleWanted,
-            paperSize: menuConfig.paperSize,
-            pageCount: menuConfig.pageCount || 1,
-            primaryColor: menuConfig.primaryColor,
-            secondaryColor: menuConfig.secondaryColor,
-            customInstructions: menuConfig.customInstructions
-          },
-          itemsAnalysis
-        };
-
-        const response = await fetch('/api/ai/generatePrompt', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(requestBody)
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || 'Failed to generate recommendations');
-        }
-
-        const data = await response.json();
-        setGeneratedPrompt(data.prompt);
-        setSuggestions(data.suggestions);
-
-        setProgress(prev => ({
-          ...prev,
-          prompt: {
-            ...prev.prompt,
-            status: 'generating',
-            startTime: Date.now(),
-            step: 0
-          }
-        }));
-      } catch (err) {
-        console.error('Error generating recommendations:', err);
-        setError(err.message);
-      } finally {
-        setIsLoading(false);
-        setProgress(prev => ({
-          ...prev,
-          prompt: {
-            ...prev.prompt,
-            status: 'complete',
-            time: Date.now() - prev.prompt.startTime,
-            step: prev.prompt.steps.length - 1
-          }
-        }));
-      }
-    };
-
     return (
       <section className="space-y-6">
         {/* Header with Generate Button */}
@@ -527,10 +481,20 @@ export default function AIMenuGenerator() {
             {/* Color Scheme */}
             <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
               <h4 className="flex items-center gap-2 text-lg font-semibold text-gray-900 mb-4">
-                <Layout className="w-5 h-5 text-blue-500" />
+                <Palette className="w-5 h-5 text-blue-500" />
                 Color Scheme
               </h4>
               <div className="prose prose-sm">
+                {suggestions?.colors && (
+                  <div className="space-y-3 mb-4">
+                    <h5 className="font-medium text-gray-700">Color Palette:</h5>
+                    <ColorSwatch color={suggestions.colors.background} name="Background" />
+                    <ColorSwatch color={suggestions.colors.sections} name="Sections" />
+                    <ColorSwatch color={suggestions.colors.highlight} name="Highlight" />
+                    <ColorSwatch color={suggestions.colors.border} name="Border" />
+                    <ColorSwatch color={suggestions.colors.itemCard} name="Item Card" />
+                  </div>
+                )}
                 <div className="text-gray-600 space-y-2">
                   {generatedPrompt
                     .substring(
@@ -581,6 +545,26 @@ export default function AIMenuGenerator() {
                 Design Recommendations
               </h4>
               <div className="prose prose-sm">
+                {suggestions?.typography && (
+                  <div className="space-y-3 mb-4">
+                    <h5 className="font-medium text-gray-700">Typography:</h5>
+                    <FontPreview 
+                      fontFamily={suggestions.typography.headings.font}
+                      size={suggestions.typography.headings.size}
+                      text="Heading Example"
+                    />
+                    <FontPreview 
+                      fontFamily={suggestions.typography.items.font}
+                      size={suggestions.typography.items.size}
+                      text="Menu Item Example"
+                    />
+                    <FontPreview 
+                      fontFamily={suggestions.typography.details.font}
+                      size={suggestions.typography.details.size}
+                      text="Item Details Example"
+                    />
+                  </div>
+                )}
                 <div className="text-gray-600 space-y-2">
                   {generatedPrompt
                     .substring(generatedPrompt.indexOf('DESIGN RECOMMENDATIONS'))
@@ -603,16 +587,18 @@ export default function AIMenuGenerator() {
           </div>
         )}
 
-        {/* Navigation */}
-        <div className="flex justify-between pt-6">
+        {/* Add accept/next button */}
+        <div className="flex justify-end mt-6">
           <button
-            onClick={goPrevStep}
-            className="px-4 py-2 text-gray-600 hover:text-gray-900 flex items-center gap-2"
+            onClick={() => {
+              setAcceptedSuggestions(true);
+              goNextStep();
+            }}
+            className="px-6 py-2.5 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2"
           >
-            <ArrowLeft className="w-4 h-4" /> Back
+            Accept & Continue
+            <ArrowRight className="w-4 h-4" />
           </button>
-          {/* Use the generic NextStepButton so that for step 3 it is disabled when no recommendation is generated */}
-          <NextStepButton />
         </div>
       </section>
     );
@@ -829,6 +815,70 @@ export default function AIMenuGenerator() {
         ...prev,
         menu: {
           ...prev.menu,
+          status: 'error'
+        }
+      }));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Inside AIMenuGenerator component, before the step components
+  const generateRecommendations = async () => {
+    setIsLoading(true);
+    setError('');
+    
+    // Start progress tracking
+    setProgress(prev => ({
+      ...prev,
+      prompt: {
+        ...prev.prompt,
+        status: 'loading',
+        startTime: Date.now(),
+        step: 0
+      }
+    }));
+    
+    try {
+      const response = await fetch('/api/ai/generatePrompt', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          menuItems,
+          config: menuConfig,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate recommendations');
+      }
+
+      const data = await response.json();
+      setGeneratedPrompt(data.prompt);
+      setSuggestions(data.suggestions);
+      
+      // Update progress to complete
+      setProgress(prev => ({
+        ...prev,
+        prompt: {
+          ...prev.prompt,
+          status: 'complete',
+          time: Date.now() - prev.prompt.startTime,
+          step: prev.prompt.steps.length
+        }
+      }));
+
+      // Don't automatically go to next step
+      setAcceptedSuggestions(false);
+    } catch (err) {
+      console.error('Error generating recommendations:', err);
+      setError('Failed to generate recommendations. Please try again.');
+      setProgress(prev => ({
+        ...prev,
+        prompt: {
+          ...prev.prompt,
           status: 'error'
         }
       }));

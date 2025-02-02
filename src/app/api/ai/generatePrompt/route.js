@@ -1,90 +1,122 @@
 // app/api/ai/generatePrompt/route.js
 import { NextResponse } from 'next/server';
-import OpenAI from 'openai';
-import { generateOpenAIPrompt } from '@/services/openAIService';
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-});
-
-async function loadResearchData() {
-  // For now, return static research data
-  // You can later move this to a database or external file
-  return {
-    psychology_factors: [
-      { description: "Place high-margin items in the golden triangle", effectiveness: 0.85 },
-      { description: "Use visual anchors for premium items", effectiveness: 0.75 },
-      { description: "Remove currency symbols to reduce price sensitivity", effectiveness: 0.65 }
-    ]
-  };
-}
+import { openai } from '@/lib/api-clients';
+import { generateDesignRecommendations } from '@/utils/researchProcessor';
 
 export async function POST(request) {
-  console.log('API route handler started');
   try {
-    const body = await request.json();
-    console.log('Received request body:', body);
-    
-    const { menuItems, config, itemsAnalysis } = body;
-    
-    const { systemPrompt, userPrompt } = await generateOpenAIPrompt(
-      { menuItems, itemsAnalysis },
-      null,
-      config
-    );
+    const { menuItems, config } = await request.json();
 
-    console.log('Generated prompts, calling OpenAI...');
-    const response = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
+    // Generate design recommendations based on menu style
+    const itemsAnalysis = {
+      bestSellers: menuItems.filter(item => item.sales_performance === 'best_seller'),
+      highMargin: menuItems.filter(item => item.margin_level === 'high_margin'),
+      boostedItems: menuItems.filter(item => item.boost_desired)
+    };
+
+    const initialRecs = generateDesignRecommendations(config.style, itemsAnalysis);
+
+    // Call OpenAI to generate the prompt
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4",
       messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt }
-      ],
-      temperature: 0.7,
-      max_tokens: 500,
+        {
+          role: "system",
+          content: `You are MenuGPT, an advanced AI menu design system. Generate SPECIFIC and DETAILED recommendations using exact values and measurements. Format your response precisely as shown below:
+
+DESIGN OVERVIEW
+- List specific design elements and approaches
+- Use clear, actionable recommendations
+
+COLOR SCHEME
+Brand Colors:
+- Primary: [HEX CODE]
+- Secondary: [HEX CODE]
+Required Colors (use exact hex codes):
+- Background Color: #XXXXXX
+- Section Background Colors: #XXXXXX
+- Highlight Color: #XXXXXX
+- Border Colors: #XXXXXX
+- Item Card Background Colors: #XXXXXX
+
+LAYOUT STRUCTURE
+- Specific measurements and spacing
+- Exact pattern descriptions
+- Precise border specifications
+
+DESIGN RECOMMENDATIONS
+Typography:
+- Headings: [Font Name] (24px)
+- Item Names: [Font Name] (18px)
+- Item Details: [Font Name] (14px)
+
+Spacing:
+- Section Padding: [X]px top, [Y]px bottom
+- Item Card Padding: [Z]px
+
+Visual Hierarchy:
+- Best Sellers: [specific treatment]
+- High-Margin Items: [specific treatment]
+- Priority Items: [specific treatment]`
+        },
+        {
+          role: "user",
+          content: `Create detailed design recommendations for a ${config.style} ${config.pageCount}-page menu with:
+Primary Color: ${config.primaryColor}
+Secondary Color: ${config.secondaryColor}
+Paper Size: ${config.paperSize}
+
+Menu Items:
+${menuItems.map(item => `- ${item.name} (${item.sales_performance === 'best_seller' ? 'Best Seller' : ''} ${item.margin_level === 'high_margin' ? 'High Margin' : ''})`.trim()).join('\n')}
+
+Format your response exactly with these sections:
+DESIGN OVERVIEW
+COLOR SCHEME
+LAYOUT STRUCTURE
+DESIGN RECOMMENDATIONS`
+        }
+      ]
     });
 
-    const aiResponse = response.choices[0].message.content;
-    console.log('Received AI response');
-    
-    // Extract colors from the natural language response
-    const colorRegex = {
-      primary: /Primary:\s*(.*?)\s*-/i,
-      secondary: /Secondary:\s*(.*?)\s*-/i
+    const generatedPrompt = completion.choices[0].message.content;
+
+    // Extract color and typography information from the generated prompt
+    const colorScheme = generatedPrompt.match(/COLOR SCHEME([\s\S]*?)(?=LAYOUT STRUCTURE)/)[1];
+    const designRecommendations = generatedPrompt.match(/DESIGN RECOMMENDATIONS([\s\S]*?)$/)[1];
+
+    // Parse colors and typography from the response
+    const colors = {
+      background: colorScheme.match(/#[A-Fa-f0-9]{6}/g)?.[0] || '#F5F5F5',
+      sections: colorScheme.match(/#[A-Fa-f0-9]{6}/g)?.[1] || '#FFFFFF',
+      highlight: colorScheme.match(/#[A-Fa-f0-9]{6}/g)?.[2] || '#FFD700',
+      border: colorScheme.match(/#[A-Fa-f0-9]{6}/g)?.[3] || '#666666',
+      itemCard: colorScheme.match(/#[A-Fa-f0-9]{6}/g)?.[4] || '#FFFFFF'
     };
 
-    // Convert color names to hex
-    const colorMap = {
-      'slate gray': '#708090',
-      'mustard yellow': '#FFDB58',
-      // Add more color mappings as needed
-    };
-
-    const primaryMatch = aiResponse.match(colorRegex.primary);
-    const secondaryMatch = aiResponse.match(colorRegex.secondary);
-
-    const primaryColor = primaryMatch ? 
-      (colorMap[primaryMatch[1].toLowerCase()] || '#000000') : 
-      '#000000';
-
-    const secondaryColor = secondaryMatch ? 
-      (colorMap[secondaryMatch[1].toLowerCase()] || '#666666') : 
-      '#666666';
-
-    return NextResponse.json({
-      suggestions: {
-        content: aiResponse,
-        pageCount: 1,
-        primaryColor,
-        secondaryColor
+    const typography = {
+      headings: { 
+        font: designRecommendations.match(/Headings:\s*([^,\n]*)/)?.[1] || 'Montserrat',
+        size: designRecommendations.match(/Headings:[^(]*\(([^)]*)\)/)?.[1] || '24px'
       },
-      prompt: aiResponse
+      items: {
+        font: designRecommendations.match(/Item Names:\s*([^,\n]*)/)?.[1] || 'Lato',
+        size: designRecommendations.match(/Item Names:[^(]*\(([^)]*)\)/)?.[1] || '18px'
+      },
+      details: {
+        font: designRecommendations.match(/Item Details:\s*([^,\n]*)/)?.[1] || 'Lato',
+        size: designRecommendations.match(/Item Details:[^(]*\(([^)]*)\)/)?.[1] || '14px'
+      }
+    };
+
+    return NextResponse.json({ 
+      prompt: generatedPrompt,
+      suggestions: { colors, typography }
     });
-    
+
   } catch (error) {
-    console.error('OpenAI API Error:', error);
+    console.error('Error generating prompt:', error);
     return NextResponse.json(
-      { error: 'Failed to generate menu suggestions: ' + error.message },
+      { error: 'Failed to generate recommendations' },
       { status: 500 }
     );
   }
