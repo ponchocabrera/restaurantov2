@@ -16,20 +16,44 @@ export async function POST(request) {
       messages: [
         {
           role: "system",
-          content: `You are a menu optimization expert. Using the provided menu analysis, generate specific recommendations in these categories:
-          - Psychology & Colors
-          - Layout & Design
-          - Menu Engineering
-          - Pricing Strategy
-          
-          Base your recommendations on proven research and best practices.`
+          content: `You are a menu optimization expert with deep knowledge of restaurant psychology and design principles. Using the provided detailed menu analysis, generate specific, actionable recommendations in these categories:
+
+PSYCHOLOGY & COLORS:
+- Color psychology implementation
+- Visual perception optimization
+- Customer behavior influence
+- Emotional response triggers
+- Brand consistency recommendations
+
+LAYOUT & DESIGN:
+- Typography improvements
+- Space utilization optimization
+- Visual hierarchy enhancement
+- Navigation flow optimization
+- Accessibility improvements
+
+MENU ENGINEERING:
+- Item placement optimization
+- Category organization
+- Profitability enhancement
+- Visual emphasis suggestions
+- Cross-selling opportunities
+
+PRICING STRATEGY:
+- Price presentation optimization
+- Value perception enhancement
+- Premium item positioning
+- Price anchoring implementation
+- Psychological pricing tactics
+
+Base your recommendations on proven research and industry best practices. Provide specific, actionable suggestions that can be implemented immediately.`
         },
         {
           role: "user",
           content: `Generate detailed recommendations based on this menu analysis:\n\n${analysis}`
         }
       ],
-      max_tokens: 2048
+      max_tokens: 4096
     });
 
     // Process the AI response and combine with research data

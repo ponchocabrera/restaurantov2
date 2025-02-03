@@ -25,6 +25,9 @@ STRUCTURE:
 - Analyze section placement and flow
 - Note any special features or callouts
 - Evaluate the information architecture
+- Analyze category balance and item distribution
+- Identify menu complexity level
+- Review section ordering logic
 
 DESIGN:
 - Typography analysis (fonts, sizes, weights, spacing)
@@ -35,6 +38,10 @@ DESIGN:
 - Text alignment and justification
 - Headers and subheaders treatment
 - Overall composition balance
+- Brand identity integration
+- Design consistency evaluation
+- Readability assessment
+- Mobile/digital adaptation potential
 
 PRICING:
 - Price presentation style and formatting
@@ -43,6 +50,12 @@ PRICING:
 - Value perception indicators
 - Price clustering analysis
 - Premium item placement
+- Competitive pricing analysis
+- Price psychology implementation
+- Value proposition clarity
+- Price-to-value relationship
+- Upselling opportunities
+- Price bracketing strategy
 
 COLOR:
 - Detailed color palette analysis
@@ -53,6 +66,10 @@ COLOR:
 - Texture and pattern usage
 - Brand color consistency
 - Color temperature and mood
+- Cultural color considerations
+- Seasonal color adaptability
+- Color accessibility evaluation
+- Emotional impact assessment
 
 VISUAL ELEMENTS:
 - Image usage and quality
@@ -62,7 +79,25 @@ VISUAL ELEMENTS:
 - Decorative flourishes
 - Background elements
 - Logo integration
-- Special callouts or highlights`
+- Special callouts or highlights
+- Visual hierarchy effectiveness
+- Negative space utilization
+- Visual flow patterns
+- Brand element consistency
+
+CUSTOMER PSYCHOLOGY:
+- Decision-making triggers
+- Attention flow analysis
+- Choice architecture
+- Psychological pricing effects
+- Visual appetite stimulation
+- Brand perception impact
+- Decision paralysis points
+- Emotional response triggers
+- Trust-building elements
+- Social proof integration
+- Scarcity/urgency indicators
+- Customer journey mapping`
           },
           {
             role: "user",

@@ -63,7 +63,8 @@ export default function MenuAnalyzer() {
         design: extractSection(rawText, 'DESIGN'),
         pricing: extractSection(rawText, 'PRICING'),
         color: extractSection(rawText, 'COLOR'),
-        visualElements: extractSection(rawText, 'VISUAL ELEMENTS')
+        visualElements: extractSection(rawText, 'VISUAL ELEMENTS'),
+        psychology: extractSection(rawText, 'CUSTOMER PSYCHOLOGY')
       };
       
       console.log('Parsed analysis:', analysisResult);

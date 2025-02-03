@@ -106,6 +106,16 @@ export default function StepAnalysis({
                   ))}
                 </ul>
               </div>
+
+              {/* Customer Psychology */}
+              <div className="bg-gray-50 rounded-lg p-6">
+                <h4 className="font-medium text-gray-900 mb-4">Customer Psychology</h4>
+                <ul className="space-y-2">
+                  {analysis.psychology.map((item, index) => (
+                    <li key={index} className="text-gray-700">{item}</li>
+                  ))}
+                </ul>
+              </div>
             </div>
           </div>
           

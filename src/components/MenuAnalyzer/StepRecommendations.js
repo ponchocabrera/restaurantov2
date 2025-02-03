@@ -23,7 +23,10 @@ export default function StepRecommendations({
             {recommendations?.psychology?.map((rec, index) => (
               <li key={index} className="flex items-start gap-2">
                 <span className="text-blue-500">•</span>
-                <span className="text-gray-700">{rec}</span>
+                <span className="text-gray-700">
+                  <span className="font-medium">{rec.split(':')[0]}:</span>
+                  {rec.split(':').slice(1).join(':')}
+                </span>
               </li>
             ))}
           </ul>
@@ -36,7 +39,10 @@ export default function StepRecommendations({
             {recommendations?.design?.map((rec, index) => (
               <li key={index} className="flex items-start gap-2">
                 <span className="text-green-500">•</span>
-                <span className="text-gray-700">{rec}</span>
+                <span className="text-gray-700">
+                  <span className="font-medium">{rec.split(':')[0]}:</span>
+                  {rec.split(':').slice(1).join(':')}
+                </span>
               </li>
             ))}
           </ul>
@@ -62,7 +68,10 @@ export default function StepRecommendations({
             {recommendations?.pricing?.map((rec, index) => (
               <li key={index} className="flex items-start gap-2">
                 <span className="text-orange-500">•</span>
-                <span className="text-gray-700">{rec}</span>
+                <span className="text-gray-700">
+                  <span className="font-medium">{rec.split(':')[0]}:</span>
+                  {rec.split(':').slice(1).join(':')}
+                </span>
               </li>
             ))}
           </ul>
