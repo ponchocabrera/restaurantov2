@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { RefreshCw } from 'lucide-react';
+import MenuChat from './MenuChat';
 
 export default function StepRecommendations({ 
   analysis,
@@ -143,7 +144,13 @@ export default function StepRecommendations({
            ))}
           </ul>
         </div>
+
+        <div className="col-span-2 mt-6">
+          <MenuChat analysis={analysis} recommendations={recommendations} />
+        </div>
       </div>
     </section>
   );
+
+  
 } 

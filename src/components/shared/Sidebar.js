@@ -8,17 +8,20 @@ export default function Sidebar() {
 
   const menuItems = [
     { icon: '⚡', label: 'Dashboard', href: '/dashboard' },
+    { icon: '📢', label: 'Menu Analyzer', href: '/menu-analyzer' },
     { icon: '📝', label: 'Menu Creator', href: '/menu-creator' },
     { icon: '🤖', label: 'Menu Generator', href: '/menu-generator' },
-    { icon: '📢', label: 'Menu Publisher', href: '/menu-publisher' },
     { icon: '⚙️', label: 'Restaurant Admin', href: '/restaurant-admin' },
     { icon: '📋', label: 'Enhance your menu', href: '/templates' },
   ];
 
   return (
     <aside className="w-64 bg-white border-r border-gray-200 min-h-screen">
-      <div className="p-4 font-bold text-lg border-b border-gray-100">
-        RestaurantOS
+      <div className="p-4 border-b border-gray-100">
+        <span className="flex items-center">
+          <span className="text-xl font-bold text-gray-900">carte</span>
+          <span className="text-xl font-medium text-[#FF7A5C]">.ai</span>
+        </span>
       </div>
       <nav className="flex flex-col p-2 space-y-1">
         {menuItems.map((item) => (

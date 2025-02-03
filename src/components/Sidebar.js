@@ -1,3 +1,5 @@
+// I don't know why this is here... we probebly need to delete it... but I tried to and something broke in the process
+
 'use client';
 
 import React from 'react';
