@@ -19,14 +19,30 @@ export default function StepRecommendations({
         {/* Psychology & Colors */}
         <div className="bg-gray-50 rounded-lg p-6">
           <h4 className="font-medium text-gray-900 mb-4">Menu Psychology & Colors</h4>
-          <ul className="space-y-3">
+          <ul className="space-y-4">
             {recommendations?.psychology?.map((rec, index) => (
-              <li key={index} className="flex items-start gap-2">
-                <span className="text-blue-500">•</span>
-                <span className="text-gray-700">
-                  <span className="font-medium">{rec.split(':')[0]}:</span>
-                  {rec.split(':').slice(1).join(':')}
-                </span>
+              <li key={index} className="space-y-2">
+                <div className="flex items-start gap-2">
+                  <span className="text-blue-500 mt-1">•</span>
+                  <div>
+                    <span className="text-gray-900 font-medium">{rec.recommendation}</span>
+                    {rec.reasoning && (
+                      <p className="text-sm text-gray-600 mt-1">
+                        Why: {rec.reasoning}
+                      </p>
+                    )}
+                    {rec.impact && (
+                      <p className="text-sm text-gray-500 mt-1">
+                        Impact: {rec.impact}
+                      </p>
+                    )}
+                    {rec.priority && (
+                      <p className="text-xs text-gray-400 mt-1">
+                        Priority: {rec.priority}
+                      </p>
+                    )}
+                  </div>
+                </div>
               </li>
             ))}
           </ul>
@@ -35,14 +51,30 @@ export default function StepRecommendations({
         {/* Layout & Design */}
         <div className="bg-gray-50 rounded-lg p-6">
           <h4 className="font-medium text-gray-900 mb-4">Layout & Design</h4>
-          <ul className="space-y-3">
+          <ul className="space-y-4">
             {recommendations?.design?.map((rec, index) => (
-              <li key={index} className="flex items-start gap-2">
-                <span className="text-green-500">•</span>
-                <span className="text-gray-700">
-                  <span className="font-medium">{rec.split(':')[0]}:</span>
-                  {rec.split(':').slice(1).join(':')}
-                </span>
+                <li key={index} className="space-y-2">
+                <div className="flex items-start gap-2">
+                  <span className="text-blue-500 mt-1">•</span>
+                  <div>
+                    <span className="text-gray-900 font-medium">{rec.recommendation}</span>
+                    {rec.reasoning && (
+                      <p className="text-sm text-gray-600 mt-1">
+                        Why: {rec.reasoning}
+                      </p>
+                    )}
+                    {rec.impact && (
+                      <p className="text-sm text-gray-500 mt-1">
+                        Impact: {rec.impact}
+                      </p>
+                    )}
+                    {rec.priority && (
+                      <p className="text-xs text-gray-400 mt-1">
+                        Priority: {rec.priority}
+                      </p>
+                    )}
+                  </div>
+                </div>
               </li>
             ))}
           </ul>
@@ -51,29 +83,64 @@ export default function StepRecommendations({
         {/* Menu Engineering */}
         <div className="bg-gray-50 rounded-lg p-6">
           <h4 className="font-medium text-gray-900 mb-4">Menu Engineering</h4>
-          <ul className="space-y-3">
+          <ul className="space-y-4">
             {recommendations?.engineering?.map((rec, index) => (
-              <li key={index} className="flex items-start gap-2">
-                <span className="text-purple-500">•</span>
-                <span className="text-gray-700">{rec}</span>
-              </li>
-            ))}
+               <li key={index} className="space-y-2">
+               <div className="flex items-start gap-2">
+                 <span className="text-blue-500 mt-1">•</span>
+                 <div>
+                   <span className="text-gray-900 font-medium">{rec.recommendation}</span>
+                   {rec.reasoning && (
+                     <p className="text-sm text-gray-600 mt-1">
+                       Why: {rec.reasoning}
+                     </p>
+                   )}
+                   {rec.impact && (
+                     <p className="text-sm text-gray-500 mt-1">
+                       Impact: {rec.impact}
+                     </p>
+                   )}
+                   {rec.priority && (
+                     <p className="text-xs text-gray-400 mt-1">
+                       Priority: {rec.priority}
+                     </p>
+                   )}
+                 </div>
+               </div>
+             </li>
+           ))}
           </ul>
         </div>
 
         {/* Pricing Strategy */}
         <div className="bg-gray-50 rounded-lg p-6">
           <h4 className="font-medium text-gray-900 mb-4">Pricing Strategy</h4>
-          <ul className="space-y-3">
+          <ul className="space-y-4">
             {recommendations?.pricing?.map((rec, index) => (
-              <li key={index} className="flex items-start gap-2">
-                <span className="text-orange-500">•</span>
-                <span className="text-gray-700">
-                  <span className="font-medium">{rec.split(':')[0]}:</span>
-                  {rec.split(':').slice(1).join(':')}
-                </span>
-              </li>
-            ))}
+               <li key={index} className="space-y-2">
+               <div className="flex items-start gap-2">
+                 <span className="text-blue-500 mt-1">•</span>
+                 <div>
+                   <span className="text-gray-900 font-medium">{rec.recommendation}</span>
+                   {rec.reasoning && (
+                     <p className="text-sm text-gray-600 mt-1">
+                       Why: {rec.reasoning}
+                     </p>
+                   )}
+                   {rec.impact && (
+                     <p className="text-sm text-gray-500 mt-1">
+                       Impact: {rec.impact}
+                     </p>
+                   )}
+                   {rec.priority && (
+                     <p className="text-xs text-gray-400 mt-1">
+                       Priority: {rec.priority}
+                     </p>
+                   )}
+                 </div>
+               </div>
+             </li>
+           ))}
           </ul>
         </div>
       </div>
