@@ -4,28 +4,16 @@ import { MENU_RESEARCH } from './researchProcessor';
 export function generateAnalysisRecommendations(analysis) {
   try {
     const menuStructure = extractMenuStructure(analysis);
-    // Use regex with optional whitespace and case insensitivity
     const sections = analysis.split(/(?:^|\n)\s*(?:STRUCTURE|DESIGN|PSYCHOLOGY|ENGINEERING|PRICING|COLOR|VISUAL ELEMENTS):/i);
     
-    // Process each section with detailed extraction
     return {
       structure: processSection(sections[1]),
       design: processSection(sections[2]),
       visualElements: processSection(sections[3]),
-      psychology: generatePsychologyRecommendations(sections[4], MENU_RESEARCH.psychology_factors),
-      engineering: generateEngineeringRecommendations(sections[5], menuStructure),
+      psychology: processSection(sections[4]),
+      engineering: processSection(sections[5]),
       pricing: processSection(sections[6]),
-      color: processSection(sections[7]),
-      recommendations: {
-        psychology: generatePsychologyRecommendations(sections[4], MENU_RESEARCH.psychology_factors),
-        engineering: generateEngineeringRecommendations(sections[5], menuStructure),
-        pricing: sections[6]?.trim().split('\n').filter(line => line.trim()) || [],
-        design: generateDesignRecommendations('modern', {
-          design: processSection(sections[2]),
-          color: processSection(sections[7]),
-          visualElements: processSection(sections[3])
-        })
-      }
+      color: processSection(sections[7])
     };
   } catch (error) {
     console.error('Error generating analysis recommendations:', error);
@@ -36,13 +24,7 @@ export function generateAnalysisRecommendations(analysis) {
       psychology: [],
       engineering: [],
       pricing: [],
-      color: [],
-      recommendations: {
-        psychology: [],
-        engineering: [],
-        pricing: [],
-        design: []
-      }
+      color: []
     };
   }
 }

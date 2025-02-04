@@ -141,9 +141,9 @@ export default function MenuCreator() {
           price: item.price,
           category: item.category,
           image_url: item.image_url || '',
-          sales_performance: item.sales_performance || '',
-          margin_level: item.margin_level || '',
-          boost_desired: item.boost_desired || false,
+          sales_performance: item.sales_performance,
+          margin_level: item.margin_level,
+          boost_desired: Boolean(item.boost_desired),
         }))
       );
     } catch (err) {
@@ -164,15 +164,15 @@ export default function MenuCreator() {
       }
       setIsLoading(true);
 
-      // Save menu first
+      // Save menu first with correct field names
       const menuRes = await fetch('/api/menus', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           id: selectedMenuId,
           restaurantId: selectedRestaurantId,
-          name: menuName,
-          templateId: selectedTemplate,
+          name: menuName || 'Untitled Menu',
+          templateId: selectedTemplate || 'modern'
         }),
       });
 
@@ -184,13 +184,27 @@ export default function MenuCreator() {
       const menuData = await menuRes.json();
       const menuId = menuData.menu.id;
 
+      // Prepare items with proper menu_id
+      const itemsToSave = menuItems.map(item => ({
+        id: item.id || undefined,
+        menu_id: menuId,
+        name: item.name,
+        description: item.description || '',
+        price: parseFloat(item.price) || 0,
+        category: item.category || '',
+        image_url: item.image_url || '',
+        sales_performance: item.sales_performance === '' ? null : item.sales_performance,
+        margin_level: item.margin_level === '' ? null : item.margin_level,
+        boost_desired: Boolean(item.boost_desired)
+      }));
+
       // Bulk save all menu items
       const itemsRes = await fetch('/api/menuItems/bulk', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           menuId,
-          items: menuItems
+          items: itemsToSave
         }),
       });
 
@@ -199,7 +213,17 @@ export default function MenuCreator() {
         throw new Error(itemError.error || 'Failed to save menu items');
       }
 
+      // Update local state with the saved data
+      setSelectedMenuId(menuId);
       setIsMenuChanged(false);
+      
+      // Refresh the menus list
+      const updatedMenusRes = await fetch(`/api/menus?restaurantId=${selectedRestaurantId}`);
+      if (updatedMenusRes.ok) {
+        const updatedMenusData = await updatedMenusRes.json();
+        setSavedMenus(updatedMenusData.menus || []);
+      }
+
       alert('Menu and items saved successfully!');
     } catch (err) {
       console.error('[saveMenuToDB] Error:', err);
@@ -239,38 +263,47 @@ export default function MenuCreator() {
     setShowAddItemForm(false);
   }
 
-  async function deleteMenuItem(itemId) {
+  const removeMenuItem = async (index) => {
     try {
-      const res = await fetch(`/api/menuItems?itemId=${itemId}`, {
-        method: 'DELETE',
-      });
-      if (!res.ok) throw new Error('Failed to delete item');
-      return true;
-    } catch (err) {
-      console.error('Error deleting item:', err);
-      alert('Failed to delete item');
-      return false;
-    }
-  }
+      const item = menuItems[index];
+      
+      // If item has an ID, delete from server first
+      if (item.id) {
+        const res = await fetch(`/api/menu-items/${item.id}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          }
+        });
+        
+        if (!res.ok) {
+          const errorText = await res.text();
+          throw new Error(`Failed to delete: ${errorText}`);
+        }
+      }
 
-  async function removeMenuItem(index) {
-    const item = menuItems[index];
-    if (item.id && typeof item.id === 'number') {
-      const success = await deleteMenuItem(item.id);
-      if (!success) return;
+      // Update local state
+      setMenuItems(prev => prev.filter((_, idx) => idx !== index));
+      setIsMenuChanged(true);
+    } catch (error) {
+      console.error('Error removing item:', error);
+      alert(`Failed to delete item: ${error.message}`);
     }
-    setMenuItems((prev) => {
-      const updated = [...prev];
-      updated.splice(index, 1);
-      return updated;
-    });
-    setIsMenuChanged(true);
-  }
+  };
 
   function updateMenuItem(index, field, value) {
     setMenuItems((prev) => {
       const updated = [...prev];
-      updated[index] = { ...updated[index], [field]: value };
+      // For margin_level, ensure empty string is converted to null
+      if (field === 'margin_level') {
+        updated[index] = { 
+          ...updated[index], 
+          [field]: value === '' ? null : value 
+        };
+      } else {
+        updated[index] = { ...updated[index], [field]: value };
+      }
       return updated;
     });
     setIsMenuChanged(true);

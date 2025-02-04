@@ -1,6 +1,5 @@
 import OpenAI from 'openai';
 import { MENU_RESEARCH } from '@/utils/researchProcessor';
-import { generateAnalysisRecommendations } from '@/utils/menuAnalysisProcessor';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
@@ -11,67 +10,59 @@ export async function POST(request) {
     const { analysis } = await request.json();
     console.log('Received analysis for recommendations:', analysis);
     
-    // Load research data
-    const researchData = MENU_RESEARCH;
-    console.log('Loaded research data:', researchData);
+    if (!analysis || !analysis.raw) {
+      throw new Error('Invalid analysis data');
+    }
 
-    // Build enhanced prompt with analysis and research
+    // Parse the raw analysis text into structured sections
+    const analysisText = analysis.raw;
+    const sections = {
+      structure: analysis.structure || [],
+      design: analysis.design || [],
+      pricing: analysis.pricing || [],
+      color: analysis.color || [],
+      visualElements: analysis.visualElements || [],
+      psychology: analysis.psychology || []
+    };
+
+    // Build a more concise prompt
     const enhancedPrompt = `
-As a menu optimization expert, analyze this menu and provide detailed recommendations based on our research and the previous analysis.
+Analyze these findings and provide targeted menu recommendations:
 
-ANALYSIS SUMMARY:
-${analysis}
+${Object.entries(sections)
+  .map(([section, items]) => `${section.toUpperCase()}:\n${items.slice(0, 3).map(item => `- ${item}`).join('\n')}`)
+  .join('\n\n')}
 
-RESEARCH INSIGHTS:
-Psychology Factors:
-${researchData.psychology_factors.map(f => `- ${f.description} (${Math.round(f.effectiveness * 100)}% effective)`).join('\n')}
-
-Layout Guidelines:
-${researchData.layout_guidelines.map(g => `- ${g.description} (Priority: ${g.priority})`).join('\n')}
-
-For each category below, provide 2-3 specific recommendations. Format each recommendation exactly as follows:
-
-1. **Specific Recommendation:** [The recommendation]
-**Reasoning:** [Why this recommendation is important]
-**Expected Impact:** [What results to expect]
-**Implementation Priority:** [High/Medium/Low]
+Provide 2 recommendations for each category below. Format exactly as:
+**Specific Recommendation:** [action]
+**Reasoning:** [reference findings]
+**Expected Impact:** [result]
+**Priority:** [High/Medium/Low]
 
 PSYCHOLOGY & COLORS:
-[Your recommendations here]
-
 LAYOUT & DESIGN:
-[Your recommendations here]
-
 MENU ENGINEERING:
-[Your recommendations here]
+PRICING STRATEGY:`;
 
-PRICING STRATEGY:
-[Your recommendations here]`;
-
-    console.log('Sending enhanced prompt to OpenAI:', enhancedPrompt);
-
-    // Get AI recommendations
     const response = await openai.chat.completions.create({
       model: "gpt-4",
       messages: [
         {
           role: "system",
-          content: "You are a menu optimization expert with deep knowledge of restaurant psychology and design principles."
+          content: "You are a menu optimization expert. Provide specific, actionable recommendations based on the analysis findings."
         },
         {
           role: "user",
           content: enhancedPrompt
         }
       ],
-      max_tokens: 4096
+      temperature: 0.7,
+      max_tokens: 2048
     });
 
-    console.log('Raw OpenAI response:', response.choices[0].message.content);
-
-    // Process and structure the recommendations
     const aiRecommendations = response.choices[0].message.content;
+    console.log('Raw AI recommendations:', aiRecommendations);
 
-    // Process each section
     const recommendations = {
       psychology: processRecommendations(aiRecommendations, 'PSYCHOLOGY & COLORS'),
       design: processRecommendations(aiRecommendations, 'LAYOUT & DESIGN'),
@@ -79,18 +70,17 @@ PRICING STRATEGY:
       pricing: processRecommendations(aiRecommendations, 'PRICING STRATEGY')
     };
 
-    // Log each section's processed recommendations
+    // Validate recommendations
     Object.entries(recommendations).forEach(([section, recs]) => {
-      console.log(`Processed ${section} recommendations:`, recs);
+      if (!recs || recs.length === 0) {
+        console.error(`No recommendations generated for ${section}`);
+      }
     });
 
     return Response.json({ recommendations });
   } catch (error) {
-    console.error('Recommendations generation failed:', error);
-    return Response.json(
-      { error: 'Recommendations generation failed', details: error.message }, 
-      { status: 500 }
-    );
+    console.error('Error generating recommendations:', error);
+    return Response.json({ error: error.message }, { status: 500 });
   }
 }
 
@@ -101,42 +91,35 @@ function processRecommendations(text, section) {
     if (sectionStart === -1) return [];
     
     // Get the text after our section header
-    const textAfterSection = text.slice(sectionStart + section.length);
+    const textAfterSection = text.slice(sectionStart + section.length + 1);
     
     // Find the next section (if any)
     const nextSectionMatch = textAfterSection.match(/\n\n[A-Z& ]+:/);
     const sectionEnd = nextSectionMatch 
-      ? sectionStart + section.length + nextSectionMatch.index 
-      : text.length;
+      ? nextSectionMatch.index 
+      : textAfterSection.length;
     
     // Extract section content
-    const sectionContent = text.slice(sectionStart, sectionEnd);
+    const sectionContent = textAfterSection.slice(0, sectionEnd).trim();
     
-    console.log(`Processing ${section} content:`, sectionContent); // Debug log
-
     // Split into individual recommendations
-    const recommendations = sectionContent
-      .split(/\d+\.\s+/)
-      .slice(1) // Remove the section header
-      .map(block => {
-        const lines = block.split('\n').map(line => line.trim()).filter(Boolean);
-        
-        const rec = {
-          recommendation: lines[0]?.replace(/^\*\*Specific Recommendation:\*\*\s*/, '').trim(),
-          reasoning: lines.find(l => l.includes('**Reasoning:**'))
-            ?.replace(/^\*\*Reasoning:\*\*\s*/, '').trim(),
-          impact: lines.find(l => l.includes('**Expected Impact:**'))
-            ?.replace(/^\*\*Expected Impact:\*\*\s*/, '').trim(),
-          priority: lines.find(l => l.includes('**Implementation Priority:**'))
-            ?.replace(/^\*\*Implementation Priority:\*\*\s*/, '').trim()
+    return sectionContent
+      .split(/(?=\*\*Specific Recommendation:\*\*)/)
+      .filter(rec => rec.trim())
+      .map(rec => {
+        const recommendation = rec.match(/\*\*Specific Recommendation:\*\*([^\n]*)/)?.[1]?.trim() || '';
+        const reasoning = rec.match(/\*\*Reasoning:\*\*([^\n]*)/)?.[1]?.trim() || '';
+        const impact = rec.match(/\*\*Expected Impact:\*\*([^\n]*)/)?.[1]?.trim() || '';
+        const priority = rec.match(/\*\*Priority:\*\*([^\n]*)/)?.[1]?.trim() || '';
+
+        return {
+          recommendation,
+          reasoning,
+          impact,
+          priority
         };
-        
-        console.log(`Processed recommendation:`, rec); // Debug log
-        return rec;
       })
       .filter(rec => rec.recommendation);
-
-    return recommendations;
   } catch (error) {
     console.error(`Error processing ${section} recommendations:`, error);
     return [];

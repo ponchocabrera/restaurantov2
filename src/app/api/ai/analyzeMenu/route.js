@@ -111,7 +111,50 @@ CUSTOMER PSYCHOLOGY:
       });
 
       console.log('OpenAI response received');
-      return Response.json({ analysis: response.choices[0].message.content });
+      const analysisText = response.choices[0].message.content;
+      
+      function extractSection(text, sectionName) {
+        if (!text || typeof text !== 'string') {
+          console.error(`Invalid text for section ${sectionName}:`, text);
+          return [];
+        }
+
+        try {
+          const sectionRegex = new RegExp(`${sectionName}:[\\s\\S]*?(?=\\n\\n[A-Z ]+:|$)`);
+          const match = text.match(sectionRegex);
+          
+          if (!match) {
+            console.log(`No match found for section ${sectionName}`);
+            return [];
+          }
+          
+          return match[0]
+            .replace(`${sectionName}:`, '')
+            .split('\n')
+            .map(line => line.trim())
+            .filter(line => line && line.startsWith('-'))
+            .map(line => line.substring(1).trim());
+        } catch (error) {
+          console.error(`Error extracting section ${sectionName}:`, error);
+          return [];
+        }
+      }
+
+      const sections = {
+        structure: extractSection(analysisText, 'STRUCTURE'),
+        design: extractSection(analysisText, 'DESIGN'),
+        pricing: extractSection(analysisText, 'PRICING'),
+        color: extractSection(analysisText, 'COLOR'),
+        visualElements: extractSection(analysisText, 'VISUAL ELEMENTS'),
+        psychology: extractSection(analysisText, 'CUSTOMER PSYCHOLOGY')
+      };
+
+      return Response.json({ 
+        analysis: {
+          raw: analysisText,
+          ...sections
+        }
+      });
     }
 
     return Response.json({ error: 'Invalid type' });
@@ -119,19 +162,4 @@ CUSTOMER PSYCHOLOGY:
     console.error('Analysis failed:', error);
     return Response.json({ error: error.message }, { status: 500 });
   }
-}
-
-// Helper function to extract sections from the AI response
-function extractSection(text, sectionName) {
-  const sections = text.split(/\n\n|\r\n\r\n/);
-  const relevantSection = sections.find(s => 
-    s.toLowerCase().includes(sectionName.toLowerCase())
-  );
-  
-  if (!relevantSection) return [];
-  
-  return relevantSection
-    .split('\n')
-    .filter(line => line.trim() && !line.toLowerCase().includes(sectionName.toLowerCase()))
-    .map(line => line.replace(/^[-•*]\s*/, '').trim());
 } 

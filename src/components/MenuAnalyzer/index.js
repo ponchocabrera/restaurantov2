@@ -53,31 +53,22 @@ export default function MenuAnalyzer() {
       
       if (data.error) throw new Error(data.details || 'Analysis failed');
 
-      // Parse the raw analysis text into sections
-      const rawText = data.analysis;
-      
-      // Set analysis state with all sections
-      const analysisResult = {
-        raw: rawText,
-        structure: extractSection(rawText, 'STRUCTURE'),
-        design: extractSection(rawText, 'DESIGN'),
-        pricing: extractSection(rawText, 'PRICING'),
-        color: extractSection(rawText, 'COLOR'),
-        visualElements: extractSection(rawText, 'VISUAL ELEMENTS'),
-        psychology: extractSection(rawText, 'CUSTOMER PSYCHOLOGY')
-      };
-      
-      console.log('Parsed analysis:', analysisResult);
-      setAnalysis(analysisResult);
-      setCurrentStep(2);
+      // The analysis is already structured from the API
+      if (data.analysis && typeof data.analysis === 'object') {
+        console.log('Parsed analysis:', data.analysis);
+        setAnalysis(data.analysis);
+        setCurrentStep(2);
 
-      setProgress(prev => ({
-        analysis: {
-          ...prev.analysis,
-          status: 'complete',
-          step: 4
-        }
-      }));
+        setProgress(prev => ({
+          analysis: {
+            ...prev.analysis,
+            status: 'complete',
+            step: 4
+          }
+        }));
+      } else {
+        throw new Error('Invalid analysis format received');
+      }
     } catch (error) {
       console.error('Analysis failed:', error);
       setProgress(prev => ({
@@ -116,7 +107,7 @@ export default function MenuAnalyzer() {
         const recommendationsResponse = await fetch('/api/ai/generateRecommendations', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ analysis: analysis.raw })
+          body: JSON.stringify({ analysis })
         });
 
         if (!recommendationsResponse.ok) throw new Error('Recommendations failed');

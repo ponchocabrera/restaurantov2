@@ -158,7 +158,6 @@ function validateMenuItems(html, menuItems) {
     // Only check description if it exists and isn't empty
     if (item.description && item.description.trim() !== '') {
       const descriptionLower = item.description.toLowerCase();
-      // Make description check more lenient by looking for key phrases
       const descriptionWords = descriptionLower.split(' ').filter(word => word.length > 3);
       const hasDescription = descriptionWords.some(word => lowerHTML.includes(word));
       
@@ -167,13 +166,22 @@ function validateMenuItems(html, menuItems) {
       }
     }
 
-    // Check for price if it exists
+    // More flexible price checking
     if (item.price) {
       const priceStr = typeof item.price === 'number' ? 
-        item.price.toFixed(2) : 
+        item.price.toString() : 
         item.price.toString().replace('$', '');
       
-      if (!html.includes(priceStr)) {
+      // Try different price formats
+      const priceFormats = [
+        priceStr,
+        priceStr.replace('.', ','),
+        parseFloat(priceStr).toFixed(2),
+        parseFloat(priceStr).toString()
+      ];
+      
+      const hasPriceMatch = priceFormats.some(format => html.includes(format));
+      if (!hasPriceMatch) {
         errors.push(`Missing price for: ${item.name}`);
       }
     }

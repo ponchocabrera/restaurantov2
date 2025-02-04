@@ -54,26 +54,36 @@ export async function POST(request) {
            margin_level text,
            boost_desired boolean
          )
+       ),
+       inserted_rows AS (
+         INSERT INTO menu_items 
+           (menu_id, name, description, price, category, image_url, 
+            sales_performance, margin_level, boost_desired, user_id)
+         SELECT 
+           $1, i.name, i.description, i.price, i.category, i.image_url,
+           i.sales_performance, i.margin_level, i.boost_desired, $2
+         FROM input_rows i
+         WHERE i.id IS NULL
+         RETURNING *
+       ),
+       updated_rows AS (
+         UPDATE menu_items m
+         SET 
+           name = i.name,
+           description = i.description,
+           price = i.price,
+           category = i.category,
+           image_url = i.image_url,
+           sales_performance = i.sales_performance,
+           margin_level = i.margin_level,
+           boost_desired = i.boost_desired
+         FROM input_rows i
+         WHERE m.id = i.id AND m.menu_id = $1 AND i.id IS NOT NULL
+         RETURNING m.*
        )
-       INSERT INTO menu_items 
-         (id, menu_id, name, description, price, category, image_url, 
-          sales_performance, margin_level, boost_desired, user_id)
-       SELECT 
-         i.id, $1, i.name, i.description, i.price, i.category, i.image_url,
-         i.sales_performance, i.margin_level, i.boost_desired, $2
-       FROM input_rows i
-       ON CONFLICT (id) 
-       DO UPDATE SET
-         name = EXCLUDED.name,
-         description = EXCLUDED.description,
-         price = EXCLUDED.price,
-         category = EXCLUDED.category,
-         image_url = EXCLUDED.image_url,
-         sales_performance = EXCLUDED.sales_performance,
-         margin_level = EXCLUDED.margin_level,
-         boost_desired = EXCLUDED.boost_desired
-       WHERE menu_items.menu_id = $1
-       RETURNING *`,
+       SELECT * FROM inserted_rows
+       UNION ALL
+       SELECT * FROM updated_rows`,
       [menuId, session.user.id, JSON.stringify(sanitizedItems)]
     );
 
