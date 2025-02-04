@@ -1,30 +1,38 @@
 // [D] pages/api/restaurantsProfile/[id].js or app/api/restaurantsProfile/[id]/route.js
-import { pool } from '../../../lib/db'; // or correct path
+import { NextResponse } from 'next/server';
+import { query } from '@/lib/db';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 
-export default async function handler(req, res) {
-  const { id } = req.query; // or params if app router
-  if (req.method === 'PUT') {
-    try {
-      const { data, colorPalette } = req.body;
-      const sql = `
-        UPDATE restaurants_profile
-        SET data = $1,
-            color_palette = $2,
-            updated_at = NOW()
-        WHERE id = $3
-        RETURNING id, data, color_palette
-      `;
-
-      const result = await pool.query(sql, [data, colorPalette, id]);
-      if (result.rowCount === 0) {
-        return res.status(404).json({ error: 'Profile not found' });
-      }
-      return res.status(200).json({ profile: result.rows[0] });
-    } catch (err) {
-      console.error(err);
-      return res.status(500).json({ error: err.message });
+export async function PUT(request, { params }) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-  } else {
-    return res.status(405).json({ error: 'Method not allowed' });
+
+    const { id } = params;
+    const { data, colorPalette } = await request.json();
+    
+    const result = await query(
+      `UPDATE restaurants_profile rp
+       SET data = $1,
+           color_palette = $2,
+           updated_at = NOW()
+       FROM restaurants r
+       WHERE rp.restaurant_id = r.id
+       AND r.user_id = $3
+       AND rp.id = $4
+       RETURNING rp.id, rp.data, rp.color_palette`,
+      [data, colorPalette, session.user.id, id]
+    );
+
+    if (result.rowCount === 0) {
+      return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
+    }
+    return NextResponse.json({ profile: result.rows[0] });
+  } catch (err) {
+    console.error(err);
+    return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

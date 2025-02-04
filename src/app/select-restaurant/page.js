@@ -1,8 +1,27 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 
 export default function SelectRestaurantPage() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/login');
+    }
+  }, [status, router]);
+
+  if (status === 'loading') {
+    return <div>Loading...</div>;
+  }
+
+  if (!session) {
+    return null;
+  }
+
   const [restaurants, setRestaurants] = useState([]);
   const [selectedRestaurantId, setSelectedRestaurantId] = useState(null);
   const [menus, setMenus] = useState([]);

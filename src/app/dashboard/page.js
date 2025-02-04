@@ -44,7 +44,7 @@ const tools = [
   },
 
   {
-    id: 'menu-generator',
+    id: 'revenue-tracker',
     title: '[Coming soon] Revenue Impact Tracker',
     description: 'See the real impact on your bottom line with our AI Menu Intelligence',
     features: [
@@ -62,18 +62,18 @@ export default function Dashboard() {
   return (
     <DashboardLayout>
       <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Title */}
           <h1 className="text-4xl font-semibold mb-4">Transform your Menu into a Revenue Engine</h1>
           <p className="text-gray-600 mb-8">From Analysis to Optimization, in three simple steps. All done by Artificial Intelligence.</p>
 
           {/* Tools Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 justify-items-center">
             {tools.map((tool) => (
               <Link 
                 key={tool.id} 
                 href={tool.href}
-                className="group bg-white rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow"
+                className="group bg-white rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow w-full max-w-md"
               >
                 <div className="aspect-square mb-4 bg-gray-100 rounded-lg overflow-hidden">
                   <img 

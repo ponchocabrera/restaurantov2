@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '../auth/[...nextauth]/auth.config';
 
 /**
  * GET /api/menus
@@ -8,19 +10,30 @@ import { query } from '@/lib/db';
  */
 export async function GET(request) {
   try {
+    const session = await getServerSession(authOptions);
+    
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
     const restaurantId = searchParams.get('restaurantId');
 
     if (restaurantId) {
-      // If restaurantId is provided, return only that restaurant's menus
       const result = await query(
-        'SELECT * FROM menus WHERE restaurant_id = $1',
-        [restaurantId]
+        `SELECT m.* FROM menus m
+         JOIN restaurants r ON r.id = m.restaurant_id
+         WHERE r.user_id = $1 AND r.id = $2`,
+        [session.user.id, restaurantId]
       );
       return NextResponse.json({ menus: result.rows });
     } else {
-      // No restaurantId? Return ALL menus
-      const result = await query('SELECT * FROM menus');
+      const result = await query(
+        `SELECT m.* FROM menus m
+         JOIN restaurants r ON r.id = m.restaurant_id
+         WHERE r.user_id = $1`,
+        [session.user.id]
+      );
       return NextResponse.json({ menus: result.rows });
     }
   } catch (err) {
@@ -37,6 +50,12 @@ export async function GET(request) {
  */
 export async function POST(request) {
   try {
+    const session = await getServerSession(authOptions);
+    
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { id, restaurantId, name, templateId } = await request.json();
 
     if (!restaurantId || !name || !templateId) {
@@ -48,16 +67,26 @@ export async function POST(request) {
       );
     }
 
+    // Verify restaurant belongs to user
+    const restaurantCheck = await query(
+      'SELECT id FROM restaurants WHERE id = $1 AND user_id = $2',
+      [restaurantId, session.user.id]
+    );
+
+    if (restaurantCheck.rows.length === 0) {
+      return NextResponse.json(
+        { error: 'Restaurant not found or unauthorized' },
+        { status: 404 }
+      );
+    }
+
     if (id) {
-      // ----- Update existing menu -----
       const updateResult = await query(
-        `
-          UPDATE menus
-          SET name = $2, template_id = $3
-          WHERE id = $1
-          RETURNING *
-        `,
-        [id, name, templateId]
+        `UPDATE menus
+         SET name = $2, template_id = $3
+         WHERE id = $1 AND restaurant_id = $4
+         RETURNING *`,
+        [id, name, templateId, restaurantId]
       );
 
       if (updateResult.rowCount === 0) {
@@ -66,14 +95,11 @@ export async function POST(request) {
 
       return NextResponse.json({ menu: updateResult.rows[0] });
     } else {
-      // ----- Insert new menu -----
       const insertResult = await query(
-        `
-          INSERT INTO menus (restaurant_id, name, template_id)
-          VALUES ($1, $2, $3)
-          RETURNING *
-        `,
-        [restaurantId, name, templateId]
+        `INSERT INTO menus (restaurant_id, name, template_id, user_id)
+         VALUES ($1, $2, $3, $4)
+         RETURNING *`,
+        [restaurantId, name, templateId, session.user.id]
       );
 
       return NextResponse.json({ menu: insertResult.rows[0] }, { status: 201 });

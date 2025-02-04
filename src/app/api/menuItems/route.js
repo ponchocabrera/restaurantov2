@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';  // Use the same db utility as other routes
+import { getServerSession } from 'next-auth';
+import { authOptions } from '../auth/[...nextauth]/auth.config';
 
 // Fallback data for development
 const fallbackItems = {
@@ -29,6 +31,12 @@ const fallbackItems = {
 
 export async function GET(request) {
   try {
+    const session = await getServerSession(authOptions);
+    
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
     const menuId = searchParams.get('menuId');
 
@@ -39,41 +47,19 @@ export async function GET(request) {
       );
     }
 
-    try {
-      const result = await query(
-        `SELECT 
-          id,
-          name,
-          description,
-          price,
-          category,
-          sales_performance,
-          margin_level,
-          boost_desired
-        FROM menu_items 
-        WHERE menu_id = $1
-        ORDER BY category, name`,
-        [menuId]
-      );
-      
-      if (!result.rows || result.rows.length === 0) {
-        console.log('No items found for menuId:', menuId);
-        return NextResponse.json({ items: [] });
-      }
+    const result = await query(
+      `SELECT mi.* 
+       FROM menu_items mi
+       JOIN menus m ON m.id = mi.menu_id
+       JOIN restaurants r ON r.id = m.restaurant_id
+       WHERE mi.menu_id = $1 AND r.user_id = $2
+       ORDER BY mi.category, mi.name`,
+      [menuId, session.user.id]
+    );
 
-      console.log(`Found ${result.rows.length} items for menuId:`, menuId);
-      return NextResponse.json({ items: result.rows });
-      
-    } catch (dbError) {
-      console.error('Database error:', dbError);
-      return NextResponse.json(
-        { error: 'Database error: ' + dbError.message },
-        { status: 500 }
-      );
-    }
-
+    return NextResponse.json({ items: result.rows });
   } catch (error) {
-    console.error('Error:', error);
+    console.error('Error fetching menu items:', error);
     return NextResponse.json(
       { error: 'Failed to fetch menu items' },
       { status: 500 }
@@ -83,6 +69,12 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
+    const session = await getServerSession(authOptions);
+    
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json();
     let {
       id,
@@ -97,89 +89,57 @@ export async function POST(request) {
       boost_desired = false
     } = body;
 
-    console.log('[POST /api/menuItems] Incoming body:', body);
-
-    if (sales_performance === '') sales_performance = null;
-    if (margin_level === '') margin_level = null;
-
     if (!menuId || !name) {
-      console.warn('[POST /api/menuItems] Missing menuId or name');
       return NextResponse.json(
         { error: 'Missing required fields: menuId or name' },
         { status: 400 }
       );
     }
 
-    if (
-      sales_performance &&
-      !['best_seller', 'regular_seller', 'not_selling'].includes(sales_performance)
-    ) {
+    // Verify menu belongs to user
+    const menuCheck = await query(
+      `SELECT m.id 
+       FROM menus m
+       JOIN restaurants r ON r.id = m.restaurant_id
+       WHERE m.id = $1 AND r.user_id = $2`,
+      [menuId, session.user.id]
+    );
+
+    if (menuCheck.rows.length === 0) {
       return NextResponse.json(
-        { error: 'Invalid sales_performance value' },
-        { status: 400 }
-      );
-    }
-    
-    if (
-      margin_level &&
-      !['high_margin', 'mid_margin', 'low_margin', 'red_margin'].includes(margin_level)
-    ) {
-      return NextResponse.json(
-        { error: 'Invalid margin_level value' },
-        { status: 400 }
+        { error: 'Menu not found or unauthorized' },
+        { status: 404 }
       );
     }
 
     if (id) {
-      const checkResult = await query(
-        `SELECT menu_id FROM menu_items WHERE id = $1`,
-        [id]
-      );
-      
-      if (checkResult.rowCount === 0) {
-        return NextResponse.json({ error: 'Item not found' }, { status: 404 });
-      }
-      
-      const existingItem = checkResult.rows[0];
-      if (existingItem.menu_id !== Number(menuId)) {
-        console.warn(
-          '[POST /api/menuItems] Mismatched menuId. ' +
-          `Item belongs to menu_id=${existingItem.menu_id}, but got menuId=${menuId}.`
-        );
-        return NextResponse.json(
-          { error: 'Cannot change menuId of an existing item.' },
-          { status: 400 }
-        );
-      }
-
       const updateResult = await query(
         `UPDATE menu_items
-        SET name = $1, description = $2, price = $3, category = $4, 
-            image_url = $5, sales_performance = $6, margin_level = $7, 
-            boost_desired = $8
-        WHERE id = $9
-        RETURNING *`,
-        [name, description, price, category, image_url, sales_performance, margin_level, boost_desired, id]
+         SET name = $1, description = $2, price = $3, category = $4, 
+             image_url = $5, sales_performance = $6, margin_level = $7, 
+             boost_desired = $8
+         WHERE id = $9 AND menu_id = $10
+         RETURNING *`,
+        [name, description, price, category, image_url, 
+         sales_performance, margin_level, boost_desired, id, menuId]
       );
 
       if (updateResult.rowCount === 0) {
         return NextResponse.json({ error: 'Item not found' }, { status: 404 });
       }
 
-      console.log('[POST /api/menuItems] Updated item:', updateResult.rows[0]);
       return NextResponse.json({ item: updateResult.rows[0] });
     } else {
       const insertResult = await query(
         `INSERT INTO menu_items 
-        (menu_id, name, description, price, category, image_url, 
-         sales_performance, margin_level, boost_desired)
-        VALUES ($1, $2, $3, $4, $5, $6,
-         $7, $8, $9)
-        RETURNING *`,
-        [menuId, name, description, price, category, image_url, sales_performance, margin_level, boost_desired]
+         (menu_id, name, description, price, category, image_url, 
+          sales_performance, margin_level, boost_desired, user_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+         RETURNING *`,
+        [menuId, name, description, price, category, image_url,
+         sales_performance, margin_level, boost_desired, session.user.id]
       );
 
-      console.log('[POST /api/menuItems] Created new item:', insertResult.rows[0]);
       return NextResponse.json({ item: insertResult.rows[0] }, { status: 201 });
     }
   } catch (err) {

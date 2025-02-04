@@ -1,14 +1,25 @@
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 
 // GET /api/menus/[menuId]
 // -> Returns the single menu with ID = menuId
 export async function GET(request, { params }) {
   try {
-    const { menuId } = params; // from the URL, e.g. /api/menus/10
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
-    // Query the DB for one menu with id=menuId
-    const result = await query('SELECT * FROM menus WHERE id = $1', [menuId]);
+    const { menuId } = params;
+
+    const result = await query(
+      `SELECT m.* FROM menus m
+       JOIN restaurants r ON r.id = m.restaurant_id
+       WHERE m.id = $1 AND r.user_id = $2`,
+      [menuId, session.user.id]
+    );
 
     if (result.rows.length === 0) {
       return NextResponse.json({ error: 'Menu not found' }, { status: 404 });
