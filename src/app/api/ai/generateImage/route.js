@@ -1,7 +1,9 @@
 // File: app/api/ai/generateImage/route.js
 
 import { NextResponse } from 'next/server';
-import { OpenAI } from 'openai';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import OpenAI from 'openai';
 
 // Create a new OpenAI client using your key
 const openai = new OpenAI({
@@ -10,44 +12,32 @@ const openai = new OpenAI({
 
 export async function POST(request) {
   try {
-    // Read the request body
-    const { itemName, brandVoice, styleWanted, tone } = await request.json();
-
-    // Build a prompt string with your variables
-    // The more descriptive your prompt, the more accurate your image
-    const prompt = `
-      A photorealistic image of a dish named "${itemName}".
-      Brand voice: ${brandVoice || 'generic'}.
-      Style: ${styleWanted || 'modern'}.
-      Tone: ${tone || 'friendly'}.
-      Show a delicious plated presentation.
-    `;
-
-    // Make sure to handle potential issues with empty itemName, etc.
-    if (!itemName) {
+    // Check authentication
+    const session = await getServerSession(authOptions);
+    if (!session) {
       return NextResponse.json(
-        { error: 'itemName is required' },
-        { status: 400 }
+        { error: 'Unauthorized' },
+        { status: 401 }
       );
     }
 
-    // Call the OpenAI images endpoint
-    // Using openai.images.generate(...) for the v4 library:
+    const { itemName, brandVoice, styleWanted, tone } = await request.json();
+
     const response = await openai.images.generate({
-      prompt,
+      model: "dall-e-3",
+      prompt: `Professional food photography of ${itemName}. Style: ${styleWanted}. Mood: ${tone}. Brand voice: ${brandVoice}.`,
       n: 1,
-      size: '512x512', // or 256x256, 1024x1024
+      size: "1024x1024",
+      quality: "standard",
+      response_format: "url",
     });
 
-    // "response.data" is typically an array of results
-    // e.g. { data: [ { url: "https://..." } ] }
-    const imageUrl = response.data[0].url;
-
-    // Return the image URL
-    return NextResponse.json({ imageUrl });
-  } catch (err) {
-    console.error('Error generating image:', err);
-    // Return error with status 500
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return NextResponse.json({ imageUrl: response.data[0].url });
+  } catch (error) {
+    console.error('Image generation error:', error);
+    return NextResponse.json(
+      { error: 'Failed to generate image', details: error.message },
+      { status: 500 }
+    );
   }
 }

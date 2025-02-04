@@ -100,49 +100,77 @@ const MENU_RESEARCH = {
     };
   }
   
-  function generateDesignRecommendations(menuStyle, itemsAnalysis = {}) {
+  function generateDesignRecommendations(menuStyle, analysis = {}) {
     const recommendations = [];
     
-    // Add style-specific recommendations
-    switch(menuStyle) {
-      case 'modern':
-        recommendations.push(
-          'Use sans-serif fonts for readability',
-          'Implement minimalist category dividers',
-          'Consider using a grid layout'
-        );
-        break;
-      case 'classic':
-        recommendations.push(
-          'Use serif fonts for traditional appeal',
-          'Include decorative borders',
-          'Structured two-column layout'
-        );
-        break;
-      case 'rustic':
-        recommendations.push(
-          'Incorporate textural elements',
-          'Use warm color palette',
-          'Consider handwritten-style fonts for headers'
-        );
-        break;
-      default:
-        recommendations.push(
-          'Use clean, readable typography',
-          'Maintain consistent spacing',
-          'Create clear visual hierarchy'
-        );
+    // Extract insights from analysis
+    const designSection = analysis?.design || [];
+    const colorSection = analysis?.color || [];
+    const visualElements = analysis?.visualElements || [];
+
+    // Generate dynamic recommendations based on actual analysis
+    designSection.forEach(item => {
+      if (typeof item === 'string') {
+        const lowercased = item.toLowerCase();
+        
+        // Typography recommendations
+        if (lowercased.includes('font') || lowercased.includes('typography')) {
+          recommendations.push({
+            recommendation: 'Optimize Typography',
+            reasoning: item,
+            impact: 'Improved readability and brand consistency',
+            priority: 'high'
+          });
+        }
+        
+        // Layout recommendations
+        if (lowercased.includes('layout') || lowercased.includes('spacing')) {
+          recommendations.push({
+            recommendation: 'Enhance Layout Structure',
+            reasoning: item,
+            impact: 'Better information hierarchy and flow',
+            priority: 'medium'
+          });
+        }
+      }
+    });
+
+    // Color-based recommendations
+    colorSection.forEach(item => {
+      if (typeof item === 'string' && item.toLowerCase().includes('contrast')) {
+        recommendations.push({
+          recommendation: 'Improve Color Contrast',
+          reasoning: item,
+          impact: 'Enhanced readability and visual appeal',
+          priority: 'high'
+        });
+      }
+    });
+
+    // Visual elements recommendations
+    visualElements.forEach(item => {
+      if (typeof item === 'string') {
+        if (item.toLowerCase().includes('image')) {
+          recommendations.push({
+            recommendation: 'Optimize Image Usage',
+            reasoning: item,
+            impact: 'Better visual engagement',
+            priority: 'medium'
+          });
+        }
+      }
+    });
+
+    // If no specific recommendations were generated, add fallback recommendations
+    if (recommendations.length === 0) {
+      recommendations.push({
+        recommendation: 'Use clean, readable typography',
+        reasoning: 'Clear typography ensures menu readability',
+        impact: 'Improved customer experience',
+        priority: 'high'
+      });
     }
-    
-    // Add data-driven recommendations with null checks
-    if (itemsAnalysis?.bestSellers?.length > 0) {
-      recommendations.push('Highlight best sellers with subtle visual cues');
-    }
-    
-    if (itemsAnalysis?.boostedItems?.length > 0) {
-      recommendations.push('Place boosted items in prime visual locations');
-    }
-    
+
     return recommendations;
   }
   
@@ -164,7 +192,7 @@ const MENU_RESEARCH = {
     .join('\n')}
   
   Design Recommendations:
-  ${designRecs.map(rec => `- ${rec}`).join('\n')}
+  ${designRecs.map(rec => `- ${rec.recommendation} (${rec.reasoning})`).join('\n')}
   
   Key Items to Highlight:
   - Best Sellers: ${itemsAnalysis.bestSellers.map(item => item.name).join(', ')}

@@ -89,6 +89,18 @@ export async function POST(request) {
       boost_desired = false
     } = body;
 
+    // Validate margin_level
+    const validMarginLevels = ['low', 'medium', 'high', null];
+    if (!validMarginLevels.includes(margin_level)) {
+      margin_level = null;
+    }
+
+    // Validate sales_performance
+    const validSalesPerformance = ['low', 'medium', 'high', 'best_seller', null];
+    if (!validSalesPerformance.includes(sales_performance)) {
+      sales_performance = null;
+    }
+
     if (!menuId || !name) {
       return NextResponse.json(
         { error: 'Missing required fields: menuId or name' },
@@ -142,8 +154,11 @@ export async function POST(request) {
 
       return NextResponse.json({ item: insertResult.rows[0] }, { status: 201 });
     }
-  } catch (err) {
-    console.error('Error creating/updating menu item:', err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (error) {
+    console.error('Menu item operation failed:', error);
+    return NextResponse.json(
+      { error: 'Failed to process menu item', details: error.message },
+      { status: 500 }
+    );
   }
 }

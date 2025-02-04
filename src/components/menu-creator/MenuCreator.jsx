@@ -14,6 +14,8 @@ import {
 import BulkUpload from './BulkUpload';
 import { MenuPreview } from '../menu-preview/MenuPreview';
 import ImportExportModal from './ImportExportModal';
+import { toast } from 'react-hot-toast';
+import { generateImage } from '@/services/imageService';
 
 export default function MenuCreator() {
   // -------------------------------------------------------------------------
@@ -162,7 +164,7 @@ export default function MenuCreator() {
       }
       setIsLoading(true);
 
-      // Upsert the menu
+      // Save menu first
       const menuRes = await fetch('/api/menus', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -173,55 +175,34 @@ export default function MenuCreator() {
           templateId: selectedTemplate,
         }),
       });
+
       if (!menuRes.ok) {
         const menuError = await menuRes.json();
-        console.error('[saveMenuToDB] Failed to save menu:', menuError);
         throw new Error(menuError.error || 'Failed to save menu');
       }
 
       const menuData = await menuRes.json();
       const menuId = menuData.menu.id;
 
-      // If it's a new menu, add it to savedMenus
-      if (!selectedMenuId) {
-        setSavedMenus((prev) => [...prev, menuData.menu]);
-      }
-      setSelectedMenuId(menuId);
-
-      // Save items (create/update)
-      for (const item of menuItems) {
-        const payload = {
+      // Bulk save all menu items
+      const itemsRes = await fetch('/api/menuItems/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           menuId,
-          name: item.name,
-          description: item.description || '',
-          price: item.price || 0,
-          category: item.category || '',
-          image_url: item.image_url || '',
-          sales_performance: item.sales_performance || '',
-          margin_level: item.margin_level || '',
-          boost_desired: item.boost_desired || false,
-        };
-        if (item.id) {
-          payload.id = item.id;
-        }
+          items: menuItems
+        }),
+      });
 
-        const itemRes = await fetch('/api/menuItems', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
-
-        if (!itemRes.ok) {
-          const itemError = await itemRes.json();
-          console.error('[saveMenuToDB] Failed to save menu item:', itemError);
-          throw new Error(itemError.error || 'Failed to save menu item');
-        }
+      if (!itemsRes.ok) {
+        const itemError = await itemsRes.json();
+        throw new Error(itemError.error || 'Failed to save menu items');
       }
 
       setIsMenuChanged(false);
       alert('Menu and items saved successfully!');
     } catch (err) {
-      console.error('[saveMenuToDB] Error saving menu:', err);
+      console.error('[saveMenuToDB] Error:', err);
       alert(`Error: ${err.message}`);
     } finally {
       setIsLoading(false);
@@ -339,27 +320,22 @@ export default function MenuCreator() {
   async function generateImageForItem(item, index) {
     setGeneratingImages((prev) => ({ ...prev, [index]: true }));
     try {
-      const res = await fetch('/api/ai/generateImage', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          itemName: item.name,
-          brandVoice,
-          styleWanted,
-          tone,
-        }),
-      });
-      if (!res.ok) throw new Error('Failed to generate image');
-
-      const data = await res.json();
-      updateMenuItem(index, 'image_url', data.imageUrl);
-
-      alert(
-        'Image generated successfully! (Remember to Save Menu if you want to persist this!)'
+      const imageUrl = await generateImage(
+        item.name,
+        brandVoice,
+        styleWanted,
+        tone
       );
+
+      if (imageUrl.error) {
+        throw new Error(imageUrl.message);
+      }
+
+      updateMenuItem(index, 'image_url', imageUrl);
+      toast.success('Image generated successfully! Remember to Save Menu to persist changes.');
     } catch (err) {
-      console.error(err);
-      alert(err.message);
+      console.error('Image generation error:', err);
+      toast.error(err.message);
     } finally {
       setGeneratingImages((prev) => ({ ...prev, [index]: false }));
     }

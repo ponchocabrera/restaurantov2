@@ -74,16 +74,39 @@ export async function PUT(request, { params }) {
 // -> Delete an existing menu with ID = menuId
 export async function DELETE(request, { params }) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { menuId } = params;
 
+    // Verify menu belongs to user
+    const menuCheck = await query(
+      `SELECT m.id FROM menus m
+       JOIN restaurants r ON r.id = m.restaurant_id
+       WHERE m.id = $1 AND r.user_id = $2`,
+      [menuId, session.user.id]
+    );
+
+    if (menuCheck.rows.length === 0) {
+      return NextResponse.json(
+        { error: 'Menu not found or unauthorized' },
+        { status: 404 }
+      );
+    }
+
+    // Delete menu items first
+    await query(
+      'DELETE FROM menu_items WHERE menu_id = $1',
+      [menuId]
+    );
+
+    // Then delete the menu
     const deleteResult = await query(
       'DELETE FROM menus WHERE id = $1 RETURNING *',
       [menuId]
     );
-
-    if (deleteResult.rowCount === 0) {
-      return NextResponse.json({ error: 'Menu not found' }, { status: 404 });
-    }
 
     return NextResponse.json({ success: true });
   } catch (err) {

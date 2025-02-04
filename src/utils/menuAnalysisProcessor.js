@@ -4,16 +4,27 @@ import { MENU_RESEARCH } from './researchProcessor';
 export function generateAnalysisRecommendations(analysis) {
   try {
     const menuStructure = extractMenuStructure(analysis);
-    const sections = analysis.split(/STRUCTURE:|DESIGN:|PSYCHOLOGY:|ENGINEERING:|PRICING:|COLOR:/);
+    // Use regex with optional whitespace and case insensitivity
+    const sections = analysis.split(/(?:^|\n)\s*(?:STRUCTURE|DESIGN|PSYCHOLOGY|ENGINEERING|PRICING|COLOR|VISUAL ELEMENTS):/i);
     
+    // Process each section with detailed extraction
     return {
-      structure: sections[1]?.trim().split('\n').filter(line => line.trim()) || [],
-      design: sections[2]?.trim().split('\n').filter(line => line.trim()) || [],
+      structure: processSection(sections[1]),
+      design: processSection(sections[2]),
+      visualElements: processSection(sections[3]),
+      psychology: generatePsychologyRecommendations(sections[4], MENU_RESEARCH.psychology_factors),
+      engineering: generateEngineeringRecommendations(sections[5], menuStructure),
+      pricing: processSection(sections[6]),
+      color: processSection(sections[7]),
       recommendations: {
-        psychology: generatePsychologyRecommendations(sections[3], MENU_RESEARCH.psychology_factors),
-        engineering: generateEngineeringRecommendations(sections[4], menuStructure),
-        pricing: sections[5]?.trim().split('\n').filter(line => line.trim()) || [],
-        design: generateDesignRecommendations('modern', menuStructure)
+        psychology: generatePsychologyRecommendations(sections[4], MENU_RESEARCH.psychology_factors),
+        engineering: generateEngineeringRecommendations(sections[5], menuStructure),
+        pricing: sections[6]?.trim().split('\n').filter(line => line.trim()) || [],
+        design: generateDesignRecommendations('modern', {
+          design: processSection(sections[2]),
+          color: processSection(sections[7]),
+          visualElements: processSection(sections[3])
+        })
       }
     };
   } catch (error) {
@@ -21,6 +32,11 @@ export function generateAnalysisRecommendations(analysis) {
     return {
       structure: [],
       design: [],
+      visualElements: [],
+      psychology: [],
+      engineering: [],
+      pricing: [],
+      color: [],
       recommendations: {
         psychology: [],
         engineering: [],
@@ -29,6 +45,33 @@ export function generateAnalysisRecommendations(analysis) {
       }
     };
   }
+}
+
+function processSection(section) {
+  if (!section) return [];
+  
+  return section
+    .trim()
+    .split(/(?:\r?\n)+/)
+    .filter(line => {
+      const trimmed = line.trim();
+      return trimmed && !trimmed.match(/^[•-]\s*$/);
+    })
+    .map(line => {
+      // Extract subsections (lines starting with - or •)
+      const match = line.match(/^[•-]\s*(.+?)(?:\s*:\s*(.+))?$/);
+      if (match) {
+        return {
+          type: 'subsection',
+          title: match[1],
+          description: match[2] || ''
+        };
+      }
+      return {
+        type: 'content',
+        text: line.trim()
+      };
+    });
 }
 
 function extractMenuStructure(analysis) {
