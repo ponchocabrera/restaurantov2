@@ -1,151 +1,63 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Link from 'next/link'; // If using Next.js
 import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
-
-// [A] Sidebar component (inline for demo; typically in its own Sidebar.jsx)
-function Sidebar() {
-  return (
-    <aside className="w-60 bg-white border-r border-gray-200 min-h-screen">
-      <div className="p-4 font-bold text-lg border-b border-gray-100">
-        My Project
-      </div>
-      <nav className="flex flex-col p-2 space-y-2">
-        {/* Adjust paths to match your routes */}
-        <Link href="/dashboard">
-          <span className="block px-3 py-2 rounded hover:bg-gray-100 cursor-pointer">
-            Dashboard
-          </span>
-        </Link>
-        <Link href="/templates">
-          <span className="block px-3 py-2 rounded hover:bg-gray-100 cursor-pointer">
-            Templates
-          </span>
-        </Link>
-        <Link href="/support">
-          <span className="block px-3 py-2 rounded hover:bg-gray-100 cursor-pointer">
-            Support
-          </span>
-        </Link>
-        <Link href="/menu-publisher">
-          <span className="block px-3 py-2 rounded hover:bg-gray-100 cursor-pointer">
-            Menu Publisher
-          </span>
-        </Link>
-        <Link href="/menu-creator">
-          <span className="block px-3 py-2 rounded hover:bg-gray-100 cursor-pointer">
-            Menu Creator
-          </span>
-        </Link>
-        <Link href="/restaurant-admin">
-          <span className="block px-3 py-2 rounded hover:bg-gray-100 cursor-pointer">
-            Restaurant Admin
-          </span>
-        </Link>
-      </nav>
-    </aside>
-  );
-}
+import DashboardLayout from '@/components/shared/DashboardLayout';
 
 export default function RestaurantAdmin() {
   const { data: session, status } = useSession();
-  const router = useRouter();
   const [restaurants, setRestaurants] = useState([]);
   const [newName, setNewName] = useState('');
 
   useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/login');
+    if (session) {
+      fetchRestaurants();
     }
-  }, [status, router]);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      if (session?.user?.id) {
-        console.log('Session available:', session);
-        await fetchRestaurants();
-      } else {
-        console.log('No session yet:', session);
-      }
-    };
-    fetchData();
   }, [session]);
 
-  async function fetchRestaurants() {
+  const fetchRestaurants = async () => {
     try {
-      console.log('Fetching restaurants with session:', {
-        sessionExists: !!session,
-        userId: session?.user?.id,
-        expires: session?.expires
-      });
-      
-      const res = await fetch('/api/restaurants', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        cache: 'no-store'
-      });
-      
-      if (!res.ok) {
-        const error = await res.json();
-        console.error('Error response:', error);
-        throw new Error(error.error || 'Failed to fetch');
-      }
-
+      const res = await fetch('/api/restaurants');
+      if (!res.ok) throw new Error('Failed to fetch restaurants');
       const data = await res.json();
-      console.log('Fetched restaurants:', data);
       setRestaurants(data.restaurants || []);
-    } catch (err) {
-      console.error('Error in fetchRestaurants:', err);
+    } catch (error) {
+      console.error('Error fetching restaurants:', error);
     }
-  }
+  };
 
-  async function createRestaurant() {
-    if (!newName) return alert('Enter a restaurant name!');
+  const createRestaurant = async () => {
+    if (!newName.trim()) return;
 
     try {
       const res = await fetch('/api/restaurants', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: newName }),
+        body: JSON.stringify({ name: newName })
       });
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || 'Failed to create restaurant');
-      }
-
-      alert('Created new restaurant: ' + data.restaurant.name);
+      if (!res.ok) throw new Error('Failed to create restaurant');
+      
+      await fetchRestaurants();
       setNewName('');
-      fetchRestaurants();
-    } catch (err) {
-      console.error('Error creating restaurant:', err);
-      alert(err.message || 'Error creating restaurant');
+    } catch (error) {
+      console.error('Error creating restaurant:', error);
     }
-  }
+  };
 
-  async function deleteRestaurant(id) {
-    const yes = confirm('Are you sure you want to delete this restaurant?');
-    if (!yes) return;
-
+  const deleteRestaurant = async (id) => {
     try {
       const res = await fetch(`/api/restaurants/${id}`, {
-        method: 'DELETE',
+        method: 'DELETE'
       });
+
       if (!res.ok) throw new Error('Failed to delete restaurant');
-      alert('Deleted successfully!');
-      // remove from local state
-      setRestaurants((prev) => prev.filter((r) => r.id !== id));
-    } catch (err) {
-      console.error(err);
-      alert('Failed to delete');
+      
+      await fetchRestaurants();
+    } catch (error) {
+      console.error('Error deleting restaurant:', error);
     }
-  }
+  };
 
   if (status === 'loading') {
     return <div>Loading...</div>;
@@ -155,10 +67,8 @@ export default function RestaurantAdmin() {
     return null;
   }
 
-  // [B] Render with a left sidebar layout
   return (
-    <div className="flex min-h-screen bg-gray-100">
-      <Sidebar />
+    <DashboardLayout>
       <main className="flex-1 p-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-8">Restaurant Admin</h1>
         
@@ -204,7 +114,6 @@ export default function RestaurantAdmin() {
           </div>
         </div>
       </main>
-    </div>
+    </DashboardLayout>
   );
 }
-

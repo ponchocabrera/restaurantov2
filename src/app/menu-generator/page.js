@@ -3,7 +3,6 @@
 import React from 'react';
 import Link from 'next/link';
 import AIMenuGenerator from '@/components/AIMenuGenerator';
-import Sidebar from '../../components/Sidebar';
 import DashboardLayout from '@/components/shared/DashboardLayout';
 
 export default function MenuGeneratorPage() {

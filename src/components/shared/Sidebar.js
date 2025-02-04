@@ -1,16 +1,18 @@
 'use client';
 
+import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { signOut } from 'next-auth/react';
+import { useSession, signOut } from 'next-auth/react';
 import { LogOut } from 'lucide-react';
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const { data: session } = useSession();
 
   const menuItems = [
     { 
-      icon: '/assets/icons/dashboard-icon.svg', 
+      icon: '/assets/icons/Other 12.png', 
       label: 'Dashboard', 
       href: '/dashboard' 
     },
@@ -30,14 +32,19 @@ export default function Sidebar() {
       href: '/menu-generator' 
     },
     { 
-      icon: '/assets/icons/settings-icon.svg', 
+      icon: '/assets/icons/Other 20.png', 
       label: 'Restaurant Admin', 
       href: '/restaurant-admin' 
     },
     { 
-      icon: '/assets/icons/enhance-icon.svg', 
-      label: 'Enhance your menu', 
+      icon: '/assets/icons/Other 12.png', 
+      label: 'Templates', 
       href: '/templates' 
+    },
+    { 
+      icon: '/assets/icons/Other 12.png', 
+      label: 'Support', 
+      href: '/support' 
     }
   ];
 
@@ -52,6 +59,11 @@ export default function Sidebar() {
           <span className="text-xl font-bold text-gray-900">carte</span>
           <span className="text-xl font-medium text-[#FF7A5C]">.ai</span>
         </span>
+        {session?.user?.email && (
+          <span className="text-sm text-gray-600 mt-2">
+            {session.user.email}
+          </span>
+        )}
       </div>
       
       <nav className="flex-1 flex flex-col p-2 space-y-1">
