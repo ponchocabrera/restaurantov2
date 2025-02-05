@@ -103,73 +103,33 @@ const MENU_RESEARCH = {
   function generateDesignRecommendations(menuStyle, analysis = {}) {
     const recommendations = [];
     
-    // Extract insights from analysis
-    const designSection = analysis?.design || [];
-    const colorSection = analysis?.color || [];
-    const visualElements = analysis?.visualElements || [];
-
-    // Generate dynamic recommendations based on actual analysis
-    designSection.forEach(item => {
-      if (typeof item === 'string') {
-        const lowercased = item.toLowerCase();
-        
-        // Typography recommendations
-        if (lowercased.includes('font') || lowercased.includes('typography')) {
-          recommendations.push({
-            recommendation: 'Optimize Typography',
-            reasoning: item,
-            impact: 'Improved readability and brand consistency',
-            priority: 'high'
-          });
-        }
-        
-        // Layout recommendations
-        if (lowercased.includes('layout') || lowercased.includes('spacing')) {
-          recommendations.push({
-            recommendation: 'Enhance Layout Structure',
-            reasoning: item,
-            impact: 'Better information hierarchy and flow',
-            priority: 'medium'
-          });
-        }
-      }
-    });
-
-    // Color-based recommendations
-    colorSection.forEach(item => {
-      if (typeof item === 'string' && item.toLowerCase().includes('contrast')) {
+    // Extract insights from cleaned analysis
+    const analysisItems = (analysis?.raw || '').split('\n').filter(line => line.trim());
+    
+    // Process for design recommendations
+    analysisItems.forEach(item => {
+      const lowercased = item.toLowerCase();
+      
+      // Typography recommendations
+      if (lowercased.includes('font') || lowercased.includes('typography')) {
         recommendations.push({
-          recommendation: 'Improve Color Contrast',
+          recommendation: 'Optimize Typography',
           reasoning: item,
-          impact: 'Enhanced readability and visual appeal',
+          impact: 'Improved readability and brand consistency',
           priority: 'high'
         });
       }
-    });
-
-    // Visual elements recommendations
-    visualElements.forEach(item => {
-      if (typeof item === 'string') {
-        if (item.toLowerCase().includes('image')) {
-          recommendations.push({
-            recommendation: 'Optimize Image Usage',
-            reasoning: item,
-            impact: 'Better visual engagement',
-            priority: 'medium'
-          });
-        }
+      
+      // Layout recommendations
+      if (lowercased.includes('layout') || lowercased.includes('spacing')) {
+        recommendations.push({
+          recommendation: 'Enhance Layout Structure',
+          reasoning: item,
+          impact: 'Better information hierarchy and flow',
+          priority: 'medium'
+        });
       }
     });
-
-    // If no specific recommendations were generated, add fallback recommendations
-    if (recommendations.length === 0) {
-      recommendations.push({
-        recommendation: 'Use clean, readable typography',
-        reasoning: 'Clear typography ensures menu readability',
-        impact: 'Improved customer experience',
-        priority: 'high'
-      });
-    }
 
     return recommendations;
   }

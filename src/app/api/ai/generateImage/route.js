@@ -23,6 +23,9 @@ export async function POST(request) {
 
     const { itemName, brandVoice, styleWanted, tone } = await request.json();
 
+    console.log('API Key present:', !!process.env.OPENAI_API_KEY);
+    console.log('Session:', !!session);
+
     const response = await openai.images.generate({
       model: "dall-e-3",
       prompt: `Professional food photography of ${itemName}. Style: ${styleWanted}. Mood: ${tone}. Brand voice: ${brandVoice}.`,

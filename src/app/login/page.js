@@ -1,13 +1,15 @@
 'use client';
 import { useState } from 'react';
 import { signIn } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -15,13 +17,14 @@ export default function Login() {
       const result = await signIn('credentials', {
         email,
         password,
-        redirect: false
+        redirect: false,
+        callbackUrl,
       });
 
-      if (result.error) {
+      if (result?.error) {
         setError(result.error);
       } else {
-        router.push('/restaurant-admin');
+        router.push(callbackUrl);
         router.refresh();
       }
     } catch (err) {
@@ -70,7 +73,7 @@ export default function Login() {
             type="submit"
             className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
           >
-            Sign in
+            Sign In
           </button>
         </form>
       </div>

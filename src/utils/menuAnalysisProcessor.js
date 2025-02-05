@@ -3,28 +3,32 @@ import { MENU_RESEARCH } from './researchProcessor';
 
 export function generateAnalysisRecommendations(analysis) {
   try {
-    const menuStructure = extractMenuStructure(analysis);
-    const sections = analysis.split(/(?:^|\n)\s*(?:STRUCTURE|DESIGN|PSYCHOLOGY|ENGINEERING|PRICING|COLOR|VISUAL ELEMENTS):/i);
+    // Use the raw analysis text, but process it once
+    const analysisText = analysis.raw;
+    const cleanedText = analysisText
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => line.startsWith('-') || line.startsWith('•'))
+      .map(line => line.substring(1).trim())
+      .filter(line => line.length > 0)
+      .filter((item, index, self) => self.indexOf(item) === index) // Remove duplicates
+      .join('\n');
+
+    const sections = cleanedText.split(/(?:^|\n)\s*(?:STRUCTURE|DESIGN|PSYCHOLOGY|ENGINEERING|PRICING|COLOR|VISUAL ELEMENTS):/i);
     
     return {
       structure: processSection(sections[1]),
       design: processSection(sections[2]),
-      visualElements: processSection(sections[3]),
-      psychology: processSection(sections[4]),
-      engineering: processSection(sections[5]),
-      pricing: processSection(sections[6]),
-      color: processSection(sections[7])
+      psychology: processSection(sections[3]),
+      engineering: processSection(sections[4])
     };
   } catch (error) {
     console.error('Error generating analysis recommendations:', error);
     return {
       structure: [],
       design: [],
-      visualElements: [],
       psychology: [],
-      engineering: [],
-      pricing: [],
-      color: []
+      engineering: []
     };
   }
 }

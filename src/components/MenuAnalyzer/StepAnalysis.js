@@ -82,77 +82,45 @@ export default function StepAnalysis({
       )}
 
       {/* Analysis Results */}
-      {analysis && (
-        <div className="space-y-6 mt-8">
-          <div className="grid grid-cols-3 gap-6">
-            {/* Uploaded Image */}
-            <div className="col-span-1">
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h4 className="font-medium text-gray-900 mb-4">Uploaded Menu</h4>
-                <div className="relative aspect-[3/4] w-full overflow-hidden rounded-lg">
-                  <img
-                    src={menuData}
-                    alt="Uploaded menu"
-                    className="absolute inset-0 h-full w-full object-contain"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Analysis Content */}
-            <div className="col-span-2 space-y-6">
-              {/* Menu Structure */}
-              <div className="bg-gray-50 rounded-lg p-6">
-                <h4 className="font-medium text-gray-900 mb-4">Menu Structure</h4>
-                <ul className="space-y-2">
-                  {analysis.structure.map((item, index) => (
-                    <li key={index} className="text-gray-700">{item}</li>
-                  ))}
-                </ul>
-              </div>
-
-              {/* Design Analysis */}
-              <div className="bg-gray-50 rounded-lg p-6">
-                <h4 className="font-medium text-gray-900 mb-4">Design Analysis</h4>
-                <ul className="space-y-2">
-                  {analysis.design.map((item, index) => (
-                    <li key={index} className="text-gray-700">{item}</li>
-                  ))}
-                </ul>
-              </div>
-
-              {/* Color Analysis */}
-              <div className="bg-gray-50 rounded-lg p-6">
-                <h4 className="font-medium text-gray-900 mb-4">Color Analysis</h4>
-                <ul className="space-y-2">
-                  {analysis.color.map((item, index) => (
-                    <li key={index} className="text-gray-700">{item}</li>
-                  ))}
-                </ul>
-              </div>
-
-              {/* Visual Elements */}
-              <div className="bg-gray-50 rounded-lg p-6">
-                <h4 className="font-medium text-gray-900 mb-4">Visual Elements</h4>
-                <ul className="space-y-2">
-                  {analysis.visualElements.map((item, index) => (
-                    <li key={index} className="text-gray-700">{item}</li>
-                  ))}
-                </ul>
-              </div>
-
-              {/* Customer Psychology */}
-              <div className="bg-gray-50 rounded-lg p-6">
-                <h4 className="font-medium text-gray-900 mb-4">Customer Psychology</h4>
-                <ul className="space-y-2">
-                  {analysis.psychology.map((item, index) => (
-                    <li key={index} className="text-gray-700">{item}</li>
-                  ))}
-                </ul>
-              </div>
-            </div>
+{analysis && (
+  <div className="space-y-6 mt-8">
+    <div className="grid grid-cols-3 gap-6">
+      {/* Uploaded Image */}
+      <div className="col-span-1">
+        <div className="bg-gray-50 rounded-lg p-4">
+          <h4 className="font-medium text-gray-900 mb-4">Uploaded Menu</h4>
+          <div className="relative aspect-[3/4] w-full overflow-hidden rounded-lg">
+            <img
+              src={menuData}
+              alt="Uploaded menu"
+              className="absolute inset-0 h-full w-full object-contain"
+            />
           </div>
-          
+        </div>
+      </div>
+
+      {/* Analysis Content */}
+      <div className="col-span-2 space-y-6">
+        <div className="bg-gray-50 rounded-lg p-6">
+          <h4 className="font-medium text-gray-900 mb-4">Menu Analysis</h4>
+          <ul className="space-y-2">
+            {analysis?.raw?.split('\n').map((line, index) => {
+              // Only show lines that start with a bullet point or dash
+              const cleanLine = line.trim();
+              if (cleanLine.startsWith('-') || cleanLine.startsWith('•')) {
+                return (
+                  <li key={index} className="text-gray-700">
+                    • {cleanLine.substring(1).trim()}
+                  </li>
+                );
+              }
+              return null;
+            }).filter(Boolean)}
+          </ul>
+        </div>
+      </div>
+    </div>
+    
           {/* Next Step Button */}
           <div className="flex justify-end mt-6">
             <button

@@ -119,11 +119,13 @@ export default function MenuCreator() {
     }
 
     const existingMenu = savedMenus.find((m) => m.id === menuId);
-    setSelectedMenuId(menuId);
-    setMenuName(existingMenu?.name || '');
-    setSelectedTemplate(existingMenu?.template_id || 'modern');
-    fetchMenuItems(menuId);
-    setIsMenuChanged(false);
+    if (existingMenu) {
+      setSelectedMenuId(menuId);
+      setMenuName(existingMenu.name);
+      setSelectedTemplate(existingMenu.template_id || 'modern');
+      fetchMenuItems(menuId);
+      setIsMenuChanged(false);
+    }
   };
 
   async function fetchMenuItems(menuId) {
@@ -184,37 +186,9 @@ export default function MenuCreator() {
       const menuData = await menuRes.json();
       const menuId = menuData.menu.id;
 
-      // Prepare items with proper menu_id
-      const itemsToSave = menuItems.map(item => ({
-        id: item.id || undefined,
-        menu_id: menuId,
-        name: item.name,
-        description: item.description || '',
-        price: parseFloat(item.price) || 0,
-        category: item.category || '',
-        image_url: item.image_url || '',
-        sales_performance: item.sales_performance === '' ? null : item.sales_performance,
-        margin_level: item.margin_level === '' ? null : item.margin_level,
-        boost_desired: Boolean(item.boost_desired)
-      }));
-
-      // Bulk save all menu items
-      const itemsRes = await fetch('/api/menuItems/bulk', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          menuId,
-          items: itemsToSave
-        }),
-      });
-
-      if (!itemsRes.ok) {
-        const itemError = await itemsRes.json();
-        throw new Error(itemError.error || 'Failed to save menu items');
-      }
-
-      // Update local state with the saved data
+      // Update local state with the saved menu data
       setSelectedMenuId(menuId);
+      setMenuName(menuData.menu.name);
       setIsMenuChanged(false);
       
       // Refresh the menus list
@@ -224,10 +198,10 @@ export default function MenuCreator() {
         setSavedMenus(updatedMenusData.menus || []);
       }
 
-      alert('Menu and items saved successfully!');
+      toast.success('Menu and items saved successfully!');
     } catch (err) {
       console.error('[saveMenuToDB] Error:', err);
-      alert(`Error: ${err.message}`);
+      toast.error(`Error: ${err.message}`);
     } finally {
       setIsLoading(false);
     }
@@ -306,6 +280,8 @@ export default function MenuCreator() {
       }
       return updated;
     });
+    
+    // Ensure isMenuChanged is set to true whenever an item is updated
     setIsMenuChanged(true);
   }
 
@@ -497,32 +473,34 @@ export default function MenuCreator() {
   // [11] RENDER
   // -------------------------------------------------------------------------
   return (
-    <div className="min-h-screen bg-white">
-      <div className="container mx-auto px-4 py-8">
+    <div className="w-full min-h-screen bg-white">
+      <div className="w-full bg-white">
         {/* "Go Back" Link */}
         <a
           href="/"
-          className="text-purple-600 hover:text-purple-700 flex items-center gap-2 mb-6"
+          className="text-purple-600 hover:text-purple-700 flex items-center gap-2 p-4"
         >
           <ArrowLeft className="w-4 h-4" />
           Go Back
         </a>
 
         {/* Page Title and Intro */}
-        <h1 className="text-4xl font-bold text-gray-900 mb-2">
-          Create your Restaurant Menu
-        </h1>
-        <p className="text-lg text-gray-600 mb-8">
-          Design and manage your menu items with ease
-        </p>
+        <div className="px-4">
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">
+            Create your Restaurant Menu
+          </h1>
+          <p className="text-lg text-gray-600 mb-8">
+            Design and manage your menu items with ease
+          </p>
+        </div>
 
-        {/* 
-          [A] Single Container Spanning Full Width:
-          1) "Menu Management" + Tips
-          2) "Review your Menu and enhance it with AI"
-        */}
-        <div className="bg-white rounded-lg p-6">
-          {/* 1) "Menu Management" + Tips & Best Practices */}
+        {/* Main Content */}
+        <div className="bg-white">
+          {/* 
+            [A] Single Container Spanning Full Width:
+            1) "Menu Management" + Tips
+            2) "Review your Menu and enhance it with AI"
+          */}
           <div className="mb-8">
             <h3 className="text-lg font-semibold text-gray-900 mb-3">
               Menu Management
@@ -542,15 +520,40 @@ export default function MenuCreator() {
           </div>
 
           {/* 2) "Review your Menu and enhance it with AI" + Menus */}
-          <div className="border-b w-full p-4">
-            <div className="mb-4">
-              <h1 className="text-xl font-medium text-gray-800">
-                Review your Menu and enhance it with AI
-              </h1>
-              <p className="text-sm text-gray-500">
-                Manage your items, review their performance, and enhance images
-                and descriptions with AI
-              </p>
+          <div className="w-full">
+            <div className="space-y-4 sm:space-y-0 sm:flex sm:items-center sm:justify-between mb-6">
+              <div className="flex-1 min-w-0">
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-900 truncate">
+                  {selectedMenuId ? 'Edit Menu' : 'Create New Menu'}
+                </h2>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
+                <select
+                  value={selectedRestaurantId || ''}
+                  onChange={(e) => handleRestaurantSelect(e.target.value)}
+                  className="block w-full sm:w-auto rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                >
+                  <option value="">Select Restaurant</option>
+                  {restaurants.map((restaurant) => (
+                    <option key={restaurant.id} value={restaurant.id}>
+                      {restaurant.name}
+                    </option>
+                  ))}
+                </select>
+                
+                <select
+                  value={selectedMenuId || ''}
+                  onChange={(e) => handleMenuSelect(e.target.value)}
+                  className="block w-full sm:w-auto rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                >
+                  <option value="">New Menu</option>
+                  {savedMenus.map((menu) => (
+                    <option key={menu.id} value={menu.id}>
+                      {menu.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             <div className="flex items-center gap-4">
@@ -562,40 +565,6 @@ export default function MenuCreator() {
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full p-4 border border-gray-200 rounded-lg appearance-none bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-gray-700 text-lg"
               />
-
-              {/* Select Restaurant */}
-              <select
-                className="w-full p-4 border border-gray-200 rounded-lg appearance-none bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-gray-700 text-lg"
-                value={selectedRestaurantId || ''}
-                onChange={(e) =>
-                  handleRestaurantSelect(
-                    e.target.value ? Number(e.target.value) : null
-                  )
-                }
-              >
-                <option value="">Select Restaurant</option>
-                {restaurants.map((r) => (
-                  <option key={r.id} value={r.id}>
-                    {r.name}
-                  </option>
-                ))}
-              </select>
-
-              {/* Select or Create Menu */}
-              <select
-                className="w-full p-4 border border-gray-200 rounded-lg appearance-none bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-gray-700 text-lg"
-                value={selectedMenuId || ''}
-                onChange={(e) =>
-                  handleMenuSelect(e.target.value ? Number(e.target.value) : null)
-                }
-              >
-                <option value="">Select or Create Menu</option>
-                {savedMenus.map((menu) => (
-                  <option key={menu.id} value={menu.id}>
-                    {menu.name}
-                  </option>
-                ))}
-              </select>
 
               {/* Delete Menu button (shown only if a menu is selected) */}
               {selectedMenuId && (
@@ -806,335 +775,307 @@ export default function MenuCreator() {
             )}
 
             {/* Items List */}
-            <div className="overflow-x-auto bg-white shadow-sm">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Name
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Description
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Price
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Category
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Performance
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Margin
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Boost
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Image
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Action
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {menuItems.length === 0 ? (
+            <div className="w-full overflow-x-auto">
+              <div className="min-w-[800px] sm:min-w-full">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
                     <tr>
-                      <td colSpan={9} className="px-6 py-12 text-center">
-                        <div className="flex flex-col items-center justify-center text-gray-500">
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-12 w-12 mb-4 text-gray-400"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={1.5}
-                              d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-                            />
-                          </svg>
-                          <p className="text-lg font-medium mb-1">
-                            No menu items yet
-                          </p>
-                          <p className="text-sm">
-                            Select a menu or create a new one to get started
-                          </p>
-                        </div>
-                      </td>
+                      <th className="px-2 sm:px-6 py-2 sm:py-3 text-left text-xs sm:text-sm font-medium text-gray-500 uppercase tracking-wider">
+                        Name
+                      </th>
+                      <th className="px-2 sm:px-6 py-2 sm:py-3 text-left text-xs sm:text-sm font-medium text-gray-500 uppercase tracking-wider">
+                        Description
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Price
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Category
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Performance
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Margin
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Boost
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Image
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Action
+                      </th>
                     </tr>
-                  ) : (
-                    menuItems.map((item, idx) => {
-                      const isEditing = idx === editingIndex;
-                      return (
-                        <tr
-                          key={item.id ?? idx}
-                          className="hover:bg-gray-50"
-                        >
-                          {/* NAME */}
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {isEditing ? (
-                              <input
-                                type="text"
-                                value={item.name}
-                                onChange={(e) =>
-                                  updateMenuItem(idx, 'name', e.target.value)
-                                }
-                                className="w-full p-4 border border-gray-200 rounded-lg appearance-none bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-gray-700 text-lg"
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {menuItems.length === 0 ? (
+                      <tr>
+                        <td colSpan={9} className="px-6 py-12 text-center">
+                          <div className="flex flex-col items-center justify-center text-gray-500">
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-12 w-12 mb-4 text-gray-400"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={1.5}
+                                d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
                               />
-                            ) : (
-                              item.name
-                            )}
-                          </td>
+                            </svg>
+                            <p className="text-lg font-medium mb-1">
+                              No menu items yet
+                            </p>
+                            <p className="text-sm">
+                              Select a menu or create a new one to get started
+                            </p>
+                          </div>
+                        </td>
+                      </tr>
+                    ) : (
+                      menuItems.map((item, idx) => {
+                        const isEditing = idx === editingIndex;
+                        return (
+                          <tr
+                            key={item.id ?? idx}
+                            className="hover:bg-gray-50"
+                          >
+                            {/* NAME */}
+                            <td className="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap">
+                              <div className="text-xs sm:text-sm text-gray-900">{item.name}</div>
+                            </td>
 
-                          {/* DESCRIPTION */}
-                          <td className="px-6 py-4 text-sm text-gray-500 max-w-xs">
-                            {isEditing ? (
-                              <textarea
-                                value={item.description}
-                                onChange={(e) =>
-                                  updateMenuItem(idx, 'description', e.target.value)
-                                }
-                                className="w-full p-4 border border-gray-200 rounded-lg appearance-none bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-gray-700 text-lg"
-                                rows={2}
-                              />
-                            ) : (
-                              <span className="truncate block">
-                                {item.description}
-                              </span>
-                            )}
-                          </td>
+                            {/* DESCRIPTION */}
+                            <td className="px-2 sm:px-6 py-2 sm:py-4">
+                              <div className="text-xs sm:text-sm text-gray-500">{item.description}</div>
+                            </td>
 
-                          {/* PRICE */}
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {isEditing ? (
-                              <input
-                                type="number"
-                                value={item.price}
-                                onChange={(e) =>
-                                  updateMenuItem(idx, 'price', e.target.value)
-                                }
-                                className="w-full p-4 border border-gray-200 rounded-lg appearance-none bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-gray-700 text-lg"
-                              />
-                            ) : (
-                              `$${item.price}`
-                            )}
-                          </td>
-
-                          {/* CATEGORY */}
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {isEditing ? (
-                              <input
-                                type="text"
-                                value={item.category || ''}
-                                onChange={(e) =>
-                                  updateMenuItem(idx, 'category', e.target.value)
-                                }
-                                className="w-full p-4 border border-gray-200 rounded-lg appearance-none bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-gray-700 text-lg"
-                              />
-                            ) : (
-                              item.category
-                            )}
-                          </td>
-
-                          {/* PERFORMANCE */}
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            {isEditing ? (
-                              <select
-                                value={item.sales_performance || ''}
-                                onChange={(e) =>
-                                  updateMenuItem(
-                                    idx,
-                                    'sales_performance',
-                                    e.target.value
-                                  )
-                                }
-                                className="w-full p-4 border border-gray-200 rounded-lg appearance-none bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-gray-700 text-lg"
-                              >
-                                <option value="">Not Set</option>
-                                <option value="best_seller">Best Seller</option>
-                                <option value="regular_seller">
-                                  Regular Seller
-                                </option>
-                                <option value="not_selling">Not Selling</option>
-                              </select>
-                            ) : (
-                              <span
-                                className={`px-2 py-1 text-xs font-medium rounded-full ${
-                                  item.sales_performance === 'best_seller'
-                                    ? 'bg-green-100 text-green-800'
-                                    : 'bg-gray-100 text-gray-800'
-                                }`}
-                              >
-                                {item.sales_performance || 'Not Set'}
-                              </span>
-                            )}
-                          </td>
-
-                          {/* MARGIN */}
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            {isEditing ? (
-                              <select
-                                value={item.margin_level || ''}
-                                onChange={(e) =>
-                                  updateMenuItem(idx, 'margin_level', e.target.value)
-                                }
-                                className="w-full p-4 border border-gray-200 rounded-lg appearance-none bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-gray-700 text-lg"
-                              >
-                                <option value="">Not Set</option>
-                                <option value="high_margin">High Margin</option>
-                                <option value="mid_margin">Mid Margin</option>
-                                <option value="low_margin">Low Margin</option>
-                                <option value="red_margin">Red Margin</option>
-                              </select>
-                            ) : (
-                              <span
-                                className={`px-2 py-1 text-xs font-medium rounded-full ${
-                                  item.margin_level === 'high_margin'
-                                    ? 'bg-blue-100 text-blue-800'
-                                    : 'bg-gray-100 text-gray-800'
-                                }`}
-                              >
-                                {item.margin_level || 'Not Set'}
-                              </span>
-                            )}
-                          </td>
-
-                          {/* BOOST */}
-                          <td className="px-6 py-4 whitespace-nowrap text-center">
-                            {isEditing ? (
-                              <input
-                                type="checkbox"
-                                checked={item.boost_desired}
-                                onChange={(e) =>
-                                  updateMenuItem(
-                                    idx,
-                                    'boost_desired',
-                                    e.target.checked
-                                  )
-                                }
-                              />
-                            ) : (
-                              <input
-                                type="checkbox"
-                                checked={item.boost_desired}
-                                disabled
-                              />
-                            )}
-                          </td>
-
-                          {/* IMAGE */}
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            {item.image_url ? (
-                              <div className="flex items-center space-x-2">
-                                <img
-                                  src={item.image_url}
-                                  alt={item.name}
-                                  className="h-8 w-8 rounded-full cursor-pointer hover:opacity-80"
-                                  onClick={() => enlargeImage(item.image_url)}
+                            {/* PRICE */}
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {isEditing ? (
+                                <input
+                                  type="number"
+                                  value={item.price}
+                                  onChange={(e) =>
+                                    updateMenuItem(idx, 'price', e.target.value)
+                                  }
+                                  className="w-full p-4 border border-gray-200 rounded-lg appearance-none bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-gray-700 text-lg"
                                 />
-                                {!isEditing && (
-                                  <button
-                                    onClick={() => handleRemoveImage(idx)}
-                                    className="text-red-600 hover:text-red-800 text-sm"
-                                  >
-                                    Remove
-                                  </button>
+                              ) : (
+                                `$${item.price}`
+                              )}
+                            </td>
+
+                            {/* CATEGORY */}
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {isEditing ? (
+                                <input
+                                  type="text"
+                                  value={item.category || ''}
+                                  onChange={(e) =>
+                                    updateMenuItem(idx, 'category', e.target.value)
+                                  }
+                                  className="w-full p-4 border border-gray-200 rounded-lg appearance-none bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-gray-700 text-lg"
+                                />
+                              ) : (
+                                item.category
+                              )}
+                            </td>
+
+                            {/* PERFORMANCE */}
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              {isEditing ? (
+                                <select
+                                  value={item.sales_performance || ''}
+                                  onChange={(e) =>
+                                    updateMenuItem(
+                                      idx,
+                                      'sales_performance',
+                                      e.target.value
+                                    )
+                                  }
+                                  className="w-full p-4 border border-gray-200 rounded-lg appearance-none bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-gray-700 text-lg"
+                                >
+                                  <option value="">Not Set</option>
+                                  <option value="best_seller">Best Seller</option>
+                                  <option value="regular_seller">Regular Seller</option>
+                                  <option value="not_selling">Not Selling</option>
+                                </select>
+                              ) : (
+                                <span
+                                  className={`px-2 py-1 text-xs font-medium rounded-full ${
+                                    item.sales_performance === 'best_seller'
+                                      ? 'bg-green-100 text-green-800'
+                                      : 'bg-gray-100 text-gray-800'
+                                  }`}
+                                >
+                                  {item.sales_performance || 'Not Set'}
+                                </span>
+                              )}
+                            </td>
+
+                            {/* MARGIN */}
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              {isEditing ? (
+                                <select
+                                  value={item.margin_level || ''}
+                                  onChange={(e) =>
+                                    updateMenuItem(idx, 'margin_level', e.target.value)
+                                  }
+                                  className="w-full p-4 border border-gray-200 rounded-lg appearance-none bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-gray-700 text-lg"
+                                >
+                                  <option value="">Not Set</option>
+                                  <option value="high_margin">High Margin</option>
+                                  <option value="mid_margin">Mid Margin</option>
+                                  <option value="low_margin">Low Margin</option>
+                                  <option value="red_margin">Red Margin</option>
+                                </select>
+                              ) : (
+                                <span
+                                  className={`px-2 py-1 text-xs font-medium rounded-full ${
+                                    item.margin_level === 'high_margin'
+                                      ? 'bg-blue-100 text-blue-800'
+                                      : 'bg-gray-100 text-gray-800'
+                                  }`}
+                                >
+                                  {item.margin_level || 'Not Set'}
+                                </span>
+                              )}
+                            </td>
+
+                            {/* BOOST */}
+                            <td className="px-6 py-4 whitespace-nowrap text-center">
+                              {isEditing ? (
+                                <input
+                                  type="checkbox"
+                                  checked={item.boost_desired}
+                                  onChange={(e) =>
+                                    updateMenuItem(
+                                      idx,
+                                      'boost_desired',
+                                      e.target.checked
+                                    )
+                                  }
+                                />
+                              ) : (
+                                <input
+                                  type="checkbox"
+                                  checked={item.boost_desired}
+                                  disabled
+                                />
+                              )}
+                            </td>
+
+                            {/* IMAGE */}
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              {item.image_url ? (
+                                <div className="flex items-center space-x-2">
+                                  <img
+                                    src={item.image_url}
+                                    alt={item.name}
+                                    className="h-8 w-8 rounded-full cursor-pointer hover:opacity-80"
+                                    onClick={() => enlargeImage(item.image_url)}
+                                  />
+                                  {!isEditing && (
+                                    <button
+                                      onClick={() => handleRemoveImage(idx)}
+                                      className="text-red-600 hover:text-red-800 text-sm"
+                                    >
+                                      Remove
+                                    </button>
+                                  )}
+                                </div>
+                              ) : isEditing ? (
+                                <span className="text-xs text-gray-400">
+                                  (Generate or leave empty)
+                                </span>
+                              ) : (
+                                <button
+                                  onClick={() => generateImageForItem(item, idx)}
+                                  disabled={generatingImages[idx]}
+                                  className={`text-sm ${
+                                    generatingImages[idx]
+                                      ? 'text-gray-400 cursor-not-allowed'
+                                      : 'text-blue-600 hover:text-blue-800'
+                                  }`}
+                                >
+                                  {generatingImages[idx] ? (
+                                    <span className="flex items-center gap-1">
+                                      <RefreshCw className="w-3 h-3 animate-spin" />
+                                      Generating...
+                                    </span>
+                                  ) : (
+                                    'Generate'
+                                  )}
+                                </button>
+                              )}
+                            </td>
+
+                            {/* ACTIONS */}
+                            <td className="px-1 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-500">
+                              <div className="flex flex-row gap-1 sm:gap-2">
+                                {isEditing ? (
+                                  <>
+                                    <button
+                                      onClick={handleSaveEdit}
+                                      className="text-green-600 hover:text-green-800 flex items-center justify-center p-1 sm:p-2"
+                                    >
+                                      <Check className="w-3 h-3 sm:w-4 sm:h-4" />
+                                      <span className="hidden sm:inline ml-1">Save</span>
+                                    </button>
+                                    <button
+                                      onClick={handleCancelEdit}
+                                      className="text-red-600 hover:text-red-800 flex items-center justify-center p-1 sm:p-2"
+                                    >
+                                      <X className="w-3 h-3 sm:w-4 sm:h-4" />
+                                      <span className="hidden sm:inline ml-1">Cancel</span>
+                                    </button>
+                                  </>
+                                ) : (
+                                  <>
+                                    <button
+                                      onClick={() => handleEditRow(idx)}
+                                      className="text-blue-600 hover:text-blue-800 flex items-center justify-center p-1 sm:p-2"
+                                    >
+                                      <Edit2 className="w-3 h-3 sm:w-4 sm:h-4" />
+                                      <span className="hidden sm:inline ml-1">Edit</span>
+                                    </button>
+                                    <button
+                                      onClick={() => enhanceItemDescription(item, idx)}
+                                      className="text-blue-600 hover:text-blue-800 flex items-center justify-center p-1 sm:p-2"
+                                    >
+                                      <span className="hidden sm:inline">Enhance</span>
+                                      <span className="sm:hidden">↑</span>
+                                    </button>
+                                    <button
+                                      onClick={() => removeMenuItem(idx)}
+                                      className="text-red-600 hover:text-red-800 flex items-center justify-center p-1 sm:p-2"
+                                    >
+                                      <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
+                                    </button>
+                                  </>
                                 )}
                               </div>
-                            ) : isEditing ? (
-                              <span className="text-xs text-gray-400">
-                                (Generate or leave empty)
-                              </span>
-                            ) : (
-                              <button
-                                onClick={() => generateImageForItem(item, idx)}
-                                disabled={generatingImages[idx]}
-                                className={`text-sm ${
-                                  generatingImages[idx]
-                                    ? 'text-gray-400 cursor-not-allowed'
-                                    : 'text-blue-600 hover:text-blue-800'
-                                }`}
-                              >
-                                {generatingImages[idx] ? (
-                                  <span className="flex items-center gap-1">
-                                    <RefreshCw className="w-3 h-3 animate-spin" />
-                                    Generating...
-                                  </span>
-                                ) : (
-                                  'Generate'
-                                )}
-                              </button>
-                            )}
-                          </td>
-
-                          {/* ACTIONS */}
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            <div className="flex space-x-2">
-                              {isEditing ? (
-                                <>
-                                  {/* Save Button */}
-                                  <button
-                                    onClick={handleSaveEdit}
-                                    className="text-green-600 hover:text-green-800 flex items-center"
-                                  >
-                                    <Check className="w-4 h-4 mr-1" />
-                                    Save
-                                  </button>
-                                  {/* Cancel Button */}
-                                  <button
-                                    onClick={handleCancelEdit}
-                                    className="text-red-600 hover:text-red-800 flex items-center"
-                                  >
-                                    <X className="w-4 h-4 mr-1" />
-                                    Cancel
-                                  </button>
-                                </>
-                              ) : (
-                                <>
-                                  {/* Edit Icon */}
-                                  <button
-                                    onClick={() => handleEditRow(idx)}
-                                    className="text-blue-600 hover:text-blue-800 flex items-center"
-                                  >
-                                    <Edit2 className="w-4 h-4 mr-1" />
-                                    Edit
-                                  </button>
-                                  {/* Enhance Button */}
-                                  <button
-                                    onClick={() => enhanceItemDescription(item, idx)}
-                                    className="text-blue-600 hover:text-blue-800"
-                                  >
-                                    Enhance
-                                  </button>
-                                  {/* Delete Button */}
-                                  <button
-                                    onClick={() => removeMenuItem(idx)}
-                                    className="text-red-600 hover:text-red-800"
-                                  >
-                                    Delete
-                                  </button>
-                                </>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
 
             {/* Preview & Save Buttons */}
-            <div className="flex flex-col sm:flex-row gap-4 mt-6">
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 mt-4">
               <button
                 onClick={() => setShowPreview(true)}
-                className="flex items-center justify-center sm:flex-1 py-2 border border-[#FF7A5C] text-[#FF7A5C] rounded-md hover:bg-[#FF7A5C] hover:text-white transition-colors"
+                className="flex items-center justify-center py-2 px-4 border border-[#FF7A5C] text-[#FF7A5C] rounded-md hover:bg-[#FF7A5C] hover:text-white transition-colors w-full sm:w-auto"
               >
                 <Eye className="w-5 h-5 mr-2" />
                 Preview Menu
@@ -1142,15 +1083,11 @@ export default function MenuCreator() {
 
               {isMenuChanged && menuItems.length > 0 && (
                 <button
-                  onClick={saveMenuToDB}
-                  disabled={!selectedRestaurantId || !menuName || isLoading}
-                  className="flex items-center justify-center sm:flex-1 bg-[#FF7A5C] text-white py-2 rounded-md hover:bg-[#ff6647] disabled:opacity-50 transition-colors"
+                onClick={saveMenuToDB}
+                disabled={!selectedRestaurantId || isLoading}
+                className="flex items-center justify-center py-2 px-4 bg-[#FF7A5C] text-white rounded-md hover:bg-[#ff6647] disabled:opacity-50 transition-colors w-full sm:w-auto"
                 >
-                  {isLoading
-                    ? 'Saving...'
-                    : selectedMenuId
-                    ? 'Save Changes'
-                    : 'Create Menu'}
+                  {isLoading ? 'Saving...' : selectedMenuId ? 'Save Changes' : 'Create Menu'}
                 </button>
               )}
             </div>
@@ -1160,8 +1097,8 @@ export default function MenuCreator() {
 
       {/* [C] PREVIEW MODAL (border removed) */}
       {showPreview && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-          <div className="bg-white w-full h-auto p-6 rounded shadow-lg relative">
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-4xl max-h-[90vh] overflow-y-auto p-4 sm:p-6 rounded shadow-lg relative">
             <MenuPreview
               items={menuItems}
               template={selectedTemplate}
@@ -1174,12 +1111,12 @@ export default function MenuCreator() {
 
       {/* [D] ENLARGED IMAGE MODAL */}
       {enlargedImageUrl && (
-        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
-          <div className="relative max-w-md mx-auto">
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
+          <div className="relative w-full max-w-md mx-auto">
             <img
               src={enlargedImageUrl}
               alt="Enlarged dish"
-              className="rounded-lg shadow-lg"
+              className="rounded-lg shadow-lg w-full"
             />
             <button
               onClick={closeEnlargedImage}

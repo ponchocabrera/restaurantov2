@@ -79,33 +79,51 @@ Format each section with bullet points starting with "-" and provide specific, d
 
   const analysisText = response.choices[0].message.content;
   
-  // Parse the analysis into structured sections
-  const sections = {
-    structure: extractSection(analysisText, 'STRUCTURE'),
-    design: extractSection(analysisText, 'DESIGN'),
-    pricing: extractSection(analysisText, 'PRICING'),
-    color: extractSection(analysisText, 'COLOR'),
-    visualElements: extractSection(analysisText, 'VISUAL ELEMENTS'),
-    psychology: extractSection(analysisText, 'PSYCHOLOGY')
-  };
-
   return {
-    raw: analysisText,
-    ...sections
+    raw: analysisText
   };
 }
 
 function extractSection(text, sectionName) {
   const sectionRegex = new RegExp(`${sectionName}:[\\s\\S]*?(?=\\n\\n[A-Z]+:|$)`);
   const match = text.match(sectionRegex);
+  
   if (!match) return [];
   
-  return match[0]
+  // Get only the content specific to this section
+  const sectionContent = match[0]
     .replace(`${sectionName}:`, '')
+    .trim();
+    
+  // Split by bullet points and clean up
+  const items = sectionContent
     .split('\n')
     .map(line => line.trim())
-    .filter(line => line && line.startsWith('-'))
-    .map(line => line.substring(1).trim());
+    .filter(line => line.startsWith('-') || line.startsWith('•'))
+    .map(line => line.substring(1).trim())
+    .filter(line => line.length > 0);
+
+  // Only return the first comprehensive analysis block
+  const firstBlock = [];
+  let foundBreak = false;
+
+  for (const item of items) {
+    // If we find a repeated pattern or a summary-like statement, stop
+    if (foundBreak) break;
+    
+    // Check for repeated patterns or summary statements
+    if (firstBlock.some(existing => 
+      item.toLowerCase().includes(existing.toLowerCase()) ||
+      existing.toLowerCase().includes(item.toLowerCase())
+    )) {
+      foundBreak = true;
+      continue;
+    }
+    
+    firstBlock.push(item);
+  }
+
+  return firstBlock;
 }
 
 async function analyzeMenuText(text) {

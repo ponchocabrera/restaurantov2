@@ -127,7 +127,7 @@ export default function MenuAnalyzer() {
 
   return (
     <DashboardLayout>
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="min-h-screen bg-white py-8">
         <div className="max-w-7xl mx-auto px-4">
           <h1 className="text-4xl font-semibold mb-4">Menu Analyzer</h1>
           <p className="text-gray-600 mb-8">Get AI-powered insights and recommendations for your menu.</p>
