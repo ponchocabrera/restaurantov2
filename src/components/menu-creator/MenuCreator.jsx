@@ -64,6 +64,9 @@ export default function MenuCreator() {
   const [editingIndex, setEditingIndex] = useState(-1);
   const [editItemData, setEditItemData] = useState({});
 
+  // Success modal
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+
   // -------------------------------------------------------------------------
   // [2] LOAD RESTAURANTS ON MOUNT
   // -------------------------------------------------------------------------
@@ -85,30 +88,37 @@ export default function MenuCreator() {
   // [3] SELECTING A RESTAURANT
   // -------------------------------------------------------------------------
   const handleRestaurantSelect = async (restaurantId) => {
-    setSelectedRestaurantId(restaurantId);
+    // Convert the string value from select to number or null
+    const numericId = restaurantId ? Number(restaurantId) : null;
+    
+    setSelectedRestaurantId(numericId);
     setSavedMenus([]);
     setSelectedMenuId(null);
     setMenuName('');
     setMenuItems([]);
     setIsMenuChanged(false);
 
-    if (!restaurantId) return;
+    if (!numericId) return;
 
     try {
-      const res = await fetch(`/api/menus?restaurantId=${restaurantId}`);
+      const res = await fetch(`/api/menus?restaurantId=${numericId}`);
       if (!res.ok) throw new Error('Failed to fetch menus');
       const data = await res.json();
       setSavedMenus(data.menus || []);
     } catch (err) {
       console.error('Error fetching menus:', err);
+      toast.error('Failed to load menus');
     }
   };
 
   // -------------------------------------------------------------------------
   // [4] SELECTING AN EXISTING MENU
   // -------------------------------------------------------------------------
-  const handleMenuSelect = (menuId) => {
-    if (!menuId) {
+  const handleMenuSelect = async (menuId) => {
+    // Convert menuId to number or null
+    const numericId = menuId ? Number(menuId) : null;
+    
+    if (!numericId) {
       // No menu => new menu scenario
       setSelectedMenuId(null);
       setMenuName('');
@@ -118,13 +128,21 @@ export default function MenuCreator() {
       return;
     }
 
-    const existingMenu = savedMenus.find((m) => m.id === menuId);
-    if (existingMenu) {
-      setSelectedMenuId(menuId);
-      setMenuName(existingMenu.name);
-      setSelectedTemplate(existingMenu.template_id || 'modern');
-      fetchMenuItems(menuId);
-      setIsMenuChanged(false);
+    try {
+      setIsLoading(true);
+      const existingMenu = savedMenus.find((m) => m.id === numericId);
+      if (existingMenu) {
+        setSelectedMenuId(numericId);
+        setMenuName(existingMenu.name);
+        setSelectedTemplate(existingMenu.template_id || 'modern');
+        await fetchMenuItems(numericId);
+        setIsMenuChanged(false);
+      }
+    } catch (error) {
+      console.error('Error selecting menu:', error);
+      toast.error('Failed to load menu');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -132,24 +150,30 @@ export default function MenuCreator() {
     try {
       setIsLoading(true);
       const res = await fetch(`/api/menuItems?menuId=${menuId}`);
-      if (!res.ok) throw new Error('Failed to fetch menu items');
+      if (!res.ok) {
+        throw new Error('Failed to fetch menu items');
+      }
       const data = await res.json();
 
+      // Ensure we're handling the response data structure correctly
+      const items = data.items || data.menuItems || [];
+      
       setMenuItems(
-        data.items.map((item) => ({
+        items.map((item) => ({
           id: item.id,
-          name: item.name,
-          description: item.description,
-          price: item.price,
-          category: item.category,
+          name: item.name || '',
+          description: item.description || '',
+          price: item.price || '',
+          category: item.category || '',
           image_url: item.image_url || '',
-          sales_performance: item.sales_performance,
-          margin_level: item.margin_level,
+          sales_performance: item.sales_performance || '',
+          margin_level: item.margin_level || '',
           boost_desired: Boolean(item.boost_desired),
         }))
       );
     } catch (err) {
       console.error('Error fetching menu items:', err);
+      toast.error('Failed to load menu items');
     } finally {
       setIsLoading(false);
     }
@@ -161,32 +185,51 @@ export default function MenuCreator() {
   async function saveMenuToDB() {
     try {
       if (!selectedRestaurantId) {
-        alert('Please select a restaurant first!');
+        toast.error('Please select a restaurant first!');
         return;
       }
       setIsLoading(true);
 
-      // Save menu first with correct field names
-      const menuRes = await fetch('/api/menus', {
-        method: 'POST',
+      // Save menu first
+      const menuEndpoint = selectedMenuId ? `/api/menus/${selectedMenuId}` : '/api/menus';
+      const menuRes = await fetch(menuEndpoint, {
+        method: selectedMenuId ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          id: selectedMenuId,
-          restaurantId: selectedRestaurantId,
+          restaurant_id: selectedRestaurantId,
           name: menuName || 'Untitled Menu',
           templateId: selectedTemplate || 'modern'
         }),
       });
 
       if (!menuRes.ok) {
-        const menuError = await menuRes.json();
-        throw new Error(menuError.error || 'Failed to save menu');
+        const errorText = await menuRes.text();
+        const errorData = errorText ? JSON.parse(errorText) : { error: 'Unknown error' };
+        throw new Error(errorData.error || 'Failed to save menu');
       }
 
       const menuData = await menuRes.json();
       const menuId = menuData.menu.id;
 
-      // Update local state with the saved menu data
+      // Save menu items using bulk endpoint
+      const bulkRes = await fetch('/api/menuItems/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          menuId: menuId,
+          items: menuItems
+        }),
+      });
+
+      if (!bulkRes.ok) {
+        const errorText = await bulkRes.text();
+        const errorData = errorText ? JSON.parse(errorText) : { error: 'Unknown error' };
+        throw new Error(errorData.error || 'Failed to save menu items');
+      }
+
+      const bulkData = await bulkRes.json();
+
+      // Update local state
       setSelectedMenuId(menuId);
       setMenuName(menuData.menu.name);
       setIsMenuChanged(false);
@@ -198,7 +241,10 @@ export default function MenuCreator() {
         setSavedMenus(updatedMenusData.menus || []);
       }
 
-      toast.success('Menu and items saved successfully!');
+      console.log('Save successful, about to show modal');
+      setShowSuccessModal(true);
+      console.log('Modal should be visible');
+
     } catch (err) {
       console.error('[saveMenuToDB] Error:', err);
       toast.error(`Error: ${err.message}`);
@@ -1135,6 +1181,29 @@ export default function MenuCreator() {
         onImport={handleBulkUpload}
         onExport={handleExport}
       />
+
+      {/* Success Modal */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-md p-6 rounded-lg shadow-xl">
+            <div className="text-center">
+              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
+                <Check className="h-6 w-6 text-green-600" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Menu Saved Successfully!</h3>
+              <p className="text-sm text-gray-500 mb-6">
+                "{menuName}" has been saved to your restaurant's menu list.
+              </p>
+              <button
+                onClick={() => setShowSuccessModal(false)}
+                className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-green-600 text-base font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 sm:text-sm"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

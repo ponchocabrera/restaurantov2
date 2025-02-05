@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../auth/[...nextauth]/auth.config';
+import { sql } from '@vercel/postgres';
 
 export async function DELETE(request, { params }) {
   try {
@@ -39,5 +40,46 @@ export async function DELETE(request, { params }) {
   } catch (error) {
     console.error('Error deleting menu item:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
+export async function GET(request, { params }) {
+  try {
+    const menuId = params.id;
+    
+    if (!menuId) {
+      return NextResponse.json(
+        { error: 'Menu ID is required' },
+        { status: 400 }
+      );
+    }
+
+    const result = await sql`
+      SELECT 
+        id,
+        name,
+        description,
+        price,
+        category,
+        image_url,
+        sales_performance,
+        margin_level,
+        boost_desired
+      FROM menu_items 
+      WHERE menu_id = ${menuId}
+      ORDER BY category, name
+    `;
+
+    return NextResponse.json({
+      items: result.rows,
+      count: result.rowCount
+    });
+
+  } catch (error) {
+    console.error('Database error:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch menu items' },
+      { status: 500 }
+    );
   }
 } 

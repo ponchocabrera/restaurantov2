@@ -53,22 +53,18 @@ export default function MenuAnalyzer() {
       
       if (data.error) throw new Error(data.details || 'Analysis failed');
 
-      // The analysis is already structured from the API
-      if (data.analysis && typeof data.analysis === 'object') {
-        console.log('Parsed analysis:', data.analysis);
-        setAnalysis(data.analysis);
-        setCurrentStep(2);
+      console.log('API Response data:', data);
+      console.log('Setting analysis to:', data.analysis);
+      setAnalysis(data.analysis);
+      setCurrentStep(2);
 
-        setProgress(prev => ({
-          analysis: {
-            ...prev.analysis,
-            status: 'complete',
-            step: 4
-          }
-        }));
-      } else {
-        throw new Error('Invalid analysis format received');
-      }
+      setProgress(prev => ({
+        analysis: {
+          ...prev.analysis,
+          status: 'complete',
+          step: 4
+        }
+      }));
     } catch (error) {
       console.error('Analysis failed:', error);
       setProgress(prev => ({

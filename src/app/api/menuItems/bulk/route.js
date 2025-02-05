@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '../../auth/[...nextauth]/auth.config';
+import { authOptions } from '@/app/api/auth/[...nextauth]/auth.config';
 
 const VALID_MARGIN_LEVELS = ['low', 'medium', 'high', null];
 const VALID_SALES_PERFORMANCE = ['low', 'medium', 'high', 'best_seller', null];

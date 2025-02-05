@@ -21,7 +21,9 @@ export default function StepRecommendations({
         <div className="bg-gray-50 rounded-lg p-6">
           <h4 className="font-medium text-gray-900 mb-4">Menu Psychology & Colors</h4>
           <ul className="space-y-4">
-            {recommendations?.psychology?.map((rec, index) => (
+            {recommendations?.psychology?.filter((rec, index, self) => 
+              index === self.findIndex(r => r.recommendation === rec.recommendation)
+            ).map((rec, index) => (
               <li key={index} className="space-y-2">
                 <div className="flex items-start gap-2">
                   <span className="text-blue-500 mt-1">•</span>
@@ -53,7 +55,9 @@ export default function StepRecommendations({
         <div className="bg-gray-50 rounded-lg p-6">
           <h4 className="font-medium text-gray-900 mb-4">Layout & Design</h4>
           <ul className="space-y-4">
-            {recommendations?.design?.map((rec, index) => (
+            {recommendations?.design?.filter((rec, index, self) => 
+              index === self.findIndex(r => r.recommendation === rec.recommendation)
+            ).map((rec, index) => (
                 <li key={index} className="space-y-2">
                 <div className="flex items-start gap-2">
                   <span className="text-blue-500 mt-1">•</span>
@@ -85,7 +89,9 @@ export default function StepRecommendations({
         <div className="bg-gray-50 rounded-lg p-6">
           <h4 className="font-medium text-gray-900 mb-4">Menu Engineering</h4>
           <ul className="space-y-4">
-            {recommendations?.engineering?.map((rec, index) => (
+            {recommendations?.engineering?.filter((rec, index, self) => 
+              index === self.findIndex(r => r.recommendation === rec.recommendation)
+            ).map((rec, index) => (
                <li key={index} className="space-y-2">
                <div className="flex items-start gap-2">
                  <span className="text-blue-500 mt-1">•</span>
@@ -117,7 +123,9 @@ export default function StepRecommendations({
         <div className="bg-gray-50 rounded-lg p-6">
           <h4 className="font-medium text-gray-900 mb-4">Pricing Strategy</h4>
           <ul className="space-y-4">
-            {recommendations?.pricing?.map((rec, index) => (
+            {recommendations?.pricing?.filter((rec, index, self) => 
+              index === self.findIndex(r => r.recommendation === rec.recommendation)
+            ).map((rec, index) => (
                <li key={index} className="space-y-2">
                <div className="flex items-start gap-2">
                  <span className="text-blue-500 mt-1">•</span>

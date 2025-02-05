@@ -102,8 +102,11 @@ function processRecommendations(text, section) {
     // Extract section content
     const sectionContent = textAfterSection.slice(0, sectionEnd).trim();
     
-    // Split into individual recommendations
-    return sectionContent
+    // Create a Set to track unique recommendations
+    const uniqueRecs = new Set();
+    
+    // Split into individual recommendations and process
+    const recommendations = sectionContent
       .split(/(?=\*\*Specific Recommendation:\*\*)/)
       .filter(rec => rec.trim())
       .map(rec => {
@@ -119,7 +122,16 @@ function processRecommendations(text, section) {
           priority
         };
       })
-      .filter(rec => rec.recommendation);
+      .filter(rec => {
+        // Only include if recommendation is not empty and not seen before
+        if (!rec.recommendation || uniqueRecs.has(rec.recommendation)) {
+          return false;
+        }
+        uniqueRecs.add(rec.recommendation);
+        return true;
+      });
+
+    return recommendations;
   } catch (error) {
     console.error(`Error processing ${section} recommendations:`, error);
     return [];
