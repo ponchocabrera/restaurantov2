@@ -417,15 +417,15 @@ export default function AIMenuGenerator() {
     return (
       <section className="space-y-6">
         {/* Header with Generate Button */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-xl font-semibold text-gray-900">AI Menu Design Plan</h3>
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-4 md:mb-6">
+          <div className="mb-4 md:mb-0">
+            <h3 className="text-lg md:text-xl font-semibold text-gray-900">AI Menu Design Plan</h3>
             <p className="text-sm text-gray-600 mt-1">Get AI-powered recommendations for your menu layout</p>
           </div>
           <button
             onClick={generateRecommendations}
             disabled={isLoading || !menuItems.length}
-            className={`px-6 py-2.5 rounded-lg flex items-center gap-2 transition-all ${
+            className={`w-full md:w-auto px-4 md:px-6 py-2.5 rounded-lg flex items-center justify-center gap-2 transition-all ${
               isLoading || !menuItems.length
                 ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                 : 'bg-gradient-to-r from-[#e4983b] to-[#f5bf66] text-white hover:opacity-90'
@@ -452,9 +452,9 @@ export default function AIMenuGenerator() {
 
         {/* Recommendations Display */}
         {generatedPrompt ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
             {/* Design Overview */}
-            <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
+            <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl p-4 md:p-6 shadow-sm hover:shadow-md transition-shadow">
               <h4 className="flex items-center gap-2 text-lg font-semibold text-gray-900 mb-4">
                 <LayoutTemplate className="w-5 h-5 text-orange-500" />
                 Design Overview
@@ -479,7 +479,7 @@ export default function AIMenuGenerator() {
             </div>
 
             {/* Color Scheme */}
-            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
+            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 md:p-6 shadow-sm hover:shadow-md transition-shadow">
               <h4 className="flex items-center gap-2 text-lg font-semibold text-gray-900 mb-4">
                 <Palette className="w-5 h-5 text-blue-500" />
                 Color Scheme
@@ -514,7 +514,7 @@ export default function AIMenuGenerator() {
             </div>
 
             {/* Layout Structure */}
-            <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
+            <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-4 md:p-6 shadow-sm hover:shadow-md transition-shadow">
               <h4 className="flex items-center gap-2 text-lg font-semibold text-gray-900 mb-4">
                 <Palette className="w-5 h-5 text-green-500" />
                 Layout Structure
@@ -539,7 +539,7 @@ export default function AIMenuGenerator() {
             </div>
 
             {/* Design Recommendations */}
-            <div className="bg-gradient-to-br from-purple-50 to-fuchsia-50 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
+            <div className="bg-gradient-to-br from-purple-50 to-fuchsia-50 rounded-xl p-4 md:p-6 shadow-sm hover:shadow-md transition-shadow">
               <h4 className="flex items-center gap-2 text-lg font-semibold text-gray-900 mb-4">
                 <Code className="w-5 h-5 text-purple-500" />
                 Design Recommendations
@@ -683,26 +683,28 @@ export default function AIMenuGenerator() {
   // [17] Step indicator with clickable steps
   const StepIndicator = () => {
     return (
-      <div className="flex items-center justify-center mb-4">
+      <div className="flex flex-wrap md:flex-nowrap items-center justify-start md:justify-center mb-4 gap-2 md:gap-0">
         {steps.map(({ id, name }, idx) => {
           const isActive = currentStep === id;
           return (
-            <div key={id} className="flex items-center">
+            <div key={id} className="flex items-center flex-shrink-0">
               <button
                 onClick={() => goToStep(id)}
-                className={`w-8 h-8 aspect-square rounded-full flex items-center justify-center text-white font-medium ${isActive ? '' : 'bg-gray-300 text-gray-700'}`}
+                className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-medium ${
+                  isActive ? '' : 'bg-gray-300 text-gray-700'
+                }`}
                 style={getProgressCircleStyle(isActive)}
               >
                 {id}
               </button>
               <button
                 onClick={() => goToStep(id)}
-                className="ml-2 mr-4 text-sm font-medium text-gray-700"
+                className="ml-2 mr-2 md:mr-4 text-sm font-medium text-gray-700 whitespace-nowrap"
               >
                 {name}
               </button>
               {idx < steps.length - 1 && (
-                <div className="border-t-2 border-gray-300 w-8 mr-4" />
+                <div className="hidden md:block border-t-2 border-gray-300 w-8 mr-4" />
               )}
             </div>
           );
@@ -890,17 +892,17 @@ export default function AIMenuGenerator() {
   // [18] Main return
   return (
     <div className="min-h-screen bg-white">
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 md:px-6 py-4 md:py-8">
         {/* Header */}
-        <a href="/" className="text-purple-600 hover:text-purple-700 flex items-center gap-2 mb-6">
+        <a href="/" className="text-purple-600 hover:text-purple-700 flex items-center gap-2 mb-4 md:mb-6">
           <ArrowLeft className="w-4 h-4" />
-          Go Back
+          <span className="text-sm md:text-base">Go Back</span>
         </a>
         
-        <h1 className="text-4xl font-bold text-gray-900 mb-2">
+        <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
           Generate your Menu Layout with AI
         </h1>
-        <p className="text-lg text-gray-600 mb-8">
+        <p className="text-base md:text-lg text-gray-600 mb-6 md:mb-8">
           Use AI to boost your revenue by creating the perfect Menu for your business
         </p>
 
@@ -908,10 +910,10 @@ export default function AIMenuGenerator() {
         <StepIndicator />
 
         {/* Main Content Grid */}
-        <div className="grid grid-cols-12 gap-8">
-          {/* Left Column: Help Text (Combined into one container) */}
-          <div className="col-span-4">
-            <div className="bg-white/70 backdrop-blur-sm rounded-lg p-6 border border-gray-100">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-8">
+          {/* Left Column: Help Text */}
+          <div className="col-span-1 lg:col-span-4 order-2 lg:order-1">
+            <div className="bg-white/70 backdrop-blur-sm rounded-lg p-4 lg:p-6 border border-gray-100">
               <h3 className="text-lg font-semibold text-gray-900 mb-3">
                 What to expect in this step
               </h3>
@@ -928,8 +930,8 @@ export default function AIMenuGenerator() {
           </div>
 
           {/* Right Column: Main Content */}
-          <div className="col-span-8">
-            <div className="bg-white rounded-lg p-6 border border-gray-200">
+          <div className="col-span-1 lg:col-span-8 order-1 lg:order-2">
+            <div className="bg-white rounded-lg p-4 lg:p-6 border border-gray-200">
               {currentStep === 1 && <StepSelectMenu />}
               {currentStep === 2 && <StepAIConfig />}
               {currentStep === 3 && <StepRecommendations />}
@@ -956,15 +958,19 @@ export default function AIMenuGenerator() {
 
       {/* [23] Fullscreen Menu Modal */}
       {showMenuModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white p-6 rounded shadow-lg max-w-4xl w-full max-h-[90vh] overflow-auto relative">
-            <button
-              onClick={() => setShowMenuModal(false)}
-              className="absolute top-4 right-4 px-4 py-2 bg-gradient-to-r from-[#e4983b] to-[#f5bf66] text-white rounded-lg hover:opacity-90 transition-opacity"
-            >
-              Close
-            </button>
-            <div dangerouslySetInnerHTML={{ __html: generatedHTML }} />
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+          <div className="bg-white rounded-lg shadow-lg w-full max-w-4xl max-h-[90vh] overflow-auto relative">
+            <div className="sticky top-0 bg-white p-4 border-b border-gray-200">
+              <button
+                onClick={() => setShowMenuModal(false)}
+                className="absolute right-4 top-4 px-3 py-1.5 bg-gradient-to-r from-[#e4983b] to-[#f5bf66] text-white rounded-lg hover:opacity-90 transition-opacity text-sm"
+              >
+                Close
+              </button>
+            </div>
+            <div className="p-4 md:p-6">
+              <div dangerouslySetInnerHTML={{ __html: generatedHTML }} />
+            </div>
           </div>
         </div>
       )}

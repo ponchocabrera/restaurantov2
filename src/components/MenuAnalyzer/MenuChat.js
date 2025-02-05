@@ -4,6 +4,7 @@ export default function MenuChat({ analysis, recommendations }) {
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [streamedResponse, setStreamedResponse] = useState('');
 
   const sendMessage = async (e) => {
     e.preventDefault();
@@ -28,11 +29,40 @@ export default function MenuChat({ analysis, recommendations }) {
         })
       });
 
-      const data = await response.json();
-      if (data.error) throw new Error(data.error);
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let fullResponse = '';
 
-      // Add AI response to chat
-      setMessages(prev => [...prev, { role: 'assistant', content: data.reply }]);
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n');
+        
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(5);
+            if (data === '[DONE]') continue;
+
+            try {
+              const parsed = JSON.parse(data);
+              if (parsed.content) {
+                fullResponse += parsed.content;
+                setStreamedResponse(fullResponse);
+              }
+            } catch (e) {
+              console.error('Error parsing chunk:', e);
+            }
+          }
+        }
+      }
+
+      // Add complete AI response to chat
+      setMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: fullResponse 
+      }]);
     } catch (error) {
       console.error('Chat error:', error);
       setMessages(prev => [...prev, { 
@@ -41,6 +71,7 @@ export default function MenuChat({ analysis, recommendations }) {
       }]);
     } finally {
       setIsLoading(false);
+      // Don't clear the streamed response here anymore
     }
   };
 
@@ -63,10 +94,12 @@ export default function MenuChat({ analysis, recommendations }) {
             </div>
           </div>
         ))}
-        {isLoading && (
+        
+        {/* Only show streaming response while loading */}
+        {isLoading && streamedResponse && (
           <div className="flex justify-start">
-            <div className="bg-gray-100 rounded-lg p-3">
-              <span className="animate-pulse">Thinking...</span>
+            <div className="max-w-3/4 rounded-lg p-3 bg-gray-100 text-gray-900">
+              {streamedResponse}
             </div>
           </div>
         )}

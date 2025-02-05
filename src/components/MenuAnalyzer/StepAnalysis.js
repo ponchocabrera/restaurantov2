@@ -20,17 +20,16 @@ export default function StepAnalysis({
   };
 
   return (
-    <section className="space-y-6">
-      {/* Header with Generate Button */}
-      <div className="flex items-center justify-between">
+    <section className="space-y-4 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-0">
         <div>
-          <h3 className="text-xl font-semibold text-gray-900">Menu Analysis Results</h3>
-          <p className="text-sm text-gray-600 mt-1">AI-powered insights for your menu</p>
+          <h3 className="text-lg sm:text-xl font-semibold text-gray-900">Menu Analysis Results</h3>
+          <p className="text-xs sm:text-sm text-gray-600 mt-1">AI-powered insights for your menu</p>
         </div>
         <button
           onClick={onAnalyze}
           disabled={isAnalyzing || !menuData}
-          className={`px-6 py-2.5 rounded-lg flex items-center gap-2 transition-all ${
+          className={`w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg flex items-center justify-center sm:justify-start gap-2 transition-all ${
             isAnalyzing || !menuData
               ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
               : 'bg-gradient-to-r from-[#e4983b] to-[#f5bf66] text-white hover:opacity-90'
@@ -39,10 +38,10 @@ export default function StepAnalysis({
           {isAnalyzing ? (
             <>
               <RefreshCw className="w-4 h-4 animate-spin" />
-              Analyzing...
+              <span className="text-sm sm:text-base">Analyzing...</span>
             </>
           ) : (
-            'Analyze Menu'
+            <span className="text-sm sm:text-base">Analyze Menu</span>
           )}
         </button>
       </div>

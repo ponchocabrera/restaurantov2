@@ -123,21 +123,21 @@ export default function MenuAnalyzer() {
 
   return (
     <DashboardLayout>
-      <div className="min-h-screen bg-white py-8">
+      <div className="min-h-screen bg-white py-4 sm:py-8">
         <div className="max-w-7xl mx-auto px-4">
-          <h1 className="text-4xl font-semibold mb-4">Menu Analyzer</h1>
-          <p className="text-gray-600 mb-8">Get AI-powered insights and recommendations for your menu.</p>
+          <h1 className="text-2xl sm:text-4xl font-semibold mb-2 sm:mb-4">Menu Analyzer</h1>
+          <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-8">Get AI-powered insights and recommendations for your menu.</p>
 
-          <div className="grid grid-cols-12 gap-6">
-            <div className="col-span-4">
-              <div className="bg-white rounded-lg p-6 border border-gray-200">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6">
+            <div className="lg:col-span-4">
+              <div className="bg-white rounded-lg p-4 sm:p-6 border border-gray-200">
                 <h3 className="font-semibold text-gray-900 mb-4">Steps</h3>
-                <div className="space-y-4">
+                <div className="space-y-2 sm:space-y-4">
                   {[1, 2, 3].map((step) => (
                     <button
                       key={step}
                       onClick={() => setCurrentStep(step)}
-                      className={`w-full text-left px-4 py-3 rounded-lg transition-all ${
+                      className={`w-full text-left px-3 sm:px-4 py-2 sm:py-3 rounded-lg transition-all text-sm sm:text-base ${
                         currentStep === step
                           ? 'bg-gradient-to-r from-[#e4983b] to-[#f5bf66] text-white'
                           : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
@@ -148,11 +148,11 @@ export default function MenuAnalyzer() {
                   ))}
                 </div>
 
-                <div className="mt-8">
-                  <h3 className="font-semibold text-gray-900 mb-4">
+                <div className="mt-6 sm:mt-8">
+                  <h3 className="font-semibold text-gray-900 mb-2 sm:mb-4">
                     Tips & Best Practices
                   </h3>
-                  <ul className="list-disc list-inside text-gray-700">
+                  <ul className="list-disc list-inside text-gray-700 text-sm sm:text-base">
                     {getStepTips(currentStep).map((tip, index) => (
                       <li key={index} className="mb-2">{tip}</li>
                     ))}
@@ -161,8 +161,8 @@ export default function MenuAnalyzer() {
               </div>
             </div>
 
-            <div className="col-span-8">
-              <div className="bg-white rounded-lg p-6 border border-gray-200">
+            <div className="lg:col-span-8">
+              <div className="bg-white rounded-lg p-4 sm:p-6 border border-gray-200">
                 {currentStep === 1 && (
                   <StepUpload 
                     onUploadComplete={handleUploadComplete}
