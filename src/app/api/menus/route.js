@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { query } from '@/lib/db';
+import { query, pool } from '@/lib/db';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/auth.config';  
 
@@ -56,57 +56,45 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id, restaurantId, name, templateId } = await request.json();
+    const { name, restaurant_id, template_id = 'default' } = await request.json();
 
-    if (!restaurantId || !name || !templateId) {
-      return NextResponse.json(
-        {
-          error: 'Missing required fields: restaurantId, name, or templateId',
-        },
-        { status: 400 }
-      );
+    if (!name || !restaurant_id) {
+      return NextResponse.json({ 
+        error: 'Missing required fields: name or restaurant_id' 
+      }, { status: 400 });
     }
 
     // Verify restaurant belongs to user
-    const restaurantCheck = await query(
+    const restaurantCheck = await pool.query(
       'SELECT id FROM restaurants WHERE id = $1 AND user_id = $2',
-      [restaurantId, session.user.id]
+      [restaurant_id, session.user.id]
     );
 
     if (restaurantCheck.rows.length === 0) {
-      return NextResponse.json(
-        { error: 'Restaurant not found or unauthorized' },
-        { status: 404 }
-      );
+      return NextResponse.json({ 
+        error: 'Restaurant not found or unauthorized' 
+      }, { status: 404 });
     }
 
-    if (id) {
-      const updateResult = await query(
-        `UPDATE menus
-         SET name = $2, template_id = $3
-         WHERE id = $1 AND restaurant_id = $4
-         RETURNING *`,
-        [id, name, templateId, restaurantId]
-      );
+    // Create the menu
+    const result = await pool.query(
+      `INSERT INTO menus (name, restaurant_id, template_id, user_id)
+       VALUES ($1, $2, $3, $4)
+       RETURNING id, name, restaurant_id, template_id`,
+      [name, restaurant_id, template_id, session.user.id]
+    );
 
-      if (updateResult.rowCount === 0) {
-        return NextResponse.json({ error: 'Menu not found' }, { status: 404 });
-      }
+    return NextResponse.json({ 
+      menu: result.rows[0],
+      success: true 
+    }, { status: 201 });
 
-      return NextResponse.json({ menu: updateResult.rows[0] });
-    } else {
-      const insertResult = await query(
-        `INSERT INTO menus (restaurant_id, name, template_id, user_id)
-         VALUES ($1, $2, $3, $4)
-         RETURNING *`,
-        [restaurantId, name, templateId, session.user.id]
-      );
-
-      return NextResponse.json({ menu: insertResult.rows[0] }, { status: 201 });
-    }
-  } catch (err) {
-    console.error('Error upserting menu:', err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (error) {
+    console.error('Error creating menu:', error);
+    return NextResponse.json({ 
+      error: 'Failed to create menu',
+      details: error.message 
+    }, { status: 500 });
   }
 }
 
