@@ -105,6 +105,11 @@ export default function StepUpload({ onUploadComplete, onStepComplete }) {
             {file ? (
               <div className="space-y-4">
                 <p className="text-gray-700">{file.name}</p>
+                <img
+                  src={URL.createObjectURL(file)}
+                  alt="Uploaded preview"
+                  className="max-w-full h-auto rounded-lg"
+                />
                 <button
                   onClick={() => fileInputRef.current?.click()}
                   className="text-orange-500 hover:text-orange-600"

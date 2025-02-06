@@ -22,8 +22,8 @@ export default function Navbar() {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center">
-            <span className="text-xl font-bold text-gray-800">carte</span>
-            <span className="text-xl font-medium text-[#FF7A5C]">.ai</span>
+            <span className="text-4xl font-bold text-black" style={{ fontFamily: 'Outfit, sans-serif !important' }}>Carte</span>
+            {/*<span className="text-xl font-medium text-[#FF7A5C]">.ai</span>*/}
           </Link>
 
           {/* Desktop menu */}

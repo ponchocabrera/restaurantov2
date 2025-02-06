@@ -34,49 +34,61 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-lg shadow">
-        <h2 className="text-3xl font-bold text-center">Login</h2>
-        {error && (
-          <div className="bg-red-50 text-red-500 p-3 rounded">
-            {error}
+    <div className="min-h-screen flex flex-col md:flex-row">
+      <div className="w-full md:w-1/2 bg-white flex items-start justify-start p-8">
+        <h1 className="text-4xl font-bold text-black font-outfit">Carte</h1>
+      </div>
+      <div className="w-full md:w-1/2 bg-[#F7F7F7] flex flex-col items-center justify-center p-8">
+        <div className="w-full max-w-md space-y-4">
+          <div className="space-y-2 text-left">
+            <h2 className="text-5xl font-bold text-black font-libre">Menu Intelligence</h2>
+            <h3 className="text-2xl font-bold text-black font-outfit">Made Easy with AI</h3>
+            <div className="space-y-1">
+              <p className="text-gray-600">Welcome Back!</p>
+              <p className="text-gray-600">Log into your account</p>
+            </div>
           </div>
-        )}
-        <form onSubmit={handleSubmit} className="mt-8 space-y-6">
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-gray-300 p-2"
-            />
-          </div>
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-gray-300 p-2"
-            />
-          </div>
-          <button
-            type="submit"
-            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
-          >
-            Sign In
-          </button>
-        </form>
+          {error && (
+            <div className="bg-red-50 text-red-500 p-3 rounded">
+              {error}
+            </div>
+          )}
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                User email
+              </label>
+              <input
+                id="email"
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-[#212350] focus:outline-none focus:ring-1 focus:ring-[#212350]"
+              />
+            </div>
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                Password
+              </label>
+              <input
+                id="password"
+                type="password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-[#212350] focus:outline-none focus:ring-1 focus:ring-[#212350]"
+              />
+            </div>
+            <button
+              type="submit"
+              className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#212350] hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#212350]"
+            >
+              Enter to your account
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   );
-} 
+}

@@ -83,7 +83,7 @@ export default function StepAnalysis({
       {/* Analysis Results */}
       {analysis && (
         <div className="space-y-6 mt-8">
-          <div className="grid grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* Uploaded Image */}
             <div className="col-span-1">
               <div className="bg-gray-50 rounded-lg p-4">
@@ -102,8 +102,8 @@ export default function StepAnalysis({
             <div className="col-span-2 space-y-6">
               <div className="bg-gray-50 rounded-lg p-6">
                 <h4 className="font-medium text-gray-900 mb-6">Menu Analysis</h4>
-                <div className="grid grid-cols-2 gap-4">
-                  {analysis?.raw?.split('###').map((section, sectionIndex) => {
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {analysis?.raw?.split('##').map((section, sectionIndex) => {
                     if (!section.trim()) return null;
                     
                     const [sectionTitle, ...lines] = section.trim().split('\n');
@@ -134,41 +134,46 @@ export default function StepAnalysis({
                       return acc;
                     }, []);
                     
-                    return items.map((item, itemIndex) => {
-                      // Determine icon based on content keywords
-                      let IconComponent = Layout;
-                      const lowerText = (item.title + item.description).toLowerCase();
-                      
-                      if (lowerText.includes('brand') || lowerText.includes('color')) {
-                        IconComponent = Palette;
-                      } else if (lowerText.includes('price') || lowerText.includes('cost')) {
-                        IconComponent = DollarSign;
-                      } else if (lowerText.includes('visual') || lowerText.includes('design')) {
-                        IconComponent = Eye;
-                      } else if (lowerText.includes('menu') || lowerText.includes('item') || 
-                                 lowerText.includes('section') || lowerText.includes('category')) {
-                        IconComponent = FileText;
-                      }
-                      
-                      return (
-                        <div 
-                          key={`${sectionIndex}-${itemIndex}`}
-                          className="bg-white rounded-lg p-4 shadow-sm border border-gray-100 hover:shadow-md transition-shadow"
-                        >
-                          <div className="flex items-start gap-3">
-                            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center">
-                              <IconComponent className="w-4 h-4 text-orange-600" />
+                    return (
+                      <div key={sectionIndex} className="space-y-4">
+                        <h5 className="font-semibold text-gray-800">{sectionTitle}</h5>
+                        {items.map((item, itemIndex) => {
+                          // Determine icon based on content keywords
+                          let IconComponent = Layout;
+                          const lowerText = (item.title + item.description).toLowerCase();
+                          
+                          if (lowerText.includes('brand') || lowerText.includes('color')) {
+                            IconComponent = Palette;
+                          } else if (lowerText.includes('price') || lowerText.includes('cost')) {
+                            IconComponent = DollarSign;
+                          } else if (lowerText.includes('visual') || lowerText.includes('design')) {
+                            IconComponent = Eye;
+                          } else if (lowerText.includes('menu') || lowerText.includes('item') || 
+                                     lowerText.includes('section') || lowerText.includes('category')) {
+                            IconComponent = FileText;
+                          }
+                          
+                          return (
+                            <div 
+                              key={`${sectionIndex}-${itemIndex}`}
+                              className="bg-white rounded-lg p-4 shadow-sm border border-gray-100 hover:shadow-md transition-shadow"
+                            >
+                              <div className="flex items-start gap-3">
+                                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center">
+                                  <IconComponent className="w-4 h-4 text-orange-600" />
+                                </div>
+                                <div>
+                                  <h5 className="font-medium text-gray-900 mb-1">{item.title}</h5>
+                                  <p className="text-gray-600 text-sm leading-relaxed">
+                                    {item.description}
+                                  </p>
+                                </div>
+                              </div>
                             </div>
-                            <div>
-                              <h5 className="font-medium text-gray-900 mb-1">{item.title}</h5>
-                              <p className="text-gray-600 text-sm leading-relaxed">
-                                {item.description}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    });
+                          );
+                        })}
+                      </div>
+                    );
                   })}
                 </div>
               </div>

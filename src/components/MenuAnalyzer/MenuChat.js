@@ -43,8 +43,11 @@ export default function MenuChat({ analysis, recommendations }) {
         for (const line of lines) {
           if (line.startsWith('data: ')) {
             const data = line.slice(5);
-            if (data === '[DONE]') continue;
-
+            
+            // Skip the [DONE] message without trying to parse it
+            if (data.trim() === '[DONE]') continue;
+            
+            // Only try to parse if it's not [DONE]
             try {
               const parsed = JSON.parse(data);
               if (parsed.content) {
@@ -84,13 +87,14 @@ export default function MenuChat({ analysis, recommendations }) {
 
       <div className="h-96 overflow-y-auto p-4 space-y-4">
         {messages.map((msg, idx) => (
-          <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`max-w-3/4 rounded-lg p-3 ${
+          <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} mb-4`}>
+            <div className={`max-w-3/4 rounded-lg p-4 ${
               msg.role === 'user' 
                 ? 'bg-blue-100 text-blue-900' 
                 : 'bg-gray-100 text-gray-900'
-            }`}>
-              {msg.content}
+            } shadow-md`}>
+              <div className="font-semibold mb-2">{msg.role === 'user' ? 'You' : 'Menu Intelligence'}</div>
+              <div className="whitespace-pre-line">{msg.content}</div>
             </div>
           </div>
         ))}

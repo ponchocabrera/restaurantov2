@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&family=Outfit:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -13,6 +15,14 @@
 body {
   color: var(--foreground);
   background: var(--background);
+}
+
+.font-libre {
+  font-family: 'Libre Baskerville', serif;
+}
+
+.font-outfit {
+  font-family: 'Outfit', sans-serif;
 }
 
 @layer base {
