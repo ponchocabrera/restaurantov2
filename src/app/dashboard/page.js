@@ -6,24 +6,24 @@ import DashboardLayout from '@/components/shared/DashboardLayout';
 export default function Dashboard() {
   return (
     <DashboardLayout>
-      <div className="min-h-screen bg-white p-6">
+      <div className="min-h-screen bg-white px-6 py-12">
         
         {/* Title Section */}
-        <h1 className="text-5xl font-bold font-libre mb-2">Transform your menu into a Revenue Engine</h1>
-        <h2 className="text-3xl outfit-bold mb-4">Made Easy with AI</h2>
-        <p className="text-base font-work-sans mb-8">From Analysis to Optimization, in three simple steps. All done by Artificial Intelligence.</p>
+        <h1 className="text-5xl font-bold font-libre mb-6 leading-tight text-[#212350]">Transform Your Menu into a Revenue Engine</h1>
+        <h2 className="text-2xl outfit-bold mb-4 text-[#212350]">Made Easy with AI</h2>
+        <p className="text-lg font-work-sans mb-12 text-gray-700">From Analysis to Optimization, in three simple steps. All done by Artificial Intelligence.</p>
 
-        {/* AI Tools Section - Adjusted Layout with Stronger Shadows */}
-        <h2 className="text-2xl font-outfit-bold mb-4">AI Tools</h2>
+        {/* AI Tools Section */}
+        <h2 className="text-2xl font-outfit-bold mb-6 text-[#212350]">AI Tools</h2>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch">
           
-          {/* Left Side: Menu Analyzer Card with Stronger Shadow */}
+          {/* Left Side: Menu Analyzer Card */}
           <Link 
             href="/menu-analyzer"
-            className="group bg-white rounded-lg p-5 shadow-lg hover:shadow-xl transition-shadow w-full flex flex-col h-full"
+            className="group bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-shadow w-full flex flex-col h-full border border-gray-200"
           >
-            <div className="h-56 md:h-60 mb-4 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center">
+            <div className="h-56 md:h-60 mb-6 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center">
               <img 
                 src="/assets/icons/Other 12.png" 
                 alt="Menu Analyzer"
@@ -31,21 +31,20 @@ export default function Dashboard() {
               />
             </div>
             <h3 className="text-lg font-bold font-outfit mb-2">Menu Analyzer</h3>
-            <p className="text-gray-600 text-sm">
-              Orci semper leo viverra commodo nunc eu. Adipiscing a non dignissim purus. 
-              Nec morbi fermentum convallis augue. Vitae.
+            <p className="text-gray-700 text-sm leading-relaxed">
+              Upload your menu and get instant, AI-powered insights and recommendations to optimize your menu.
             </p>
           </Link>
 
-          {/* Right Side: Two Smaller Cards with Stronger Shadows */}
-          <div className="flex flex-col gap-4 h-full">
+          {/* Right Side: Two Smaller Cards */}
+          <div className="flex flex-col gap-6 h-full">
             
             {/* Menu Enhancer */}
             <Link 
               href="/menu-enhancer"
-              className="group bg-white rounded-lg p-4 shadow-lg hover:shadow-xl transition-shadow flex items-center gap-4 flex-1"
+              className="group bg-white rounded-xl p-5 shadow-md hover:shadow-lg transition-shadow flex items-center gap-6 flex-1 border border-gray-200"
             >
-              <div className="w-20 h-20 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+              <div className="w-24 h-24 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
                 <img 
                   src="/assets/icons/Other 20.png" 
                   alt="Menu Enhancer"
@@ -54,9 +53,8 @@ export default function Dashboard() {
               </div>
               <div>
                 <h3 className="text-lg font-bold font-outfit mb-1">Menu Enhancer</h3>
-                <p className="text-gray-600 text-sm">
-                  Orci semper leo viverra commodo nunc eu. Adipiscing a non dignissim purus. 
-                  Nec morbi fermentum convallis augue. Vitae.
+                <p className="text-gray-700 text-sm leading-relaxed">
+                  Enhance your menu's descriptions and visuals for better customer engagement.
                 </p>
               </div>
             </Link>
@@ -64,9 +62,9 @@ export default function Dashboard() {
             {/* Menu Publisher */}
             <Link 
               href="/menu-publisher"
-              className="group bg-white rounded-lg p-4 shadow-lg hover:shadow-xl transition-shadow flex items-center gap-4 flex-1"
+              className="group bg-white rounded-xl p-5 shadow-md hover:shadow-lg transition-shadow flex items-center gap-6 flex-1 border border-gray-200"
             >
-              <div className="w-20 h-20 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+              <div className="w-24 h-24 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
                 <img 
                   src="/assets/icons/menu-icon.svg" 
                   alt="Menu Publisher"
@@ -75,9 +73,8 @@ export default function Dashboard() {
               </div>
               <div>
                 <h3 className="text-lg font-bold font-outfit mb-1">Menu Publisher</h3>
-                <p className="text-gray-600 text-sm">
-                  Orci semper leo viverra commodo nunc eu. Adipiscing a non dignissim purus. 
-                  Nec morbi fermentum convallis augue. Vitae.
+                <p className="text-gray-700 text-sm leading-relaxed">
+                  Easily publish and share your optimized menu across digital and print formats.
                 </p>
               </div>
             </Link>
@@ -86,34 +83,40 @@ export default function Dashboard() {
 
         </div>
 
-        {/* Your Restaurant & Menu Engineering Research - Keeping Two Column Layout */}
-        <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Your Restaurant & Menu Engineering Research */}
+        <div className="mt-14 grid grid-cols-1 md:grid-cols-2 gap-10">
           
           {/* Your Restaurant Section */}
           <div className="flex flex-col h-full">
-            <h2 className="text-xl font-outfit-bold mb-2">Your Restaurant</h2>
-            <div className="p-6 bg-[#212350] text-white rounded-2xl flex-grow flex flex-col justify-between shadow-lg">
+            <h2 className="text-2xl font-outfit-bold mb-4 text-[#212350]">Your Restaurant</h2>
+            <div className="p-8 bg-gradient-to-br from-[#1D2C40] to-[#354861] text-white rounded-2xl flex-grow flex flex-col justify-between shadow-xl">
               
               {/* Stats Section */}
-              <div className="grid grid-cols-2 gap-6">
-                <div>
-                  <p className="text-5xl font-bold">3</p>
-                  <p className="text-sm">Number of Menus</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
+                
+                {/* Left Side - Number of Menus */}
+                <div className="flex flex-col items-start">
+                  <p className="text-md font-bold uppercase tracking-wide">Number of Menus</p>
+                  <p className="text-5xl font-bold mt-1">3</p>
                 </div>
-                <div>
-                  <p className="text-5xl font-bold">48</p>
-                  <p className="text-sm">Number of Menu Items</p>
-                </div>
-                <div className="col-span-2">
-                  <p className="text-5xl font-bold">9<span className="text-lg">/10</span></p>
-                  <p className="text-sm font-bold">Menu Excellence Score</p>
-                  <p className="text-xs text-gray-300">Find out your potential improvements</p>
+
+                {/* Right Side - Number of Items & Excellence Score */}
+                <div className="flex flex-col space-y-6">
+                  <div>
+                    <p className="text-md font-bold uppercase tracking-wide">Number of Menu Items</p>
+                    <p className="text-5xl font-bold mt-1">48</p>
+                  </div>
+                  <div>
+                    <p className="text-md font-bold uppercase tracking-wide">Menu Excellence Score</p>
+                    <p className="text-5xl font-bold mt-1">9<span className="text-2xl">/10</span></p>
+                    <p className="text-sm text-gray-300">Find out your potential improvements</p>
+                  </div>
                 </div>
               </div>
 
               {/* Button Section */}
-              <div className="flex justify-center md:justify-start mt-6">
-                <button className="bg-white text-[#212350] font-bold py-4 px-6 rounded-full shadow-lg hover:bg-gray-300 transition-all w-48 text-center">
+              <div className="flex justify-start mt-8">
+                <button className="bg-white text-[#212350] font-bold py-3 px-6 rounded-full shadow-lg hover:bg-gray-300 transition-all">
                   See your Menu Report
                 </button>
               </div>
@@ -123,21 +126,20 @@ export default function Dashboard() {
 
           {/* Menu Engineering Research Section */}
           <div className="flex flex-col h-full">
-            <h2 className="text-xl font-outfit-bold mb-2">Menu Engineering Research</h2>
-            <div className="p-6 bg-[#F8F8F8] border-2 border-[#ffffff] rounded-2xl flex-grow flex flex-col justify-between shadow-lg">
+            <h2 className="text-2xl font-outfit-bold mb-4 text-[#212350]">Menu Engineering Research</h2>
+            <div className="p-6 bg-[#F8F8F8] border-2 border-[#ffffff] rounded-2xl flex-grow flex flex-col justify-between shadow-xl">
               
               {/* Title & Text */}
               <div>
-                <p className="text-lg font-bold">The Psychology of colors behind your Menu</p>
-                <p className="text-sm text-gray-700 mt-2">
-                  Orci semper leo viverra commodo nunc eu. Adipiscing a non dignissim purus. 
-                  Nec morbi fermentum convallis augue. Vitae.
+                <p className="text-lg font-bold">The Psychology of Colors Behind Your Menu</p>
+                <p className="text-base text-gray-700 mt-2 leading-relaxed">
+                  Learn how color choices impact customer behavior and menu engagement.
                 </p>
               </div>
 
               {/* CTA Button */}
-              <div className="flex justify-center md:justify-start mt-6">
-                <button className="bg-[#F4AF54] hover:bg-[#D69A3D] text-black font-bold py-2 px-4 rounded shadow-lg">
+              <div className="flex justify-start mt-6">
+                <button className="bg-[#F4AF54] hover:bg-[#D69A3D] text-black font-bold py-3 px-6 rounded-full shadow-lg">
                   See Carte Research
                 </button>
               </div>

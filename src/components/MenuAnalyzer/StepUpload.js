@@ -1,3 +1,5 @@
+'use client';
+
 import { useState, useRef } from 'react';
 import { Upload, FileText, Image, RefreshCw } from 'lucide-react';
 
@@ -58,101 +60,90 @@ export default function StepUpload({ onUploadComplete, onStepComplete }) {
     <section className="space-y-8">
       {/* Header */}
       <div className="mb-8">
-        <h2 className="text-2xl font-semibold text-gray-900 mb-2">Upload Your Menu</h2>
-        <p className="text-gray-600">Choose how you want to input your menu for analysis</p>
+        <h2 className="text-2xl font-bold text-black">Upload Your Menu</h2>
+        <p className="text-gray-600 text-sm">Choose how you want to input your menu for analysis</p>
       </div>
 
       {/* Input Type Selection */}
-      <div className="grid grid-cols-2 gap-6">
+      <div className="flex flex-col sm:flex-row gap-6">
         <button
           onClick={() => setInputType('image')}
-          className={`p-4 rounded-lg border-2 transition-all ${
+          className={`flex-1 p-5 sm:p-6 rounded-lg text-left transition-all border-2 ${
             inputType === 'image'
-              ? 'border-[#e4983b] bg-orange-50'
-              : 'border-gray-200 hover:border-gray-300'
+              ? 'bg-white border-[#F4AF54] shadow-md'
+              : 'bg-[#F6F6F6] text-gray-700 border-transparent hover:bg-gray-300'
           }`}
         >
-          <Image className="w-6 h-6 mb-2" />
-          <h3 className="font-medium">Upload Menu Image</h3>
-          <p className="text-sm text-gray-600">Upload a photo or scan of your menu</p>
+          <Image className="w-6 h-6 mb-2 text-black" />
+          <h3 className="font-bold text-sm">Upload Menu Image</h3>
+          <p className="text-xs text-gray-600">Upload a photo or scan of your menu</p>
         </button>
 
         <button
           onClick={() => setInputType('text')}
-          className={`p-4 rounded-lg border-2 transition-all ${
+          className={`flex-1 p-5 sm:p-6 rounded-lg text-left transition-all border-2 ${
             inputType === 'text'
-              ? 'border-[#e4983b] bg-orange-50'
-              : 'border-gray-200 hover:border-gray-300'
+              ? 'bg-white border-[#F4AF54] shadow-md'
+              : 'bg-[#F6F6F6] text-gray-700 border-transparent hover:bg-gray-300'
           }`}
         >
-          <FileText className="w-6 h-6 mb-2" />
-          <h3 className="font-medium">Enter Menu Text</h3>
-          <p className="text-sm text-gray-600">Paste or type your menu content</p>
+          <FileText className="w-6 h-6 mb-2 text-black" />
+          <h3 className="font-bold text-sm">Enter Menu Text</h3>
+          <p className="text-xs text-gray-600">Paste or type your menu content</p>
         </button>
       </div>
 
       {/* Upload/Input Area */}
-      <div className="mt-6">
-        {inputType === 'image' ? (
-          <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleFileChange}
-              accept="image/*"
-              className="hidden"
-            />
-            {file ? (
-              <div className="space-y-4">
-                <p className="text-gray-700">{file.name}</p>
-                <img
-                  src={URL.createObjectURL(file)}
-                  alt="Uploaded preview"
-                  className="max-w-full h-auto rounded-lg"
-                />
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  className="text-orange-500 hover:text-orange-600"
-                >
-                  Choose different file
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="text-gray-600 hover:text-gray-800"
-              >
-                <Upload className="w-8 h-8 mx-auto mb-2" />
-                <span>Click to upload or drag and drop</span>
-              </button>
-            )}
+      <div
+        className="border-2 border-dashed border-gray-300 text-center text-gray-600 rounded-lg bg-[#F6F6F6] flex flex-col justify-center items-center h-48 cursor-pointer p-0 m-0 w-full"
+        onClick={() => fileInputRef.current?.click()}
+      >
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleFileChange}
+          accept="image/*"
+          className="hidden"
+        />
+        {file ? (
+          <div className="w-full h-full flex flex-col items-center justify-center">
+            <div className="w-full h-full border rounded-lg overflow-hidden">
+              <img
+                src={URL.createObjectURL(file)}
+                alt="Uploaded preview"
+                className="w-full h-full object-cover"
+              />
+            </div>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                fileInputRef.current?.click();
+              }}
+              className="text-[#F4AF54] font-bold hover:text-[#e4983b] mt-2"
+            >
+              Choose different file
+            </button>
           </div>
         ) : (
-          <textarea
-            value={menuText}
-            onChange={(e) => setMenuText(e.target.value)}
-            placeholder="Paste your menu content here..."
-            className="w-full h-64 p-4 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-          />
+          <>
+            <Upload className="w-8 h-8 mb-2 text-black" />
+            <span className="text-sm">Click to upload or drag and drop</span>
+          </>
         )}
       </div>
 
-      {/* Submit Button */}
-      <div className="flex justify-end">
+      {/* Analyze Button - Improved Styling */}
+      <div className="flex justify-center mt-6">
         <button
           onClick={handleUpload}
           disabled={isUploading || (!file && !menuText)}
-          className={`px-6 py-2.5 rounded-lg flex items-center gap-2 transition-all ${
-            isUploading || (!file && !menuText)
-              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-              : 'bg-gradient-to-r from-[#e4983b] to-[#f5bf66] text-white hover:opacity-90'
-          }`}
+          className="w-full sm:w-auto px-8 py-3 rounded-full bg-[#212350] text-white font-bold transition-all hover:bg-opacity-90 disabled:bg-gray-200 disabled:text-gray-500 flex justify-center items-center"
         >
           {isUploading ? (
-            <>
+            <div className="flex items-center gap-2">
               <RefreshCw className="w-4 h-4 animate-spin" />
               Uploading...
-            </>
+            </div>
           ) : (
             'Analyze Menu'
           )}
@@ -160,4 +151,4 @@ export default function StepUpload({ onUploadComplete, onStepComplete }) {
       </div>
     </section>
   );
-} 
+}

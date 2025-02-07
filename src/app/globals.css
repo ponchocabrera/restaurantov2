@@ -56,3 +56,9 @@ textarea,
 select {
   @apply w-full rounded-lg border-gray-300 shadow-sm focus:border-[#FF7A5C] focus:ring-[#FF7A5C];
 }
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
