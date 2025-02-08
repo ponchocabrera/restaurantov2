@@ -1,7 +1,7 @@
 
 // src/app/api/publish-menu/route.js
 import { NextResponse } from 'next/server';
-import { publishMenu } from '../../../../controllers/menuPublisherController'; 
+import { publishMenu } from '../../../controllers/menuPublisherController'; 
 
 export async function POST(request) {
   try {
