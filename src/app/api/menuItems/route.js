@@ -1,3 +1,6 @@
+export const dynamic = "force-dynamic";
+
+
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';  // Use the same db utility as other routes
 import { getServerSession } from 'next-auth';
