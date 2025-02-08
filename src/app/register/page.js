@@ -1,88 +1,51 @@
-"use client";
+'use client';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
-import React, { Suspense, useState } from "react";
-import { signIn } from "next-auth/react";
-import { useRouter, useSearchParams } from "next/navigation";
-
-export default function LoginPage() {
-  // 1) The top-level component wraps everything in a Suspense boundary.
-  return (
-    <Suspense fallback={<p>Loading login page...</p>}>
-      <LoginContent />
-    </Suspense>
-  );
-}
-
-function LoginContent() {
-  // 2) The actual login form logic goes here
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-
+export default function Register() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const router = useRouter();
-  const searchParams = useSearchParams();
-
-  // If the URL has ?callbackUrl=/somepage, we use that; otherwise default to /dashboard
-  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    try {
-      const result = await signIn("credentials", {
-        email,
-        password,
-        redirect: false,
-        callbackUrl,
-      });
+    
+    const res = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
 
-      if (result?.error) {
-        setError(result.error);
-      } else {
-        router.push(callbackUrl);
-        router.refresh(); // optional
-      }
-    } catch (err) {
-      console.error("Login error:", err);
-      setError("An error occurred during login");
+    if (res.ok) {
+      router.push('/login');
+    } else {
+      const data = await res.json();
+      alert(data.error || 'Registration failed');
     }
   };
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
-      {/* Left side */}
-      <div className="w-full md:w-1/2 bg-white flex items-start justify-start p-8">
-        <h1 className="text-4xl font-bold text-black font-outfit">Carte</h1>
-      </div>
+      {/* Left Side - Empty White Space */}
+      <div className="hidden md:flex w-1/2 bg-white"></div>
 
-      {/* Right side with login form */}
+      {/* Right Side - Registration Form */}
       <div className="w-full md:w-1/2 bg-[#F7F7F7] flex flex-col items-center justify-center p-8">
-        <div className="w-full max-w-md space-y-4">
-          <div className="space-y-2 text-left">
-            <h2 className="text-5xl font-bold text-black font-libre">
-              Menu Intelligence
-            </h2>
-            <h3 className="text-2xl font-bold text-black font-outfit">
-              Made Easy with AI
-            </h3>
-            <div className="space-y-1">
-              <p className="text-gray-600">Welcome Back!</p>
-              <p className="text-gray-600">Log into your account</p>
-            </div>
+        <div className="w-full max-w-md space-y-6">
+          
+          {/* Header Section */}
+          <div className="text-left space-y-2">
+            <h1 className="text-4xl font-bold text-black font-outfit">Carte</h1>
+            <h2 className="text-5xl font-bold text-black font-libre">Menu Intelligence</h2>
+            <h3 className="text-2xl font-bold text-black font-outfit">Made Easy with AI</h3>
+            <p className="text-gray-600">Welcome to your new AI-powered Restaurant!<br/>Create a new account.</p>
           </div>
 
-          {/* Error message display */}
-          {error && (
-            <div className="bg-red-50 text-red-500 p-3 rounded">{error}</div>
-          )}
-
-          {/* Login form */}
+          {/* Registration Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label
-                htmlFor="email"
-                className="block text-sm font-medium text-gray-700"
-              >
-                User email
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                Email
               </label>
               <input
                 id="email"
@@ -94,10 +57,7 @@ function LoginContent() {
               />
             </div>
             <div>
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium text-gray-700"
-              >
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                 Password
               </label>
               <input
@@ -113,7 +73,7 @@ function LoginContent() {
               type="submit"
               className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#212350] hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#212350]"
             >
-              Enter to your account
+              Create your account
             </button>
           </form>
         </div>
