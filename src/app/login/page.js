@@ -1,18 +1,26 @@
 "use client";
 
-import React, { useState } from "react";
+export const dynamic = "force-dynamic";
+
+import React, { Suspense, useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-export default function LoginPage() {
+export default function LoginOuter() {
+  return (
+    <Suspense fallback={<p>Loading login page...</p>}>
+      <LoginContent />
+    </Suspense>
+  );
+}
+
+function LoginContent() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
   const router = useRouter();
   const searchParams = useSearchParams();
-
-  // If the URL has ?callbackUrl=/somepage, we use that; otherwise default to /dashboard
   const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
 
   const handleSubmit = async (e) => {
@@ -26,12 +34,10 @@ export default function LoginPage() {
       });
 
       if (result?.error) {
-        // If NextAuth returns an error (e.g. bad credentials), show it
         setError(result.error);
       } else {
-        // On success, go to callbackUrl
         router.push(callbackUrl);
-        router.refresh(); // optional, forces re-fetching data
+        router.refresh();
       }
     } catch (err) {
       console.error("Login error:", err);
@@ -62,11 +68,9 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* Error message display */}
+          {/* Error message */}
           {error && (
-            <div className="bg-red-50 text-red-500 p-3 rounded">
-              {error}
-            </div>
+            <div className="bg-red-50 text-red-500 p-3 rounded">{error}</div>
           )}
 
           {/* Login form */}
@@ -115,3 +119,4 @@ export default function LoginPage() {
     </div>
   );
 }
+
