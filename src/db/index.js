@@ -1,20 +1,14 @@
-import { Client } from 'pg';
-
-const client = new Client({
-  connectionString: process.env.DATABASE_URL || 'postgres://alfonsocabrera:YOUR_PASSWORD@localhost:5432/restaurantos_dev'
-});
-
-client.connect();
+import { query } from '@/lib/db';
 
 export async function saveMenuAnalysis(userId, analysis, imageData, recommendations = null) {
-  const query = `
+  const sql = `
     INSERT INTO menu_analysis (user_id, analysis, image_data, recommendations)
     VALUES ($1, $2, $3, $4)
     RETURNING id
   `;
   const values = [userId, analysis, imageData, recommendations];
   try {
-    const res = await client.query(query, values);
+    const res = await query(sql, values);
     console.log('Full analysisText:', analysis);
     return res.rows[0];
   } catch (error) {
@@ -24,7 +18,7 @@ export async function saveMenuAnalysis(userId, analysis, imageData, recommendati
 }
 
 export async function updateMenuAnalysisRecommendations(analysisId, recommendations) {
-  const query = `
+  const sql = `
     UPDATE menu_analysis
     SET recommendations = $1
     WHERE id = $2
@@ -32,7 +26,7 @@ export async function updateMenuAnalysisRecommendations(analysisId, recommendati
   `;
   const values = [recommendations, analysisId];
   try {
-    const res = await client.query(query, values);
+    const res = await query(sql, values);
     console.log('Updated recommendations for analysis ID:', analysisId);
     return res.rows[0];
   } catch (error) {
@@ -41,9 +35,8 @@ export async function updateMenuAnalysisRecommendations(analysisId, recommendati
   }
 }
 
-// New function to fetch analysis records for a given user
 export async function getMenuAnalysis(userId) {
-  const query = `
+  const sql = `
     SELECT *
     FROM menu_analysis
     WHERE user_id = $1
@@ -51,10 +44,10 @@ export async function getMenuAnalysis(userId) {
   `;
   const values = [userId];
   try {
-    const res = await client.query(query, values);
+    const res = await query(sql, values);
     return res.rows;
   } catch (error) {
-    console.error("Error fetching menu analysis:", error);
+    console.error('Error fetching menu analysis:', error);
     throw error;
   }
 }
@@ -64,11 +57,7 @@ function extractSection(text, sectionName) {
     console.error(`Invalid text for section ${sectionName}:`, text);
     return [];
   }
-
   try {
-    // This regex looks for the section name followed by a colon,
-    // then captures everything up to the next section (which is assumed to be all-caps and ends with a colon)
-    // or the end of the string.
     const sectionRegex = new RegExp(`${sectionName}:[\\s\\S]*?(?=(?:[A-Z]+:)|$)`);
     const match = text.match(sectionRegex);
     
@@ -76,7 +65,7 @@ function extractSection(text, sectionName) {
       console.log(`No match found for section ${sectionName}`);
       return [];
     }
-
+    
     return match[0]
       .replace(`${sectionName}:`, '')
       .split('\n')
@@ -88,3 +77,5 @@ function extractSection(text, sectionName) {
     return [];
   }
 }
+
+export { extractSection };
