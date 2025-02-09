@@ -105,8 +105,27 @@ export default function MenuAnalyzer() {
     }
   };
 
+  const processRecommendations = (recs) => {
+    const seen = new Set();
+    return Object.entries(recs).reduce((acc, [key, value]) => {
+      if (Array.isArray(value)) {
+        acc[key] = value.filter(rec => {
+          const recKey = typeof rec === 'object' ? 
+            rec.recommendation?.toLowerCase().trim() : 
+            rec.toLowerCase().trim();
+          if (!recKey || seen.has(recKey)) return false;
+          seen.add(recKey);
+          return true;
+        });
+      } else {
+        acc[key] = value;
+      }
+      return acc;
+    }, {});
+  };
+
   const handleNextStep = async () => {
-    if (currentStep === 2) {
+    if (currentStep === 2 && !recommendations) {
       setIsAnalyzing(true);
       try {
         const recommendationsResponse = await fetch('/api/ai/generateRecommendations', {
@@ -120,13 +139,16 @@ export default function MenuAnalyzer() {
         
         if (data.error) throw new Error(data.details || 'Recommendations failed');
 
-        setRecommendations(data.recommendations);
+        const processedRecs = processRecommendations(data.recommendations);
+        setRecommendations(processedRecs);
         setCurrentStep(3);
       } catch (error) {
         console.error('Recommendations failed:', error);
       } finally {
         setIsAnalyzing(false);
       }
+    } else if (currentStep === 2) {
+      setCurrentStep(3);
     }
   };
 

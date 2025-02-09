@@ -7,6 +7,15 @@ export default function StepRecommendations({
   recommendations,
   isLoading
 }) {
+  const sections = [
+    { key: 'psychology', title: 'Menu Psychology & Colors' },
+    { key: 'design', title: 'Layout & Design' },
+    { key: 'engineering', title: 'Menu Engineering' },
+    { key: 'pricing', title: 'Pricing Strategy' },
+    { key: 'visualHierarchy', title: 'Visual Hierarchy' },
+    { key: 'customerExperience', title: 'Customer Experience' }
+  ];
+
   return (
     <section className="space-y-4 sm:space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
@@ -17,102 +26,40 @@ export default function StepRecommendations({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-        {/* Psychology & Colors */}
-        <div className="bg-gray-50 rounded-lg p-4 sm:p-6">
-          <h4 className="font-medium text-gray-900 mb-3 sm:mb-4 text-sm sm:text-base">Menu Psychology & Colors</h4>
-          <ul className="space-y-3 sm:space-y-4">
-            {recommendations?.psychology?.map((rec, index) => (
-              <RecommendationItem key={index} recommendation={rec} />
-            ))}
-          </ul>
-        </div>
-
-        {/* Layout & Design */}
-        <div className="bg-gray-50 rounded-lg p-4 sm:p-6">
-          <h4 className="font-medium text-gray-900 mb-3 sm:mb-4 text-sm sm:text-base">Layout & Design</h4>
-          <ul className="space-y-3 sm:space-y-4">
-            {recommendations?.design?.map((rec, index) => (
-              <RecommendationItem key={index} recommendation={rec} />
-            ))}
-          </ul>
-        </div>
-
-        {/* Menu Engineering */}
-        <div className="bg-gray-50 rounded-lg p-4 sm:p-6">
-          <h4 className="font-medium text-gray-900 mb-3 sm:mb-4 text-sm sm:text-base">Menu Engineering</h4>
-          <ul className="space-y-3 sm:space-y-4">
-            {recommendations?.engineering?.map((rec, index) => (
-              <RecommendationItem key={index} recommendation={rec} />
-            ))}
-          </ul>
-        </div>
-
-        {/* Pricing Strategy */}
-        <div className="bg-gray-50 rounded-lg p-4 sm:p-6">
-          <h4 className="font-medium text-gray-900 mb-3 sm:mb-4 text-sm sm:text-base">Pricing Strategy</h4>
-          <ul className="space-y-3 sm:space-y-4">
-            {recommendations?.pricing?.map((rec, index) => (
-              <RecommendationItem key={index} recommendation={rec} />
-            ))}
-          </ul>
-        </div>
-
-        {/* Visual Hierarchy */}
-        <div className="bg-gray-50 rounded-lg p-4 sm:p-6">
-          <h4 className="font-medium text-gray-900 mb-3 sm:mb-4 text-sm sm:text-base">Visual Hierarchy</h4>
-          <ul className="space-y-3 sm:space-y-4">
-            {recommendations?.visualHierarchy?.map((rec, index) => (
-              <RecommendationItem key={index} recommendation={rec} />
-            ))}
-          </ul>
-        </div>
-
-        {/* Customer Experience */}
-        <div className="bg-gray-50 rounded-lg p-4 sm:p-6">
-          <h4 className="font-medium text-gray-900 mb-3 sm:mb-4 text-sm sm:text-base">Customer Experience</h4>
-          <ul className="space-y-3 sm:space-y-4">
-            {recommendations?.customerExperience?.map((rec, index) => (
-              <RecommendationItem key={index} recommendation={rec} />
-            ))}
-          </ul>
-        </div>
+        {sections.map(({ key, title }) => (
+          <div key={key} className="bg-gray-50 rounded-lg p-4 sm:p-6">
+            <h4 className="font-medium text-gray-900 mb-3 sm:mb-4 text-sm sm:text-base">{title}</h4>
+            <ul className="space-y-3 sm:space-y-4">
+              {recommendations?.[key]?.map((rec, index) => (
+                <RecommendationItem key={`${key}-${index}`} recommendation={rec} />
+              ))}
+            </ul>
+          </div>
+        ))}
       </div>
     </section>
   );
 }
 
-// Extracted RecommendationItem component for cleaner code
 function RecommendationItem({ recommendation }) {
+  if (typeof recommendation === 'string') {
+    return <li className="text-sm text-gray-700">{recommendation}</li>;
+  }
+
   return (
-    <li className="space-y-1 sm:space-y-2">
-      <div className="flex items-start gap-2">
-        <div className="flex-shrink-0 mt-1">
-          {recommendation.priority?.toLowerCase() === 'high' && (
-            <span className="inline-block w-2 h-2 bg-red-500 rounded-full" />
-          )}
-          {recommendation.priority?.toLowerCase() === 'medium' && (
-            <span className="inline-block w-2 h-2 bg-yellow-500 rounded-full" />
-          )}
-          {recommendation.priority?.toLowerCase() === 'low' && (
-            <span className="inline-block w-2 h-2 bg-blue-500 rounded-full" />
-          )}
-        </div>
-        <div>
-          <span className="text-gray-900 font-medium text-sm sm:text-base">
-            {recommendation.recommendation}
-          </span>
-          {recommendation.reasoning && (
-            <p className="text-xs sm:text-sm text-gray-600 mt-1">
-              Why: {recommendation.reasoning}
-            </p>
-          )}
-          {recommendation.impact && (
-            <p className="text-xs sm:text-sm text-gray-500 mt-1">
-              Impact: {recommendation.impact}
-            </p>
-          )}
-        </div>
-      </div>
+    <li className="text-sm">
+      <p className="font-medium text-gray-900">{recommendation.recommendation}</p>
+      {recommendation.reasoning && (
+        <p className="text-gray-600 mt-1">Why: {recommendation.reasoning}</p>
+      )}
+      {recommendation.impact && (
+        <p className="text-gray-600">Impact: {recommendation.impact}</p>
+      )}
+      {recommendation.priority && (
+        <p className={`text-${recommendation.priority.toLowerCase() === 'high' ? 'red' : 'gray'}-600`}>
+          Priority: {recommendation.priority}
+        </p>
+      )}
     </li>
   );
 } 

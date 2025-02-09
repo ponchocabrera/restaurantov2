@@ -6,6 +6,73 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
 
+// Helper to deduplicate recommendations (works for objects or strings)
+function dedupeRecommendations(items) {
+  if (!Array.isArray(items)) return [];
+  const seen = new Set();
+  return items.filter(item => {
+    let key;
+    if (typeof item === 'object' && item !== null && item.recommendation) {
+      key = item.recommendation.toLowerCase().trim();
+    } else if (typeof item === 'string') {
+      key = item.toLowerCase().trim();
+    } else {
+      key = JSON.stringify(item).toLowerCase();
+    }
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+// Helper function to process recommendations for a given section.
+// It looks for a block starting with the provided sectionHeader and extracts recommendations 
+// based on the expected format.
+function processRecommendations(text, section) {
+  const sectionRegex = new RegExp(`${section}:[\\s\\S]*?(?=\\n\\n[A-Z &]+:|$)`);
+  const match = text.match(sectionRegex);
+  if (!match) return [];
+
+  const recommendations = [];
+  const seen = new Set();
+  let currentRec = null;
+  
+  const lines = match[0].split('\n')
+    .map(line => line.trim())
+    .filter(Boolean);
+  
+  lines.forEach(line => {
+    if (line === section + ':') return;
+    
+    const recommendationMatch = line.match(/\*\*Specific Recommendation:\*\*(.*)/i);
+    if (recommendationMatch) {
+      const recText = recommendationMatch[1].trim();
+      const recKey = recText.toLowerCase();
+      
+      if (!seen.has(recKey)) {
+        if (currentRec) recommendations.push(currentRec);
+        currentRec = { recommendation: recText };
+        seen.add(recKey);
+      } else {
+        currentRec = null;
+      }
+      return;
+    }
+    
+    if (!currentRec) return;
+    
+    const propertyMatch = line.match(/\*\*(.*?):\*\*(.*)/);
+    if (propertyMatch) {
+      const [, key, value] = propertyMatch;
+      const cleanKey = key.toLowerCase().replace(/\s+/g, '_');
+      currentRec[cleanKey] = value.trim();
+    }
+  });
+  
+  if (currentRec) recommendations.push(currentRec);
+  return recommendations;
+}
+
 export async function POST(request) {
   try {
     const { analysis } = await request.json();
@@ -15,35 +82,38 @@ export async function POST(request) {
       throw new Error('Invalid analysis data: missing id or raw analysis');
     }
 
-    // Parse the raw analysis text into structured sections
-    const analysisText = analysis.raw;
+    // Use all available sections from the analysis
     const sections = {
       structure: analysis.structure || [],
       design: analysis.design || [],
       pricing: analysis.pricing || [],
       color: analysis.color || [],
       visualElements: analysis.visualElements || [],
-      psychology: analysis.psychology || []
+      psychology: analysis.psychology || [],
+      engineering: analysis.engineering || [],
+      customerExperience: analysis.customerExperience || []
     };
 
-    // Build a more concise prompt
+    // Build a more comprehensive prompt
     const enhancedPrompt = `
-Analyze these findings and provide targeted menu recommendations:
+Analyze these findings and provide detailed menu recommendations:
 
 ${Object.entries(sections)
-  .map(([section, items]) => `${section.toUpperCase()}:\n${items.slice(0, 3).map(item => `- ${item}`).join('\n')}`)
+  .map(([section, items]) =>
+    `${section.toUpperCase()}:\n${dedupeRecommendations(items).slice(0, 5).map(item => `- ${item}`).join('\n')}`
+  )
   .join('\n\n')}
 
-Provide 3-4 recommendations for each category below. Format exactly as:
-**Specific Recommendation:** [action]
-**Reasoning:** [reference findings]
-**Expected Impact:** [result]
+For each category below, provide 4-6 detailed recommendations. Format exactly as:
+**Specific Recommendation:** [clear, actionable step]
+**Reasoning:** [detailed explanation referencing the analysis]
+**Expected Impact:** [specific benefits and outcomes]
 **Priority:** [High/Medium/Low]
 
 PSYCHOLOGY & COLORS:
 LAYOUT & DESIGN:
-MENU ENGINEERING:
 PRICING STRATEGY:
+MENU ENGINEERING:
 VISUAL HIERARCHY:
 CUSTOMER EXPERIENCE:`;
 
@@ -52,98 +122,50 @@ CUSTOMER EXPERIENCE:`;
       messages: [
         {
           role: "system",
-          content: "You are a menu optimization expert. Provide specific, actionable recommendations based on the analysis findings."
+          content: `You are an expert menu optimization consultant with deep knowledge of restaurant psychology, design principles, and menu engineering. 
+Provide detailed, actionable recommendations that will have significant impact on the menu's performance. 
+Focus on practical steps that can be implemented immediately.`
         },
         {
           role: "user",
           content: enhancedPrompt
         }
       ],
-      temperature: 0.7,
-      max_tokens: 2048
+      temperature: 0.8,
+      max_tokens: 3000
     });
 
     const aiRecommendations = response.choices[0].message.content;
     console.log('Raw AI recommendations:', aiRecommendations);
 
+    // Process and deduplicate recommendations
     const recommendations = {
-      psychology: processRecommendations(aiRecommendations, 'PSYCHOLOGY & COLORS'),
-      design: processRecommendations(aiRecommendations, 'LAYOUT & DESIGN'),
-      engineering: processRecommendations(aiRecommendations, 'MENU ENGINEERING'),
-      pricing: processRecommendations(aiRecommendations, 'PRICING STRATEGY'),
-      visualHierarchy: processRecommendations(aiRecommendations, 'VISUAL HIERARCHY'),
-      customerExperience: processRecommendations(aiRecommendations, 'CUSTOMER EXPERIENCE')
+      psychology: dedupeRecommendations(processRecommendations(aiRecommendations, 'PSYCHOLOGY & COLORS')),
+      design: dedupeRecommendations(processRecommendations(aiRecommendations, 'LAYOUT & DESIGN')),
+      pricing: dedupeRecommendations(processRecommendations(aiRecommendations, 'PRICING STRATEGY')),
+      engineering: dedupeRecommendations(processRecommendations(aiRecommendations, 'MENU ENGINEERING')),
+      visualHierarchy: dedupeRecommendations(processRecommendations(aiRecommendations, 'VISUAL HIERARCHY')),
+      customerExperience: dedupeRecommendations(processRecommendations(aiRecommendations, 'CUSTOMER EXPERIENCE'))
     };
 
-    // Validate recommendations
+    // Ensure each section has at least an empty array
+    Object.keys(recommendations).forEach(key => {
+      if (!recommendations[key]) recommendations[key] = [];
+    });
+
+    // Validate and ensure minimum recommendations
     Object.entries(recommendations).forEach(([section, recs]) => {
-      if (!recs || recs.length === 0) {
-        console.error(`No recommendations generated for ${section}`);
+      if (!recs || recs.length < 3) {
+        console.error(`Insufficient recommendations generated for ${section}`);
       }
     });
 
-    // Save the recommendations in the database by updating the analysis record
     const updatedRecord = await updateMenuAnalysisRecommendations(analysis.id, recommendations);
     console.log('Recommendations updated for analysis ID:', updatedRecord.id);
 
-    // Return the updated recommendations
     return Response.json({ recommendations: updatedRecord.recommendations });
   } catch (error) {
     console.error('Error generating recommendations:', error);
     return Response.json({ error: error.message }, { status: 500 });
-  }
-}
-
-function processRecommendations(text, section) {
-  try {
-    // First, find the section
-    const sectionStart = text.indexOf(`${section}:`);
-    if (sectionStart === -1) return [];
-    
-    // Get the text after our section header
-    const textAfterSection = text.slice(sectionStart + section.length + 1);
-    
-    // Find the next section (if any)
-    const nextSectionMatch = textAfterSection.match(/\n\n[A-Z& ]+:/);
-    const sectionEnd = nextSectionMatch 
-      ? nextSectionMatch.index 
-      : textAfterSection.length;
-    
-    // Extract section content
-    const sectionContent = textAfterSection.slice(0, sectionEnd).trim();
-    
-    // Create a Set to track unique recommendations
-    const uniqueRecs = new Set();
-    
-    // Split into individual recommendations and process
-    const recommendations = sectionContent
-      .split(/(?=\*\*Specific Recommendation:\*\*)/)
-      .filter(rec => rec.trim())
-      .map(rec => {
-        const recommendation = rec.match(/\*\*Specific Recommendation:\*\*([^\n]*)/)?.[1]?.trim() || '';
-        const reasoning = rec.match(/\*\*Reasoning:\*\*([^\n]*)/)?.[1]?.trim() || '';
-        const impact = rec.match(/\*\*Expected Impact:\*\*([^\n]*)/)?.[1]?.trim() || '';
-        const priority = rec.match(/\*\*Priority:\*\*([^\n]*)/)?.[1]?.trim() || '';
-
-        return {
-          recommendation,
-          reasoning,
-          impact,
-          priority
-        };
-      })
-      .filter(rec => {
-        // Only include if recommendation is not empty and not seen before
-        if (!rec.recommendation || uniqueRecs.has(rec.recommendation)) {
-          return false;
-        }
-        uniqueRecs.add(rec.recommendation);
-        return true;
-      });
-
-    return recommendations;
-  } catch (error) {
-    console.error(`Error processing ${section} recommendations:`, error);
-    return [];
   }
 } 

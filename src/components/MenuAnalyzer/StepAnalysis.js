@@ -69,7 +69,7 @@ export default function StepAnalysis({
         <div className="w-full">
           <button
             onClick={() => setIsExplanationOpen(!isExplanationOpen)}
-            className="w-full flex justify-between items-center px-4 py-3 bg-[#212350] text-white font-bold rounded-lg shadow-lg"
+            className="w-full flex justify-between items-center px-4 py-3 bg-[#212350] text-white font-bold rounded-full shadow-lg"
           >
             How does your Menu get Analyzed?
             {isExplanationOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
@@ -79,7 +79,7 @@ export default function StepAnalysis({
             <div className="mt-2 p-4 bg-gray-100 rounded-lg">
               <p className="text-sm text-gray-700">
                 Our AI analyzes your menu using a multi-step process, evaluating design, structure, layout, and
-                readability. Insights are generated based on scientific research and industry best practices.
+                readability. Our AI analyzes up to 150 different points from your Menu and give detailed explanations on why this is good or bad for your business. Insights are generated based on scientific research and industry best practices.
               </p>
             </div>
           )}
@@ -94,12 +94,13 @@ export default function StepAnalysis({
         steps={progress?.steps || []}
       />
 
-      {/* Analyze Menu Button */}
-      <div className="flex justify-center mt-6">
+      {/* Buttons: Analyze Menu & View Recommendations at the same level */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6">
+        {/* Analyze Menu Button */}
         <button
           onClick={onAnalyze}
           disabled={isAnalyzing || !menuData}
-          className="w-full sm:w-auto px-6 py-3 rounded-full bg-[#212350] text-white font-bold transition-all hover:bg-opacity-90 disabled:bg-gray-200 disabled:text-gray-500 flex justify-center items-center"
+          className="w-full sm:w-auto px-6 py-3 rounded-full bg-gradient-to-r from-[#222452] to-[#42469F] text-white font-bold transition-all hover:opacity-90 disabled:bg-gray-200 disabled:text-gray-500 flex justify-center items-center"
         >
           {isAnalyzing ? (
             <div className="flex items-center gap-2">
@@ -109,6 +110,15 @@ export default function StepAnalysis({
           ) : (
             'Analyze Menu'
           )}
+        </button>
+
+        {/* Next Step Button */}
+        <button
+          onClick={onNext}
+          className="px-6 py-3 rounded-full bg-gradient-to-r from-[#222452] to-[#42469F] text-white font-bold hover:opacity-90 transition-opacity flex items-center gap-2"
+        >
+          View Recommendations
+          <ArrowRight className="w-4 h-4" />
         </button>
       </div>
 
@@ -123,7 +133,9 @@ export default function StepAnalysis({
             if (!trimmedLine.startsWith('-')) return acc;
             const cleanLine = trimmedLine.substring(1).trim();
             if (cleanLine.includes('**')) {
-              const title = cleanLine.match(/\*\*(.*?)\*\*/)[1].replace(':', '').trim();
+              const titleMatch = cleanLine.match(/\*\*(.*?)\*\*/);
+              if (!titleMatch) return acc;
+              const title = titleMatch[1].replace(':', '').trim();
               let description = '';
               for (let i = index + 1; i < lines.length; i++) {
                 const nextLine = lines[i].trim();
@@ -182,19 +194,6 @@ export default function StepAnalysis({
           </button>
         </div>
       )}
-
-      {/* Next Step Button */}
-      <div className="flex justify-end mt-6">
-        <button
-          onClick={onNext}
-          className="px-6 py-3 bg-[#212350] text-white rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2"
-        >
-          View Recommendations
-          <ArrowRight className="w-4 h-4" />
-        </button>
-      </div>
     </section>
   );
 }
-
-

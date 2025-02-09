@@ -1,63 +1,52 @@
 import { generateDesignRecommendations } from '@/utils/researchProcessor';
 import { MENU_RESEARCH } from './researchProcessor';
 
-export function generateAnalysisRecommendations(analysis) {
-  try {
-    // Use the raw analysis text, but process it once
-    const analysisText = analysis.raw;
-    const cleanedText = analysisText
-      .split('\n')
-      .map(line => line.trim())
-      .filter(line => line.startsWith('-') || line.startsWith('•'))
-      .map(line => line.substring(1).trim())
-      .filter(line => line.length > 0)
-      .filter((item, index, self) => self.indexOf(item) === index) // Remove duplicates
-      .join('\n');
-
-    const sections = cleanedText.split(/(?:^|\n)\s*(?:STRUCTURE|DESIGN|PSYCHOLOGY|ENGINEERING|PRICING|COLOR|VISUAL ELEMENTS):/i);
-    
-    return {
-      structure: processSection(sections[1]),
-      design: processSection(sections[2]),
-      psychology: processSection(sections[3]),
-      engineering: processSection(sections[4])
-    };
-  } catch (error) {
-    console.error('Error generating analysis recommendations:', error);
-    return {
-      structure: [],
-      design: [],
-      psychology: [],
-      engineering: []
-    };
-  }
+function processSection(sectionText) {
+  if (!sectionText) return [];
+  return sectionText
+    .split('\n')
+    .map(line => line.trim())
+    .filter(line => line.length > 0)
+    // Deduplicate in a case-insensitive manner
+    .filter((item, index, self) => self.findIndex(x => x.toLowerCase() === item.toLowerCase()) === index);
 }
 
-function processSection(section) {
-  if (!section) return [];
-  
-  return section
-    .trim()
-    .split(/(?:\r?\n)+/)
-    .filter(line => {
-      const trimmed = line.trim();
-      return trimmed && !trimmed.match(/^[•-]\s*$/);
-    })
-    .map(line => {
-      // Extract subsections (lines starting with - or •)
-      const match = line.match(/^[•-]\s*(.+?)(?:\s*:\s*(.+))?$/);
+export function generateAnalysisRecommendations(analysis) {
+  try {
+    if (!analysis || !analysis.raw) return {};
+    
+    const sections = {};
+    const uniqueItems = new Set();
+    
+    // Split the raw text into sections
+    const rawSections = analysis.raw.split(/(?=\b(?:STRUCTURE|DESIGN|PSYCHOLOGY|ENGINEERING|PRICING|COLOR|VISUAL ELEMENTS|CUSTOMER EXPERIENCE):)/i);
+    
+    rawSections.forEach(section => {
+      const match = section.match(/^(STRUCTURE|DESIGN|PSYCHOLOGY|ENGINEERING|PRICING|COLOR|VISUAL ELEMENTS|CUSTOMER EXPERIENCE):([\s\S]*)/i);
       if (match) {
-        return {
-          type: 'subsection',
-          title: match[1],
-          description: match[2] || ''
-        };
+        const [, sectionName, content] = match;
+        const key = sectionName.toLowerCase().replace(/\s+/g, '');
+        
+        const items = content
+          .split('\n')
+          .map(line => line.trim())
+          .filter(line => line.length > 0 && (line.startsWith('-') || line.startsWith('•')))
+          .map(line => line.substring(1).trim());
+        
+        sections[key] = items.filter(item => {
+          const lowerItem = item.toLowerCase();
+          if (uniqueItems.has(lowerItem)) return false;
+          uniqueItems.add(lowerItem);
+          return true;
+        });
       }
-      return {
-        type: 'content',
-        text: line.trim()
-      };
     });
+    
+    return sections;
+  } catch (error) {
+    console.error('Error generating analysis recommendations:', error);
+    return {};
+  }
 }
 
 function extractMenuStructure(analysis) {

@@ -3,30 +3,25 @@
 import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/shared/DashboardLayout';
 import { ChevronUp, ChevronDown } from 'lucide-react';
+import RawMaterialModal from '@/components/RawMaterialModal';
 
-// Helper to format analysis raw string into structured sections
+// Optional formatting helper if needed
 function formatAnalysis(raw) {
   if (!raw) return [];
-  // Split on "###" which starts each section in your analysis
   const sections = raw.split('###').map(s => s.trim()).filter(Boolean);
   return sections.map(section => {
     const lines = section.split('\n').filter(line => line.trim() !== '');
-    // Use the first line as the header, removing any trailing colon
     const header = lines[0].replace(':', '').trim();
     const items = [];
     let currentItem = '';
-
-    // Loop through the remaining lines and merge continuation lines
     for (let i = 1; i < lines.length; i++) {
       const trimmedLine = lines[i].trim();
       if (trimmedLine.startsWith('-')) {
-        // If there's an existing bullet, push it before starting a new one
         if (currentItem) {
           items.push(currentItem);
         }
         currentItem = trimmedLine.replace(/^-+\s*/, '');
       } else {
-        // Append a continuation line to the current item
         if (currentItem) {
           currentItem += ' ' + trimmedLine;
         }
@@ -35,9 +30,131 @@ function formatAnalysis(raw) {
     if (currentItem) {
       items.push(currentItem);
     }
-
     return { header, items };
   });
+}
+
+// Render a nicely formatted analysis details view.
+// Now the raw analysis material is hidden and a button is provided to open it.
+function renderAnalysisDetails(analysis) {
+  if (!analysis || typeof analysis !== 'object') return null;
+  
+  const sectionConfig = [
+    { key: 'structure', title: 'Structure' },
+    { key: 'design', title: 'Design' },
+    { key: 'pricing', title: 'Pricing' },
+    { key: 'color', title: 'Color' },
+    { key: 'visualElements', title: 'Visual Elements' },
+    { key: 'psychology', title: 'Customer Psychology' },
+    { key: 'engineering', title: 'Menu Engineering' },
+    { key: 'customerExperience', title: 'Customer Experience' }
+  ];
+
+  const processedSections = new Set();
+  
+  const processSectionItems = (items) => {
+    if (!Array.isArray(items)) return [];
+    return items.filter(item => {
+      const key = typeof item === 'string' ? 
+        item.toLowerCase().trim() : 
+        JSON.stringify(item).toLowerCase();
+      if (processedSections.has(key)) return false;
+      processedSections.add(key);
+      return true;
+    });
+  };
+
+  return (
+    <div className="mt-4">
+      {sectionConfig.map(({ key, title }) => {
+        const items = processSectionItems(analysis[key]);
+        if (!items || items.length === 0) return null;
+        
+        return (
+          <div key={key} className="mb-3">
+            <h4 className="font-bold">{title}</h4>
+            <ul className="list-disc ml-5">
+              {items.map((item, index) => (
+                <li key={index} className="text-sm text-gray-700">{item}</li>
+              ))}
+            </ul>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// New component that renders a recommendation (object or string) in a list item.
+function RecommendationItem({ recommendation }) {
+  if (typeof recommendation === 'object' && recommendation !== null) {
+    return (
+      <li className="text-sm">
+        {recommendation.recommendation && (
+          <div><strong>Recommendation:</strong> {recommendation.recommendation}</div>
+        )}
+        {recommendation.reasoning && (
+          <div><strong>Reasoning:</strong> {recommendation.reasoning}</div>
+        )}
+        {recommendation.impact && (
+          <div><strong>Impact:</strong> {recommendation.impact}</div>
+        )}
+        {recommendation.priority && (
+          <div><strong>Priority:</strong> {recommendation.priority}</div>
+        )}
+      </li>
+    );
+  }
+  return <li className="text-sm">{recommendation}</li>;
+}
+
+// Render recommendations details with custom RecommendationItem for each entry.
+function renderRecommendations(recommendations) {
+  if (!recommendations || typeof recommendations !== 'object') return null;
+  
+  const sectionConfig = [
+    { key: 'psychology', title: 'Menu Psychology & Colors' },
+    { key: 'design', title: 'Layout & Design' },
+    { key: 'engineering', title: 'Menu Engineering' },
+    { key: 'pricing', title: 'Pricing Strategy' },
+    { key: 'visualHierarchy', title: 'Visual Hierarchy' },
+    { key: 'customerExperience', title: 'Customer Experience' }
+  ];
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {sectionConfig.map(({ key, title }) => {
+        const recs = recommendations[key];
+        if (!Array.isArray(recs) || recs.length === 0) return null;
+
+        return (
+          <div key={key} className="bg-gray-50 rounded-lg p-4">
+            <h4 className="font-semibold text-gray-900 mb-2">{title}</h4>
+            <ul className="space-y-2">
+              {recs.map((rec, index) => (
+                <li key={index} className="text-sm">
+                  {typeof rec === 'object' ? (
+                    <div>
+                      <p className="font-medium">{rec.recommendation}</p>
+                      {rec.reasoning && <p className="text-gray-600 mt-1">Why: {rec.reasoning}</p>}
+                      {rec.impact && <p className="text-gray-600">Impact: {rec.impact}</p>}
+                      {rec.priority && (
+                        <p className={`text-${rec.priority.toLowerCase() === 'high' ? 'red' : 'gray'}-600`}>
+                          Priority: {rec.priority}
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <p>{rec}</p>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 export default function MyRestaurantsPage() {
@@ -46,6 +163,7 @@ export default function MyRestaurantsPage() {
   const [loading, setLoading] = useState(true);
   const [analyses, setAnalyses] = useState([]);
   const [expandedAnalysisIds, setExpandedAnalysisIds] = useState([]);
+  const [rawModalData, setRawModalData] = useState(null);
 
   useEffect(() => {
     async function fetchRestaurantsData() {
@@ -107,13 +225,11 @@ export default function MyRestaurantsPage() {
     async function fetchAnalysesData() {
       try {
         const res = await fetch('/api/menuAnalysis');
-        if (!res.ok) {
-          throw new Error('Failed to fetch menu analyses');
-        }
+        if (!res.ok) throw new Error('Failed to fetch analyses');
         const data = await res.json();
-        if (data.analyses) setAnalyses(data.analyses);
+        setAnalyses(data.analyses || []);
       } catch (error) {
-        console.error('Error fetching analyses:', error);
+        console.error('Error fetching analyses data:', error);
       }
     }
 
@@ -122,11 +238,17 @@ export default function MyRestaurantsPage() {
   }, []);
 
   const toggleAnalysis = (id) => {
-    if (expandedAnalysisIds.includes(id)) {
-      setExpandedAnalysisIds(expandedAnalysisIds.filter(item => item !== id));
-    } else {
-      setExpandedAnalysisIds([...expandedAnalysisIds, id]);
-    }
+    setExpandedAnalysisIds((prev) =>
+      prev.includes(id) ? prev.filter((pid) => pid !== id) : [...prev, id]
+    );
+  };
+
+  const handleShowRaw = (raw) => {
+    setRawModalData(raw);
+  };
+
+  const handleCloseModal = () => {
+    setRawModalData(null);
   };
 
   return (
@@ -180,77 +302,108 @@ export default function MyRestaurantsPage() {
           {analyses.length === 0 ? (
             <p>No menu analyses available yet.</p>
           ) : (
-            analyses.map((record) => (
-              <div key={record.id} className="border rounded p-4 mb-4 bg-white shadow">
-                <div
-                  className="flex justify-between items-center mb-2 text-sm text-gray-600 cursor-pointer"
-                  onClick={() => toggleAnalysis(record.id)}
-                >
-                  <span>Analysis ID: {record.id}</span>
-                  <span>{new Date(record.created_at).toLocaleString()}</span>
-                  {expandedAnalysisIds.includes(record.id) ? (
-                    <ChevronUp className="w-5 h-5" />
-                  ) : (
-                    <ChevronDown className="w-5 h-5" />
+            analyses.map((record) => {
+              const analysis = record.analysis;
+              let analyzedPointsCount = 0;
+              if (analysis && typeof analysis === 'object') {
+                analyzedPointsCount =
+                  (analysis.structure?.length || 0) +
+                  (analysis.design?.length || 0) +
+                  (analysis.pricing?.length || 0) +
+                  (analysis.color?.length || 0) +
+                  (analysis.visualElements?.length || 0) +
+                  (analysis.psychology?.length || 0) +
+                  (analysis.engineering?.length || 0) +
+                  (analysis.customerExperience?.length || 0);
+              }
+              
+              let recommendationsCount = 0;
+              if (
+                record.recommendations &&
+                typeof record.recommendations === 'object' &&
+                !Array.isArray(record.recommendations)
+              ) {
+                recommendationsCount = Object.values(record.recommendations).reduce(
+                  (acc, curr) => {
+                    if (Array.isArray(curr)) return acc + curr.length;
+                    else if (typeof curr === 'string')
+                      return acc + curr.split('\n').filter((line) => line.trim() !== '').length;
+                    return acc;
+                  },
+                  0
+                );
+              }
+
+              return (
+                <div key={record.id} className="border rounded p-4 mb-4 bg-white shadow">
+                  <div
+                    className="flex items-center justify-between cursor-pointer"
+                    onClick={() => toggleAnalysis(record.id)}
+                  >
+                    {/* Left side: Mini Image & Analysis Info */}
+                    <div className="flex items-center space-x-4">
+                      <img
+                        src={record.image_data}
+                        alt="Analyzed Menu"
+                        className="w-16 h-16 object-cover rounded"
+                      />
+                      <div>
+                        <div className="font-medium text-sm">Analysis ID: {record.id}</div>
+                        <div className="text-gray-500 text-xs">
+                          {new Date(record.created_at).toLocaleString()}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Middle: Counts for Analyzed Points & Recommendations */}
+                    <div className="flex items-center space-x-8">
+                      <div className="text-center">
+                        <div className="font-bold text-sm">{analyzedPointsCount}</div>
+                        <div className="text-gray-500 text-xs">Points</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="font-bold text-sm">{recommendationsCount}</div>
+                        <div className="text-gray-500 text-xs">Recs</div>
+                      </div>
+                    </div>
+
+                    {/* Right side: Expand / Collapse icon */}
+                    <div>
+                      {expandedAnalysisIds.includes(record.id) ? (
+                        <ChevronUp className="w-5 h-5" />
+                      ) : (
+                        <ChevronDown className="w-5 h-5" />
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Expanded details view */}
+                  {expandedAnalysisIds.includes(record.id) && (
+                    <div className="mt-4">
+                      <div className="mb-4">
+                        <h3 className="font-medium">Analysis Details:</h3>
+                        {analysis ? (
+                          renderAnalysisDetails(analysis)
+                        ) : (
+                          <p>No analysis available.</p>
+                        )}
+                      </div>
+                      <div>
+                        <h3 className="font-medium">Recommendations:</h3>
+                        {record.recommendations
+                          ? renderRecommendations(record.recommendations)
+                          : <p>No recommendations available.</p>}
+                      </div>
+                    </div>
                   )}
                 </div>
-                {expandedAnalysisIds.includes(record.id) && (
-                  <>
-                    {record.analysis && record.analysis.raw ? (
-                      formatAnalysis(record.analysis.raw).map((section, idx) => (
-                        <div key={idx} className="mb-4">
-                          <h3 className="font-bold text-lg">{section.header}</h3>
-                          <ul className="list-disc pl-6">
-                            {section.items.map((item, jdx) => (
-                              <li key={jdx}>{item}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      ))
-                    ) : (
-                      <pre className="bg-gray-100 p-2 rounded overflow-auto">
-                        {JSON.stringify(record.analysis, null, 2)}
-                      </pre>
-                    )}
-                    {record.recommendations && typeof record.recommendations === 'object' && (
-                      <div className="mt-4">
-                        <h3 className="font-bold text-lg">Menu Recommendations</h3>
-                        {Object.keys(record.recommendations).map((section) => (
-                          <div key={section} className="mb-4">
-                            <h4 className="font-semibold text-lg capitalize">
-                              {section.replace(/([A-Z])/g, ' $1')}
-                            </h4>
-                            {record.recommendations[section].length > 0 ? (
-                              record.recommendations[section].map((rec, idx) => (
-                                <div key={idx} className="border rounded p-3 my-2 bg-gray-50">
-                                  <p><strong>Recommendation:</strong> {rec.recommendation}</p>
-                                  <p><strong>Reasoning:</strong> {rec.reasoning}</p>
-                                  <p><strong>Expected Impact:</strong> {rec.impact}</p>
-                                  <p><strong>Priority:</strong> {rec.priority}</p>
-                                </div>
-                              ))
-                            ) : (
-                              <p className="text-gray-500">No recommendations available for {section}.</p>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    {record.image_data && (
-                      <div className="mt-4">
-                        <img
-                          src={record.image_data}
-                          alt="Menu preview"
-                          className="w-full max-h-64 object-cover rounded"
-                        />
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-            ))
+              );
+            })
           )}
         </section>
+        {rawModalData && (
+          <RawMaterialModal raw={rawModalData} onClose={handleCloseModal} />
+        )}
       </main>
     </DashboardLayout>
   );

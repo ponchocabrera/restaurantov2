@@ -163,12 +163,41 @@ CUSTOMER PSYCHOLOGY:
       // Prepare the analysis object with the raw output and the parsed sections
       const analysisRecord = { raw: analysisText, ...sections };
 
-      // Save the analysis record to the database with the associated user ID
-      const savedRecord = await saveMenuAnalysis(userId, analysisRecord, imageData);
+      function deduplicateAnalysis(analysis) {
+        const seen = new Set();
+        
+        const dedupeSection = (section) => {
+          if (!Array.isArray(section)) return section;
+          return section.filter(item => {
+            const key = typeof item === 'string' ? 
+              item.toLowerCase().trim() : 
+              JSON.stringify(item).toLowerCase();
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+          });
+        };
+
+        return {
+          ...analysis,
+          structure: dedupeSection(analysis.structure),
+          design: dedupeSection(analysis.design),
+          pricing: dedupeSection(analysis.pricing),
+          color: dedupeSection(analysis.color),
+          visualElements: dedupeSection(analysis.visualElements),
+          psychology: dedupeSection(analysis.psychology),
+          engineering: dedupeSection(analysis.engineering),
+          customerExperience: dedupeSection(analysis.customerExperience)
+        };
+      }
+
+      // Use this before saving the analysis
+      const dedupedAnalysis = deduplicateAnalysis(analysisRecord);
+      const savedRecord = await saveMenuAnalysis(userId, dedupedAnalysis, imageData);
       console.log('Saved analysis with ID:', savedRecord.id);
 
       // Merge the saved id with the analysis record
-      const analysisWithId = { id: savedRecord.id, ...analysisRecord };
+      const analysisWithId = { id: savedRecord.id, ...dedupedAnalysis };
 
       // Return the analysis (including the id) to be used in recommendations generation
       return Response.json({ analysis: analysisWithId });
