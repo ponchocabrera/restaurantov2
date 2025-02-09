@@ -1,9 +1,63 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import DashboardLayout from '@/components/shared/DashboardLayout';
 
 export default function Dashboard() {
+  // State to hold restaurant statistics
+  const [restaurantStats, setRestaurantStats] = useState({ menusCount: 0, totalItems: 0 });
+
+  // Fetch restaurant stats on mount.  
+  // Here we assume the API returns an array of restaurants;
+  // we take the first one for display. Adjust this logic if needed.
+  useEffect(() => {
+    async function fetchRestaurantStats() {
+      try {
+        // Fetch the list of restaurants
+        const res = await fetch('/api/restaurants');
+        if (!res.ok) throw new Error('Failed to fetch restaurants');
+        const data = await res.json();
+        const restaurants = data.restaurants || [];
+
+        if (restaurants.length > 0) {
+          // For simplicity, we take the first restaurant
+          const restaurant = restaurants[0];
+
+          // Fetch menus for the selected restaurant
+          const menusRes = await fetch(`/api/menus?restaurantId=${restaurant.id}`);
+          let menus = [];
+          if (menusRes.ok) {
+            const menusData = await menusRes.json();
+            menus = menusData.menus || [];
+          }
+
+          // For each menu, fetch its menu items to count them
+          const menusWithDetails = await Promise.all(
+            menus.map(async (menu) => {
+              const itemsRes = await fetch(`/api/menuItems?menuId=${menu.id}`);
+              let itemCount = 0;
+              if (itemsRes.ok) {
+                const itemsData = await itemsRes.json();
+                const items = itemsData.items || [];
+                itemCount = items.length;
+              }
+              return { ...menu, itemCount };
+            })
+          );
+
+          // Calculate total items count across all menus
+          const totalItems = menusWithDetails.reduce((sum, menu) => sum + menu.itemCount, 0);
+          const menusCount = menusWithDetails.length;
+          setRestaurantStats({ menusCount, totalItems });
+        }
+      } catch (error) {
+        console.error('Error fetching restaurant stats:', error);
+      }
+    }
+    fetchRestaurantStats();
+  }, []);
+
   return (
     <DashboardLayout>
       <div className="min-h-screen bg-white px-6 py-12">
@@ -97,14 +151,14 @@ export default function Dashboard() {
                 {/* Left Side - Number of Menus */}
                 <div className="flex flex-col items-start">
                   <p className="text-md font-bold uppercase tracking-wide">Number of Menus</p>
-                  <p className="text-5xl font-bold mt-1">3</p>
+                  <p className="text-5xl font-bold mt-1">{restaurantStats.menusCount}</p>
                 </div>
 
                 {/* Right Side - Number of Items & Excellence Score */}
                 <div className="flex flex-col space-y-6">
                   <div>
                     <p className="text-md font-bold uppercase tracking-wide">Number of Menu Items</p>
-                    <p className="text-5xl font-bold mt-1">48</p>
+                    <p className="text-5xl font-bold mt-1">{restaurantStats.totalItems}</p>
                   </div>
                   <div>
                     <p className="text-md font-bold uppercase tracking-wide">Menu Excellence Score</p>
@@ -116,9 +170,11 @@ export default function Dashboard() {
 
               {/* Button Section */}
               <div className="flex justify-start mt-8">
-                <button className="bg-white text-[#212350] font-bold py-3 px-6 rounded-full shadow-lg hover:bg-gray-300 transition-all">
-                  See your Menu Report
-                </button>
+                <Link href="/my-restaurants">
+                  <button className="bg-white text-[#212350] font-bold py-3 px-6 rounded-full shadow-lg hover:bg-gray-300 transition-all">
+                    See your Menu Report
+                  </button>
+                </Link>
               </div>
 
             </div>
@@ -136,14 +192,16 @@ export default function Dashboard() {
                   Learn how color choices impact customer behavior and menu engagement.
                 </p>
               </div>
-
+              
               {/* CTA Button */}
               <div className="flex justify-start mt-6">
-                <button className="bg-[#F4AF54] hover:bg-[#D69A3D] text-black font-bold py-3 px-6 rounded-full shadow-lg">
-                  See Carte Research
-                </button>
+                <Link href="/research">
+                  <button className="bg-[#F4AF54] hover:bg-[#D69A3D] text-black font-bold py-3 px-6 rounded-full shadow-lg">
+                    See Carte Research
+                  </button>
+                </Link>
               </div>
-
+              
             </div>
           </div>
 

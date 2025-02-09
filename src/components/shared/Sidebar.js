@@ -13,12 +13,13 @@ export default function Sidebar() {
 
   const menuItems = [
     { label: 'Home', href: '/dashboard' },
-    { label: 'Your Restaurant', href: '/dashboardw' },
+    { label: 'Your Restaurant', href: '/my-restaurants' },
     { label: 'Menu Analysis', href: '/menu-analyzer' },
     { label: 'Menu Enhancement', href: '/menu-creator' },
     { label: 'Smart Publishing', href: '/menu-generator' },
     { label: 'Restaurant Admin', href: '/restaurant-admin' },
     { label: 'Chat with your AI expert', href: '/templates' },
+    { label: 'Research', href: '/research' },
     { label: 'Support', href: '/support' },
   ];
 
