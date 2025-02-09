@@ -33,7 +33,7 @@ ${Object.entries(sections)
   .map(([section, items]) => `${section.toUpperCase()}:\n${items.slice(0, 3).map(item => `- ${item}`).join('\n')}`)
   .join('\n\n')}
 
-Provide 2 recommendations for each category below. Format exactly as:
+Provide 3-4 recommendations for each category below. Format exactly as:
 **Specific Recommendation:** [action]
 **Reasoning:** [reference findings]
 **Expected Impact:** [result]
@@ -42,7 +42,9 @@ Provide 2 recommendations for each category below. Format exactly as:
 PSYCHOLOGY & COLORS:
 LAYOUT & DESIGN:
 MENU ENGINEERING:
-PRICING STRATEGY:`;
+PRICING STRATEGY:
+VISUAL HIERARCHY:
+CUSTOMER EXPERIENCE:`;
 
     const response = await openai.chat.completions.create({
       model: "gpt-4",
@@ -67,7 +69,9 @@ PRICING STRATEGY:`;
       psychology: processRecommendations(aiRecommendations, 'PSYCHOLOGY & COLORS'),
       design: processRecommendations(aiRecommendations, 'LAYOUT & DESIGN'),
       engineering: processRecommendations(aiRecommendations, 'MENU ENGINEERING'),
-      pricing: processRecommendations(aiRecommendations, 'PRICING STRATEGY')
+      pricing: processRecommendations(aiRecommendations, 'PRICING STRATEGY'),
+      visualHierarchy: processRecommendations(aiRecommendations, 'VISUAL HIERARCHY'),
+      customerExperience: processRecommendations(aiRecommendations, 'CUSTOMER EXPERIENCE')
     };
 
     // Validate recommendations
