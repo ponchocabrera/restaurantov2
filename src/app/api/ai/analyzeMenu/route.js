@@ -1,4 +1,7 @@
 import OpenAI from 'openai';
+import { saveMenuAnalysis } from '@/db/index';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/app/api/auth/[...nextauth]/auth.config';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
@@ -6,6 +9,14 @@ const openai = new OpenAI({
 
 export async function POST(request) {
   console.log('Received analysis request');
+
+  // Retrieve the current session to get the logged-in user
+  const session = await getServerSession(authOptions);
+  if (!session || !session.user) {
+    return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  const userId = session.user.id;
+
   try {
     const { type, imageData } = await request.json();
     console.log('Analysis type:', type);
@@ -149,12 +160,18 @@ CUSTOMER PSYCHOLOGY:
         psychology: extractSection(analysisText, 'CUSTOMER PSYCHOLOGY')
       };
 
-      return Response.json({ 
-        analysis: {
-          raw: analysisText,
-          ...sections
-        }
-      });
+      // Prepare the analysis object with the raw output and the parsed sections
+      const analysisRecord = { raw: analysisText, ...sections };
+
+      // Save the analysis record to the database with the associated user ID
+      const savedRecord = await saveMenuAnalysis(userId, analysisRecord, imageData);
+      console.log('Saved analysis with ID:', savedRecord.id);
+
+      // Merge the saved id with the analysis record
+      const analysisWithId = { id: savedRecord.id, ...analysisRecord };
+
+      // Return the analysis (including the id) to be used in recommendations generation
+      return Response.json({ analysis: analysisWithId });
     }
 
     return Response.json({ error: 'Invalid type' });

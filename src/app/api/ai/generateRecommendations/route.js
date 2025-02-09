@@ -1,4 +1,5 @@
 import OpenAI from 'openai';
+import { updateMenuAnalysisRecommendations } from '@/db/index';
 import { MENU_RESEARCH } from '@/utils/researchProcessor';
 
 const openai = new OpenAI({
@@ -10,8 +11,8 @@ export async function POST(request) {
     const { analysis } = await request.json();
     console.log('Received analysis for recommendations:', analysis);
     
-    if (!analysis || !analysis.raw) {
-      throw new Error('Invalid analysis data');
+    if (!analysis || !analysis.raw || !analysis.id) {
+      throw new Error('Invalid analysis data: missing id or raw analysis');
     }
 
     // Parse the raw analysis text into structured sections
@@ -81,7 +82,12 @@ CUSTOMER EXPERIENCE:`;
       }
     });
 
-    return Response.json({ recommendations });
+    // Save the recommendations in the database by updating the analysis record
+    const updatedRecord = await updateMenuAnalysisRecommendations(analysis.id, recommendations);
+    console.log('Recommendations updated for analysis ID:', updatedRecord.id);
+
+    // Return the updated recommendations
+    return Response.json({ recommendations: updatedRecord.recommendations });
   } catch (error) {
     console.error('Error generating recommendations:', error);
     return Response.json({ error: error.message }, { status: 500 });

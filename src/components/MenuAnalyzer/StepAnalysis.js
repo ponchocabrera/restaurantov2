@@ -71,7 +71,7 @@ export default function StepAnalysis({
             onClick={() => setIsExplanationOpen(!isExplanationOpen)}
             className="w-full flex justify-between items-center px-4 py-3 bg-[#212350] text-white font-bold rounded-lg shadow-lg"
           >
-            How does your Menu is Analyzed?
+            How does your Menu get Analyzed?
             {isExplanationOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
           </button>
 
@@ -113,71 +113,73 @@ export default function StepAnalysis({
       </div>
 
       {/* Analysis Results */}
-      {analysis && (
-        <div className="space-y-6 mt-8">
-          <h3 className="text-xl font-bold text-black">Structure</h3>
-          <div className="grid grid-cols-1 gap-6">
-            {analysis?.raw?.split('##').map((section, sectionIndex) => {
-              if (!section.trim()) return null;
-              
-              const [sectionTitle, ...lines] = section.trim().split('\n');
-
-              const items = lines.reduce((acc, line, index) => {
-                const trimmedLine = line.trim();
-                if (!trimmedLine.startsWith('-')) return acc;
-                
-                const cleanLine = trimmedLine.substring(1).trim();
-                
-                if (cleanLine.includes('**')) {
-                  const title = cleanLine.match(/\*\*(.*?)\*\*/)[1].replace(':', '').trim();
-                  let description = '';
-                  for (let i = index + 1; i < lines.length; i++) {
-                    const nextLine = lines[i].trim();
-                    if (nextLine.startsWith('-') && nextLine.includes('**')) break;
-                    if (nextLine.startsWith('-')) {
-                      description += nextLine.substring(1).trim() + ' ';
-                    }
-                  }
-                  
-                  acc.push({ title, description: description.trim() });
+      <div>
+        {analysis?.raw?.split('##').map((section, sectionIndex) => {
+          if (!section.trim()) return null;
+          
+          const [sectionTitle, ...lines] = section.trim().split('\n');
+          const items = lines.reduce((acc, line, index) => {
+            const trimmedLine = line.trim();
+            if (!trimmedLine.startsWith('-')) return acc;
+            const cleanLine = trimmedLine.substring(1).trim();
+            if (cleanLine.includes('**')) {
+              const title = cleanLine.match(/\*\*(.*?)\*\*/)[1].replace(':', '').trim();
+              let description = '';
+              for (let i = index + 1; i < lines.length; i++) {
+                const nextLine = lines[i].trim();
+                if (nextLine.startsWith('-') && nextLine.includes('**')) break;
+                if (nextLine.startsWith('-')) {
+                  description += nextLine.substring(1).trim() + ' ';
                 }
-                
-                return acc;
-              }, []);
+              }
+              acc.push({ title, description: description.trim() });
+            }
+            return acc;
+          }, []);
+          
+          return (
+            <div key={sectionIndex} className="space-y-4">
+              {items.map((item, itemIndex) => {
+                let IconComponent = Layout;
+                const lowerText = (item.title + item.description).toLowerCase();
+  
+                if (lowerText.includes('brand') || lowerText.includes('color')) {
+                  IconComponent = Palette;
+                } else if (lowerText.includes('price') || lowerText.includes('cost')) {
+                  IconComponent = DollarSign;
+                } else if (lowerText.includes('visual') || lowerText.includes('design')) {
+                  IconComponent = Eye;
+                } else if (lowerText.includes('menu') || lowerText.includes('item') || 
+                          lowerText.includes('section') || lowerText.includes('category')) {
+                  IconComponent = FileText;
+                }
+  
+                return (
+                  <div key={`${sectionIndex}-${itemIndex}`} className="bg-gray-100 rounded-lg p-6 shadow-md flex items-start gap-4">
+                    <div className="flex-shrink-0 w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
+                      <IconComponent className="w-6 h-6 text-gray-800" />
+                    </div>
+                    <div>
+                      <h5 className="font-bold text-lg text-black">{item.title}</h5>
+                      <p className="text-gray-600 text-sm">{item.description}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })}
+      </div>
 
-              return (
-                <div key={sectionIndex} className="space-y-4">
-                  {items.map((item, itemIndex) => {
-                    let IconComponent = Layout;
-                    const lowerText = (item.title + item.description).toLowerCase();
-
-                    if (lowerText.includes('brand') || lowerText.includes('color')) {
-                      IconComponent = Palette;
-                    } else if (lowerText.includes('price') || lowerText.includes('cost')) {
-                      IconComponent = DollarSign;
-                    } else if (lowerText.includes('visual') || lowerText.includes('design')) {
-                      IconComponent = Eye;
-                    } else if (lowerText.includes('menu') || lowerText.includes('item') || 
-                              lowerText.includes('section') || lowerText.includes('category')) {
-                      IconComponent = FileText;
-                    }
-
-                    return (
-                      <div key={`${sectionIndex}-${itemIndex}`} className="bg-gray-100 rounded-lg p-6 shadow-md flex items-start gap-4">
-                        <div className="flex-shrink-0 w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center">
-                          <IconComponent className="w-6 h-6 text-gray-800" />
-                        </div>
-                        <div>
-                          <h5 className="font-bold text-lg text-black">{item.title}</h5>
-                          <p className="text-gray-600 text-sm">{item.description}</p>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              );
-            })}
-          </div>
+      {/* Apply Analysis Button */}
+      {analysis && (
+        <div className="flex justify-end mt-4">
+          <button
+            onClick={onNext}
+            className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition duration-200"
+          >
+            Apply Analysis
+          </button>
         </div>
       )}
 
