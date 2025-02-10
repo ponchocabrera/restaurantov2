@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/shared/DashboardLayout';
 import { ChevronUp, ChevronDown } from 'lucide-react';
 import RawMaterialModal from '@/components/RawMaterialModal';
+import Link from 'next/link';
 
 // Optional formatting helper if needed
 function formatAnalysis(raw) {
@@ -297,6 +298,25 @@ export default function MyRestaurantsPage() {
             ))}
           </div>
         )}
+
+        {/* Banner Section */}
+        <div className="bg-blue-100 p-6 rounded-lg mb-8 mt-10 flex flex-col items-left text-left">
+          <h2 className="text-3xl font-bold mb-2">Learn about your Restaurant</h2>
+          <h3 className="text-xl font-semibold mb-2">
+            Your Restaurant, its Area and New Food Trends
+          </h3>
+          <p className="text-gray-700 mb-4">
+            Understand the food business industry around your Area,
+            find trends and understand how to grow your business.
+          </p>
+          <Link href="/restaurant-insights">
+            <button className="bg-blue-600 text-white py-2 px-4 rounded-full hover:bg-blue-500 transition-colors">
+              Get Insights
+            </button>
+          </Link>
+        </div>
+
+        {/* Saved Menu Analyses Section */}
         <section className="mt-10">
           <h2 className="text-2xl font-bold mb-4">Saved Menu Analyses</h2>
           {analyses.length === 0 ? (
@@ -359,11 +379,11 @@ export default function MyRestaurantsPage() {
                     <div className="flex items-center space-x-8">
                       <div className="text-center">
                         <div className="font-bold text-sm">{analyzedPointsCount}</div>
-                        <div className="text-gray-500 text-xs">Points</div>
+                        <div className="text-gray-500 text-xs">Analyzed Points</div>
                       </div>
                       <div className="text-center">
                         <div className="font-bold text-sm">{recommendationsCount}</div>
-                        <div className="text-gray-500 text-xs">Recs</div>
+                        <div className="text-gray-500 text-xs">Recommendations</div>
                       </div>
                     </div>
 

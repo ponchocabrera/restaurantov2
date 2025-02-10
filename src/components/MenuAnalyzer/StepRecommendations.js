@@ -37,6 +37,10 @@ export default function StepRecommendations({
           </div>
         ))}
       </div>
+
+      <div className="mt-8">
+        <MenuChat analysis={analysis} recommendations={recommendations} />
+      </div>
     </section>
   );
 }
