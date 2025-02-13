@@ -18,7 +18,7 @@ export default function Sidebar() {
     { label: 'Menu Enhancement', href: '/menu-creator' },
     { label: 'Smart Publishing', href: '/menu-generator' },
     { label: 'Restaurant Admin', href: '/restaurant-admin' },
-    { label: 'Chat with your AI expert', href: '/templates' },
+    { label: 'Back Office', href: '/employee-management' },
     { label: 'Research', href: '/research' },
     { label: 'Support', href: '/support' },
   ];

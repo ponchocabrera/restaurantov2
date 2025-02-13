@@ -1,4 +1,4 @@
-const { Pool } = require('pg');
+import { Pool } from 'pg';
 
 const pool = new Pool({
   user: process.env.DB_USER,
@@ -8,7 +8,7 @@ const pool = new Pool({
   port: process.env.DB_PORT,
 });
 
-// Test the connection
+// Optional: Test the connection
 pool.query('SELECT NOW()', (err, res) => {
   if (err) {
     console.error('Database connection error:', err);
@@ -17,7 +17,5 @@ pool.query('SELECT NOW()', (err, res) => {
   }
 });
 
-module.exports = {
-  query: (text, params) => pool.query(text, params),
-  pool,
-};
+export const query = (text, params) => pool.query(text, params);
+export { pool };
