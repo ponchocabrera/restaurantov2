@@ -52,7 +52,6 @@ export default function ScheduleManager() {
     const mapping = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     return mapping[dayIndex];
   }
-
   /**
    * Build a data structure grouping shifts by (employee_id, zone_id).
    * Example shape:
@@ -98,9 +97,6 @@ export default function ScheduleManager() {
       const dayName = getDayName(shift.shift_date);
       if (grouped[key].days[dayName]) {
         grouped[key].days[dayName].push(shift);
-      } else {
-        // If dayName doesn't match (like if the shift date is outside this week),
-        // you can handle that or ignore. For now we'll just skip it.
       }
     }
     return grouped;
@@ -118,13 +114,36 @@ export default function ScheduleManager() {
         throw new Error('Failed to fetch schedules');
       }
       const data = await response.json();
-      const grouped = groupShiftsByEmployeeAndZone(data.schedules || []);
-      setSchedule(Object.values(grouped));
+      const grouped = groupShiftsByArea(data.schedules || []);
+setSchedule(grouped);
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
     }
+  };
+
+  const groupShiftsByArea = (shifts) => {
+    const areaGrouped = {};
+    const employeeZoneGrouped = groupShiftsByEmployeeAndZone(shifts);
+    
+    // Convert to array of entries before regrouping
+    const entries = Object.values(employeeZoneGrouped);
+    
+    entries.forEach(entry => {
+      const area = entry.zoneName;
+      if (!areaGrouped[area]) {
+        areaGrouped[area] = []; // Ensure this is always an array
+      }
+      // Add proper array structure for the table
+      areaGrouped[area].push({
+        employee_name: entry.employeeName,
+        zone_name: entry.zoneName,
+        days: entry.days
+      });
+    });
+    
+    return areaGrouped;
   };
 
   const handleGenerateSchedule = async () => {
@@ -148,8 +167,12 @@ export default function ScheduleManager() {
       }
 
       const data = await response.json();
-      const grouped = groupShiftsByEmployeeAndZone(data.schedule || []);
-      setSchedule(Object.values(grouped));
+      
+      // Ensure we're working with array data
+      const scheduleData = Array.isArray(data.schedule) ? data.schedule : [];
+      const grouped = groupShiftsByArea(scheduleData);
+      
+      setSchedule(grouped);
 
       // Update generated weeks
       setGeneratedWeeks(prev => [...new Set([...prev, selectedWeek.toISOString().split('T')[0]])]);
@@ -193,44 +216,49 @@ export default function ScheduleManager() {
         </table>
       </div>
 
-      {schedule.length > 0 && (
+      {Object.keys(schedule).length > 0 && (
         <div className="overflow-x-auto">
-          <table className="min-w-full bg-white border-collapse border border-gray-300">
-            <thead>
-              <tr className="bg-gray-100">
-                <th className="p-3 border">Employee</th>
-                <th className="p-3 border">Zone</th>
-                {DAYS.map(day => (
-                  <th key={day} className="p-3 border">{day}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {schedule.map((row, index) => (
-                <tr key={index}>
-                  <td className="p-3 border">{row.employeeName}</td>
-                  <td className="p-3 border">{row.zoneName}</td>
-                  {DAYS.map(day => {
-                    const shifts = row.days[day];
-                    return (
-                      <td key={day} className="p-3 border align-top">
-                        {shifts.length === 0 ? '-' : shifts.map((shift, i) => (
-                          <div key={i} className="mb-1 p-1 bg-blue-50 rounded text-sm">
-                            <div className="font-medium">
-                              {shift.start_time} - {shift.end_time}
-                            </div>
-                            <div className="text-xs text-gray-600">
-                              {shift.role}
-                            </div>
-                          </div>
-                        ))}
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          {Object.entries(schedule).map(([area, shifts]) => (
+            <div key={area} className="mb-6">
+              <h3 className="text-lg font-bold">{area}</h3>
+              <table className="min-w-full bg-white border-collapse border border-gray-300">
+                <thead>
+                  <tr className="bg-gray-100">
+                    <th className="p-3 border">Employee</th>
+                    <th className="p-3 border">Zone</th>
+                    {DAYS.map(day => (
+                      <th key={day} className="p-3 border">{day}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                {(Array.isArray(shifts) ? shifts : []).map((row, index) => (
+                    <tr key={index}>
+                      <td className="p-3 border">{row.employee_name}</td>
+                      <td className="p-3 border">{row.zone_name}</td>
+                      {DAYS.map(day => {
+                        const shiftsForDay = row.days?.[day] || [];
+                        return (
+                          <td key={day} className="p-3 border align-top">
+                            {shiftsForDay.length === 0 ? '-' : shiftsForDay.map((shift, i) => (
+                              <div key={i} className="mb-1 p-1 bg-blue-50 rounded text-sm">
+                                <div className="font-medium">
+                                  {shift.start_time} - {shift.end_time}
+                                </div>
+                                <div className="text-xs text-gray-600">
+                                  {shift.role}
+                                </div>
+                              </div>
+                            ))}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ))}
         </div>
       )}
 
