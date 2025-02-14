@@ -20,16 +20,29 @@ export async function GET(request) {
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
 
-    // Fetch schedules within the date range, joined with employees and zones
     const result = await query(
       `
       SELECT
-        s.*,
+        s.id,
+        s.employee_id,
+        s.zone_id,
+        s.shift_date,
+        s.start_time,
+        s.end_time,
+        s.role,
+        s.status,
+        s.created_at,
+        s.updated_at,
+        s.is_coverage,
+        s.covered_for,
+        s.coverage_assigned,
+        s.no_show_reason,
+        s.coverage_status,
         CONCAT(e.first_name, ' ', e.last_name) AS employee_name,
         z.name AS zone_name,
         e.role AS employee_role,
         MAX(cr.replacement_employee) AS replacement_employee,
-        MAX(cr.status) AS coverage_status,
+        s.coverage_status AS coverage_status,
         MAX(cr.reason) AS coverage_reason,
         COALESCE(MAX(zr.required_count), 0) AS required_count
       FROM schedules s
@@ -44,7 +57,7 @@ export async function GET(request) {
         AND e.restaurant_id = (
           SELECT id FROM restaurants WHERE user_id = $3 LIMIT 1
         )
-      GROUP BY s.id, e.id, z.id
+      GROUP BY s.id, e.id, z.id, s.coverage_status
       ORDER BY s.shift_date ASC, s.start_time ASC
       `,
       [startDate, endDate, session.user.id]

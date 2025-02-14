@@ -112,7 +112,8 @@ export default function ScheduleManager({ compact }) {
   }, []);
 
   function isEmployeeRestDay(employeeRow, day) {
-    return employeeRow.restDays && employeeRow.restDays.includes(day);
+    const restDays = employeeRow.restDays || employeeRow.rest_days || [];
+    return restDays.includes(day);
   }
 
   //
@@ -374,7 +375,7 @@ export default function ScheduleManager({ compact }) {
       setSaveSummary(summary);
 
       // Refresh the schedule
-      handleWeekClick(selectedWeek);
+      await handleWeekClick(selectedWeek);
     } catch (error) {
       console.error('Error saving changes:', error);
       setError(error.message || 'Error saving changes');
@@ -943,7 +944,7 @@ export default function ScheduleManager({ compact }) {
         {showHowWeSchedule && (
           <div className="mt-2 border border-gray-300 p-4 rounded">
             <p className="text-sm">
-              Here’s some placeholder text explaining how shifts 
+              Here's some placeholder text explaining how shifts 
               are automatically generated. 
               Customize as needed for your app!
             </p>
