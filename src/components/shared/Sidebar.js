@@ -18,8 +18,14 @@ export default function Sidebar() {
     { label: 'Menu Enhancement', href: '/menu-creator' },
     { label: 'Smart Publishing', href: '/menu-generator' },
     { label: 'Restaurant Admin', href: '/restaurant-admin' },
-    { label: 'Back Office', href: '/employee-management' },
-    { label: 'Employees', href: '/employee-management/employees' },
+    { 
+      label: 'Back Office', 
+      href: '/employee-management/dashboard',
+      children: [
+        { label: 'Employee Contracts', href: '/employee-management/employees' },
+        { label: 'Scheduler', href: '/employee-management' }
+      ]
+    },
     { label: 'Research', href: '/research' },
     { label: 'Support', href: '/support' },
   ];
@@ -44,15 +50,28 @@ export default function Sidebar() {
 
       <nav className="flex-1 flex flex-col p-2 space-y-1 overflow-y-auto">
         {menuItems.map((item) => (
-          <Link key={item.href} href={item.href} onClick={() => setIsOpen(false)}>
-            <span className={`flex items-center px-3 py-2 rounded-md cursor-pointer transition-opacity ${
-              pathname === item.href 
-                ? 'font-bold text-lg text-black' 
-                : 'hover:bg-gray-100 text-gray-700 font-outfit'
-            }`}>
-              {item.label}
-            </span>
-          </Link>
+          <div key={item.href}>
+            <Link href={item.href} onClick={() => setIsOpen(false)}>
+              <span className={`flex items-center px-3 py-2 rounded-md cursor-pointer transition-opacity ${
+                pathname === item.href 
+                  ? 'font-bold text-lg text-black' 
+                  : 'hover:bg-gray-100 text-gray-700 font-outfit'
+              }`}>
+                {item.label}
+              </span>
+            </Link>
+            {item.children && item.children.map((child) => (
+              <Link key={child.href} href={child.href} onClick={() => setIsOpen(false)}>
+                <span className={`flex items-center px-6 py-2 text-sm rounded-md cursor-pointer transition-opacity ${
+                  pathname === child.href 
+                    ? 'font-bold text-black' 
+                    : 'hover:bg-gray-100 text-gray-500 font-outfit'
+                }`}>
+                  {child.label}
+                </span>
+              </Link>
+            ))}
+          </div>
         ))}
       </nav>
 

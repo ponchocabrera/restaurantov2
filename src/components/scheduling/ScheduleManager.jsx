@@ -8,7 +8,7 @@ import {
   Draggable
 } from 'react-beautiful-dnd';
 
-// Helper to convert full day names to abbreviations.
+// Helper: Convert full day names to abbreviations.
 const abbreviateDay = (day) => {
   const map = {
     "Monday": "Mon",
@@ -24,21 +24,28 @@ const abbreviateDay = (day) => {
 
 export default function ScheduleManager() {
   const { data: session } = useSession();
-  const [schedule, setSchedule] = useState({}); // grouped by zone → employee rows
+  const [schedule, setSchedule] = useState({}); // schedule grouped by zone → employee rows
   const [generatedWeeks, setGeneratedWeeks] = useState([]);
   const [selectedWeek, setSelectedWeek] = useState(new Date());
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showDatePicker, setShowDatePicker] = useState(false);
 
-  // New states for employee data:
+  // Employee data from API:
   const [employeeRestDaysMapping, setEmployeeRestDaysMapping] = useState({});
   const [employeeRolesMapping, setEmployeeRolesMapping] = useState({});
+
+  // Modal state for adding a shift.
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalData, setModalData] = useState(null);
 
   // Days in order (Monday–Sunday)
   const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-  // Fetch employee data (including rest_days and roles) from your API.
+  // -------------------------
+  // Fetch employee data from your API.
+  // Expected API: GET /api/employees returns { employees: [ { id, first_name, last_name, rest_days, roles, ... }, ... ] }
+  // -------------------------
   useEffect(() => {
     const fetchEmployees = async () => {
       try {
@@ -49,10 +56,10 @@ export default function ScheduleManager() {
         const restDaysMap = {};
         data.employees.forEach(emp => {
           const fullName = `${emp.first_name} ${emp.last_name}`;
+          // Normalize rest_days to abbreviations.
           restDaysMap[fullName] = (emp.rest_days || []).map(day => abbreviateDay(day));
-          rolesMap[fullName] = (emp.roles && emp.roles.length > 0)
-            ? emp.roles
-            : ["Server", "Bartender", "Host"];
+          // Use available roles from API; if none, default to a list.
+          rolesMap[fullName] = (emp.roles && emp.roles.length > 0) ? emp.roles : ["Server", "Bartender", "Host"];
           console.log(`${fullName}: rest_days=`, restDaysMap[fullName], "; roles=", rolesMap[fullName]);
         });
         setEmployeeRestDaysMapping(restDaysMap);
@@ -64,7 +71,7 @@ export default function ScheduleManager() {
     fetchEmployees();
   }, []);
 
-  // Debugging: log when checking rest days.
+  // Debug helper: log when checking rest days.
   const isEmployeeRestDay = (employeeRow, day) => {
     const result = employeeRow.restDays && employeeRow.restDays.includes(day);
     console.log(`${employeeRow.employee_name}: restDays=${JSON.stringify(employeeRow.restDays)}; checking ${day} => ${result}`);
@@ -72,7 +79,8 @@ export default function ScheduleManager() {
   };
 
   // -------------------------
-  // Existing functions for generated weeks
+  // Fetch generated weeks.
+  // Expected API: GET /api/schedules/weeks
   // -------------------------
   useEffect(() => {
     const fetchGeneratedWeeks = async () => {
@@ -104,15 +112,18 @@ export default function ScheduleManager() {
     return mapping[date.getDay()];
   }
 
-  // Group shifts by employee and zone.
+  // -------------------------
+  // Group generated shifts by employee and zone.
+  // Assumes each shift includes numeric employee_id and zone_id.
+  // -------------------------
   function groupShiftsByEmployeeAndZone(shifts) {
     const grouped = {};
     for (const shift of shifts) {
       const key = `${shift.employee_id}_${shift.zone_id}`;
       if (!grouped[key]) {
         grouped[key] = {
-          employeeId: shift.employee_id,
-          zoneId: shift.zone_id,
+          employee_id: shift.employee_id,
+          zone_id: shift.zone_id,
           employeeName: shift.employee_name || String(shift.employee_id),
           zoneName: shift.zone_name || String(shift.zone_id),
           days: { Mon: [], Tue: [], Wed: [], Thu: [], Fri: [], Sat: [], Sun: [] }
@@ -126,7 +137,7 @@ export default function ScheduleManager() {
     return grouped;
   }
 
-  // Group by zone and merge in employee rest days and available roles.
+  // Merge the schedule with employee rest days and available roles.
   const groupShiftsByArea = (shifts) => {
     const areaGrouped = {};
     const employeeZoneGrouped = groupShiftsByEmployeeAndZone(shifts);
@@ -135,6 +146,8 @@ export default function ScheduleManager() {
       if (!areaGrouped[area]) areaGrouped[area] = [];
       const fullName = entry.employeeName;
       areaGrouped[area].push({
+        employee_id: entry.employee_id, // numeric
+        zone_id: entry.zone_id,         // numeric
         employee_name: fullName,
         zone_name: entry.zoneName,
         days: entry.days,
@@ -145,6 +158,12 @@ export default function ScheduleManager() {
     return areaGrouped;
   };
 
+  // -------------------------
+  // API Calls
+  // GET schedules: /api/schedules?startDate=...&endDate=...
+  // POST (generate) schedules: /api/schedules/generate
+  // PUT (save) schedules: /api/schedules/save
+  // -------------------------
   const handleWeekClick = async (weekStart) => {
     setLoading(true);
     setError('');
@@ -193,6 +212,28 @@ export default function ScheduleManager() {
     }
   };
 
+  // Save changes by calling PUT /api/schedules/save.
+  const handleSaveChanges = async () => {
+    try {
+      const res = await fetch('/api/schedules/save', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          schedule,
+          startDate: selectedWeek.toISOString().split('T')[0],
+          endDate: weekDates[6].toISOString().split('T')[0]
+        })
+      });
+      if (!res.ok) {
+        throw new Error('Failed to save changes');
+      }
+      alert("Schedule changes saved successfully!");
+    } catch (error) {
+      console.error('Error saving changes:', error);
+      alert("Error saving changes: " + error.message);
+    }
+  };
+
   function generateWeekOptions() {
     const options = [];
     generatedWeeks.forEach(weekStr => {
@@ -219,7 +260,7 @@ export default function ScheduleManager() {
     return weekDates[index] ? weekDates[index].toISOString().split('T')[0] : '';
   };
 
-  // New conflict function: one employee can only have one shift per day.
+  // Conflict: one employee can only have one shift per day.
   const hasConflictForEmployeeOnDay = (employeeName, day) => {
     for (const zone in schedule) {
       const employees = schedule[zone];
@@ -248,7 +289,7 @@ export default function ScheduleManager() {
     if (!destination) return;
     if (source.droppableId === destination.droppableId && source.index === destination.index) return;
   
-    // droppableId format: "employeeName-day-zoneName"
+    // droppableId format: "employeeName-day-zoneName" (we sanitize spaces)
     const sanitize = (str) => str.replace(/\s+/g, '_');
     const [employee, sourceDay, zoneName] = source.droppableId.split('-').map(sanitize);
     const [destEmployee, destDay, destZone] = destination.droppableId.split('-').map(sanitize);
@@ -262,7 +303,6 @@ export default function ScheduleManager() {
       const [movedShift] = sourceShifts.splice(source.index, 1);
       zoneEmployees[empIndex].days[sourceDay] = sourceShifts;
       movedShift.shift_date = getDateForDay(destDay);
-      // When moving, if destination cell already has a shift, flag conflict.
       if (hasConflictForEmployeeOnDay(employee, destDay)) {
         movedShift.conflict = true;
       } else {
@@ -273,21 +313,22 @@ export default function ScheduleManager() {
     }
     setSchedule(newSchedule);
   };
-  
-  // Instead of prompt, open the modal to add a shift.
-  const [modalOpen, setModalOpen] = useState(false);
-  const [modalData, setModalData] = useState(null);
-  
+
+  // Instead of prompt, open a modal to add a shift.
   const openAddShiftModal = (zoneName, employeeRow, day) => {
     setModalData({ zoneName, employeeRow, day });
     setModalOpen(true);
   };
-  
+
   const handleAddShiftModal = (selectedRole) => {
     const { zoneName, employeeRow, day } = modalData;
+    // Generate a unique id for the new shift.
+    const uniqueId = `new-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
     const newShift = {
-      employee_id: employeeRow.employee_name, // demo purposes
+      id: uniqueId,
+      employee_id: employeeRow.employee_id, // numeric
       employee_name: employeeRow.employee_name,
+      zone_id: employeeRow.zone_id,         // numeric
       zone_name: employeeRow.zone_name,
       shift_date: getDateForDay(day),
       start_time: "09:00",
@@ -308,111 +349,140 @@ export default function ScheduleManager() {
     setModalOpen(false);
     setModalData(null);
   };
-  
+
   // -------------------------
-  // Render Editable Schedule
+  // Helper: Compute "Staff Required" totals for a given zone.
   // -------------------------
-  // Wrap droppable content in a <div> inside the <td> to avoid table element issues.
+  const computeStaffRequiredForZone = (employees) => {
+    const totals = { Mon: 0, Tue: 0, Wed: 0, Thu: 0, Fri: 0, Sat: 0, Sun: 0 };
+    employees.forEach(emp => {
+      DAYS.forEach(day => {
+        const shifts = emp.days[day] || [];
+        shifts.forEach(shift => {
+          totals[day] += shift.required_count || 0;
+        });
+      });
+    });
+    return totals;
+  };
+
+  // -------------------------
+  // Render Editable Schedule (with modal integration)
+  // -------------------------
+  // We sort zones and employees alphabetically.
   const renderEditableSchedule = () => {
+    const sortedZones = Object.keys(schedule).sort();
     return (
       <DragDropContext onDragEnd={handleDragEnd}>
-        {Object.entries(schedule).map(([zoneName, employees]) => (
-          <div key={zoneName} className="mb-4">
-            <h3 className="text-lg font-semibold">{zoneName}</h3>
-            <table className="w-full border">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="p-3 text-left text-sm font-medium text-gray-700">Employee</th>
-                  {weekDates.map((date, idx) => (
-                    <th key={idx} className="p-3 text-center text-sm font-medium text-gray-700 border-l">
-                      <div>{DAYS[idx]}</div>
-                      <div className="text-xs text-gray-500">
-                        {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                      </div>
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {employees.map((employeeRow) => (
-                  <tr key={employeeRow.employee_name} className="border-t">
-                    <td className="p-3 font-medium text-gray-900">
-                      {employeeRow.employee_name}
-                      <span className="text-xs text-gray-500 ml-2">
-                        (Rest: {employeeRow.restDays && employeeRow.restDays.length > 0 ? employeeRow.restDays.join(', ') : 'None'})
-                      </span>
-                    </td>
-                    {DAYS.map(day => (
-                      <Droppable droppableId={`${employeeRow.employee_name.replace(/\s+/g, '_')}-${day}-${zoneName.replace(/\s+/g, '_')}`} key={day}>
-                        {(provided) => (
-                          <td className="p-0 border-l">
-                            <div
-                              ref={provided.innerRef}
-                              {...provided.droppableProps}
-                              style={{ display: "block" }}
-                              className={`p-3 cursor-pointer ${isEmployeeRestDay(employeeRow, day) ? 'bg-gray-300' : ''}`}
-                              onClick={() => {
-                                if (!(employeeRow.days[day] && employeeRow.days[day].length > 0)) {
-                                  openAddShiftModal(zoneName, employeeRow, day);
-                                }
-                              }}
-                            >
-                              {(employeeRow.days[day] || []).map((shift, index) => (
-                                <Draggable
-                                  draggableId={`shift-${employeeRow.employee_name.replace(/\s+/g, '_')}-${day}-${zoneName.replace(/\s+/g, '_')}-${index}`}
-                                  index={index}
-                                  key={`shift-${employeeRow.employee_name}-${day}-${zoneName}-${index}`}
-                                >
-                                  {(provided) => (
-                                    <div
-                                      ref={provided.innerRef}
-                                      {...provided.draggableProps}
-                                      {...provided.dragHandleProps}
-                                      style={{ ...provided.draggableProps.style, minHeight: '30px' }}
-                                      className={`p-2 m-1 rounded ${shift.ownerModified ? 'bg-green-200' : 'bg-blue-100'} ${shift.conflict ? 'border border-red-500' : ''}`}
-                                    >
-                                      {shift.role}
-                                      {shift.conflict && (
-                                        <span
-                                          title="This shift causes a conflict: the employee is already scheduled for another shift on this day."
-                                          className="text-red-500 ml-1"
-                                        >
-                                          ⚠️
-                                        </span>
-                                      )}
-                                      {shift.ownerModified && (
+        {sortedZones.map((zoneName) => {
+          const sortedEmployees = schedule[zoneName].sort((a, b) =>
+            a.employee_name.localeCompare(b.employee_name)
+          );
+          const totals = computeStaffRequiredForZone(sortedEmployees);
+          return (
+            <div key={zoneName} className="mb-4">
+              <h3 className="text-lg font-semibold">{zoneName}</h3>
+              <table className="w-full border">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="p-3 text-left text-sm font-medium text-gray-700">Employee</th>
+                    {weekDates.map((date, idx) => (
+                      <th key={idx} className="p-3 text-center text-sm font-medium text-gray-700 border-l">
+                        <div>{DAYS[idx]}</div>
+                        <div className="text-xs text-gray-500">
+                          {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                        </div>
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {sortedEmployees.map((employeeRow) => (
+                    <tr key={employeeRow.employee_name} className="border-t">
+                      <td className="p-3 font-medium text-gray-900">
+                        {employeeRow.employee_name}
+                        <span className="text-xs text-gray-500 ml-2">
+                          (Rest: {employeeRow.restDays && employeeRow.restDays.length > 0 ? employeeRow.restDays.join(', ') : 'None'})
+                        </span>
+                      </td>
+                      {DAYS.map(day => (
+                        <Droppable droppableId={`${employeeRow.employee_name.replace(/\s+/g, '_')}-${day}-${zoneName.replace(/\s+/g, '_')}`} key={day}>
+                          {(provided) => (
+                            <td className="p-0 border-l">
+                              <div
+                                ref={provided.innerRef}
+                                {...provided.droppableProps}
+                                style={{ display: "block" }}
+                                className={`p-3 cursor-pointer ${isEmployeeRestDay(employeeRow, day) ? 'bg-gray-300' : ''}`}
+                                onClick={() => {
+                                  if (!(employeeRow.days[day] && employeeRow.days[day].length > 0)) {
+                                    openAddShiftModal(zoneName, employeeRow, day);
+                                  }
+                                }}
+                              >
+                                {(employeeRow.days[day] || []).map((shift) => (
+                                  <Draggable
+                                    draggableId={`shift-${shift.id}`}
+                                    index={(employeeRow.days[day] || []).indexOf(shift)}
+                                    key={`shift-${shift.id}`}
+                                  >
+                                    {(provided) => (
+                                      <div
+                                        ref={provided.innerRef}
+                                        {...provided.draggableProps}
+                                        {...provided.dragHandleProps}
+                                        style={{ ...provided.draggableProps.style, minHeight: '30px' }}
+                                        className={`p-2 m-1 rounded ${shift.ownerModified ? 'bg-green-200' : 'bg-blue-100'} ${shift.conflict ? 'border border-red-500' : ''}`}
+                                      >
+                                        {shift.role}
+                                        {shift.conflict && (
+                                          <span
+                                            title="This shift causes a conflict: the employee is already scheduled for another shift on this day."
+                                            className="text-red-500 ml-1"
+                                          >
+                                            ⚠️
+                                          </span>
+                                        )}
                                         <button
                                           onClick={(e) => {
                                             e.stopPropagation();
-                                            handleDeleteShift(zoneName, employeeRow.employee_name, day, index);
+                                            handleDeleteShift(zoneName, employeeRow.employee_name, day, (employeeRow.days[day] || []).indexOf(shift));
                                           }}
                                           className="ml-1 text-sm text-red-500"
                                         >
                                           X
                                         </button>
-                                      )}
-                                    </div>
-                                  )}
-                                </Draggable>
-                              ))}
-                              {provided.placeholder}
-                            </div>
-                          </td>
-                        )}
-                      </Droppable>
+                                      </div>
+                                    )}
+                                  </Draggable>
+                                ))}
+                                {provided.placeholder}
+                              </div>
+                            </td>
+                          )}
+                        </Droppable>
+                      ))}
+                    </tr>
+                  ))}
+                  <tr className="bg-gray-50 border-t">
+                    <td className="p-3 text-right font-medium text-gray-700">Staff Required</td>
+                    {DAYS.map(day => (
+                      <td key={day} className="p-3 text-center font-medium text-gray-900 border-l">
+                        {totals[day] > 0 ? totals[day] : '—'}
+                      </td>
                     ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ))}
+                </tbody>
+              </table>
+            </div>
+          );
+        })}
       </DragDropContext>
     );
   };
-  
+
   // -------------------------
-  // Render Modal for adding a shift
+  // Render Modal for Adding a Shift
   // -------------------------
   const renderModal = () => {
     if (!modalOpen || !modalData) return null;
@@ -450,7 +520,7 @@ export default function ScheduleManager() {
       </div>
     );
   };
-  
+
   return (
     <div className="bg-white p-6 rounded-lg shadow">
       <h2 className="text-2xl font-bold">Schedule Management</h2>
@@ -511,6 +581,15 @@ export default function ScheduleManager() {
       ) : (
         <p>No schedule data available.</p>
       )}
+  
+      <div className="mt-4">
+        <button
+          onClick={handleSaveChanges}
+          className="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600"
+        >
+          Save Changes
+        </button>
+      </div>
   
       {showDatePicker && (
         <div className="mt-4">
