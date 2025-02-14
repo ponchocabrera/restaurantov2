@@ -56,7 +56,11 @@ export default function EmployeeEditModal({ employee, onClose, onSave }) {
       const res = await fetch(`/api/employees/${employee.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          // Convert rest_days to array if needed
+          rest_days: Array.isArray(formData.rest_days) ? formData.rest_days : []
+        }),
       });
       
       if (!res.ok) throw new Error('Failed to update employee');

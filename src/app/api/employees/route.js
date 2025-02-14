@@ -21,11 +21,19 @@ export async function GET(request) {
         COALESCE(
           json_agg(DISTINCT ea.day_of_week) FILTER (WHERE ea.can_cover = true), 
           '[]'
-        ) as rest_day_coverage
+        ) as rest_day_coverage,
+        COALESCE(
+          json_agg(DISTINCT jsonb_build_object(
+            'shift_type', esp.shift_type,
+            'preferred', esp.preferred
+          )) FILTER (WHERE esp.shift_type IS NOT NULL),
+          '[]'
+        ) as shift_preferences
        FROM employees e
        JOIN restaurants r ON e.restaurant_id = r.id
        LEFT JOIN employee_roles er ON e.id = er.employee_id
        LEFT JOIN employee_availability ea ON e.id = ea.employee_id
+       LEFT JOIN employee_shift_preferences esp ON e.id = esp.employee_id
        WHERE r.user_id = $1
        GROUP BY e.id, r.id, r.name`,
       [session.user.id]

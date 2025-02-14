@@ -28,6 +28,9 @@ export async function GET(request) {
         CONCAT(e.first_name, ' ', e.last_name) AS employee_name,
         z.name AS zone_name,
         e.role AS employee_role,
+        MAX(cr.replacement_employee) AS replacement_employee,
+        MAX(cr.status) AS coverage_status,
+        MAX(cr.reason) AS coverage_reason,
         COALESCE(MAX(zr.required_count), 0) AS required_count
       FROM schedules s
       JOIN employees e ON s.employee_id = e.id
@@ -36,6 +39,7 @@ export async function GET(request) {
         zr.zone_id = z.id AND
         TRIM(TO_CHAR(s.shift_date, 'Day')) ILIKE zr.day_of_week AND
         zr.role = s.role
+      LEFT JOIN coverage_requests cr ON s.id = cr.schedule_id
       WHERE s.shift_date BETWEEN $1 AND $2
         AND e.restaurant_id = (
           SELECT id FROM restaurants WHERE user_id = $3 LIMIT 1

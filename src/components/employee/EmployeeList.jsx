@@ -117,6 +117,23 @@ const EmployeeList = forwardRef((props, ref) => {
                     <dd className="mt-1 text-sm text-gray-900">{employee.days_per_week}</dd>
                   </div>
                   <div>
+                    <dt className="text-sm font-medium text-gray-500">Employment Dates</dt>
+                    <dd className="mt-1 text-sm text-gray-900">
+                      {employee.contract_details?.start_date} -{' '}
+                      {employee.contract_details?.end_date || 'Present'}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-sm font-medium text-gray-500">Shift Preferences</dt>
+                    <dd className="mt-1 text-sm text-gray-900">
+                      {[
+                        employee.shift_preferences?.find(p => p.shift_type === 'morning')?.preferred && 'Morning (6am-2pm)',
+                        employee.shift_preferences?.find(p => p.shift_type === 'afternoon')?.preferred && 'Afternoon (2pm-10pm)',
+                        employee.shift_preferences?.find(p => p.shift_type === 'night')?.preferred && 'Night (10pm-6am)'
+                      ].filter(Boolean).join(', ') || 'No preferences set'}
+                    </dd>
+                  </div>
+                  <div>
                     <dt className="text-sm font-medium text-gray-500">Rest Days</dt>
                     <dd className="mt-1 text-sm text-gray-900">
                       {employee.rest_days?.join(', ') || 'No rest days set'}

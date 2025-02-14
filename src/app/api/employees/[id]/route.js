@@ -37,7 +37,7 @@ export async function DELETE(request, { params }) {
 
 export async function PUT(request, { params }) {
   const { id } = params;
-  
+
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
@@ -45,25 +45,64 @@ export async function PUT(request, { params }) {
     }
 
     const updates = await request.json();
-    
-    const result = await query(
-      `UPDATE employees 
-       SET first_name = $1, last_name = $2, email = $3, 
-           phone = $4, days_per_week = $5, rest_days = $6
-       WHERE id = $7
-       RETURNING *`,
-      [
-        updates.first_name,
-        updates.last_name,
-        updates.email,
-        updates.phone,
-        updates.days_per_week,
-        JSON.stringify(updates.rest_days),
-        id
-      ]
-    );
 
-    return NextResponse.json({ employee: result.rows[0] });
+    // Use a transaction to update the main employee record and related tables.
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      // Update main employee record. We now include contract_details.
+      const employeeResult = await client.query(
+        `UPDATE employees 
+         SET first_name = $1, last_name = $2, email = $3, 
+             phone = $4, days_per_week = $5, rest_days = $6,
+             contract_details = $7
+         WHERE id = $8
+         RETURNING *`,
+        [
+          updates.first_name,
+          updates.last_name,
+          updates.email,
+          updates.phone,
+          updates.days_per_week,
+          JSON.stringify(updates.rest_days),
+          JSON.stringify(updates.contract_details),
+          id
+        ]
+      );
+
+      // Update roles: Remove old roles and insert the new ones.
+      await client.query('DELETE FROM employee_roles WHERE employee_id = $1', [id]);
+      if (updates.roles && updates.roles.length) {
+        for (const [index, role] of updates.roles.entries()) {
+          await client.query(
+            `INSERT INTO employee_roles (employee_id, role, is_primary)
+             VALUES ($1, $2, $3)`,
+            [id, role, index === 0] // assume first role is primary
+          );
+        }
+      }
+
+      // Update shift preferences: Remove old preferences and insert the updated ones.
+      await client.query('DELETE FROM employee_shift_preferences WHERE employee_id = $1', [id]);
+      if (updates.shift_preferences) {
+        for (const shiftType of Object.keys(updates.shift_preferences)) {
+          await client.query(
+            `INSERT INTO employee_shift_preferences (employee_id, shift_type, preferred)
+             VALUES ($1, $2, $3)`,
+            [id, shiftType, updates.shift_preferences[shiftType]]
+          );
+        }
+      }
+
+      await client.query('COMMIT');
+      return NextResponse.json({ employee: employeeResult.rows[0] });
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
   } catch (error) {
     console.error('Error updating employee:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
