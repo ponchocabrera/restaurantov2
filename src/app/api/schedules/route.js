@@ -198,7 +198,6 @@ export async function POST(request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
-
 const fetchPastSchedules = async (startDate, endDate) => {
   const response = await fetch(`/api/schedules/past?startDate=${startDate}&endDate=${endDate}`);
   if (!response.ok) {
@@ -207,3 +206,4 @@ const fetchPastSchedules = async (startDate, endDate) => {
   const data = await response.json();
   return data.schedules;
 };
+
