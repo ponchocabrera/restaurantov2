@@ -26,6 +26,15 @@ export async function PUT(request) {
         const zone_id = employee.zone_id;         // should be numeric
         for (const day in employee.days) {
           for (const shift of employee.days[day]) {
+
+            // If you want a default coverage_status for coverage shifts:
+            // e.g., 'pending' if is_coverage is true
+            const coverageStatus = shift.coverage_status
+              ? shift.coverage_status
+              : shift.isCoverage
+                ? 'pending'
+                : null;
+
             newShifts.push({
               id: shift.id, // may be a number or a string (for new/coverage shifts)
               tempId: shift.tempId, // temporary key from the front end (if any)
@@ -40,7 +49,8 @@ export async function PUT(request) {
               is_coverage: shift.isCoverage || false,
               covered_for: shift.coveredFor || null,
               coverage_assigned: shift.coverageAssigned || null,
-              no_show_reason: shift.noShowReason || null
+              no_show_reason: shift.noShowReason || null,
+              coverage_status: coverageStatus // NEW field
             });
           }
         }
@@ -105,10 +115,20 @@ export async function PUT(request) {
           console.log("Inserting auto-generated shift:", shift);
           const res = await client.query(
             `INSERT INTO schedules (
-                employee_id, zone_id, role, shift_date, start_time, end_time, status, 
-                is_coverage, covered_for, coverage_assigned, no_show_reason
+                employee_id, 
+                zone_id, 
+                role, 
+                shift_date, 
+                start_time, 
+                end_time, 
+                status, 
+                is_coverage, 
+                covered_for, 
+                coverage_assigned, 
+                no_show_reason,
+                coverage_status
              )
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
              RETURNING id`,
             [
               shift.employee_id,
@@ -121,7 +141,8 @@ export async function PUT(request) {
               shift.is_coverage,
               shift.covered_for,
               shift.coverage_assigned,
-              shift.no_show_reason
+              shift.no_show_reason,
+              shift.coverage_status // NEW FIELD
             ]
           );
           // Capture the new id.
@@ -132,10 +153,21 @@ export async function PUT(request) {
           console.log("Inserting shift with provided id:", shift);
           await client.query(
             `INSERT INTO schedules (
-                id, employee_id, zone_id, role, shift_date, start_time, end_time, status, 
-                is_coverage, covered_for, coverage_assigned, no_show_reason
+                id, 
+                employee_id, 
+                zone_id, 
+                role, 
+                shift_date, 
+                start_time, 
+                end_time, 
+                status, 
+                is_coverage, 
+                covered_for, 
+                coverage_assigned, 
+                no_show_reason,
+                coverage_status
              )
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
             [
               shift.id,
               shift.employee_id,
@@ -148,7 +180,8 @@ export async function PUT(request) {
               shift.is_coverage,
               shift.covered_for,
               shift.coverage_assigned,
-              shift.no_show_reason
+              shift.no_show_reason,
+              shift.coverage_status // NEW FIELD
             ]
           );
         }
