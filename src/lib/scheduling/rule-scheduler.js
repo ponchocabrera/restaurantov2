@@ -23,7 +23,10 @@ export async function generateSchedule(restaurantId, startDate, endDate) {
 
     // For each zone and time slot
     for (const zone of zones) {
-      const requirements = zone.roles_needed.filter(r => r.day_of_week === dayOfWeek);
+      const requirements = zone.requirements.filter(r => 
+        r.day_of_week?.toLowerCase() === dayOfWeek.toLowerCase() && 
+        r.required_count > 0
+      );
       
       for (const req of requirements) {
         const availableEmployees = sortedEmployees.filter(emp => 
@@ -49,4 +52,16 @@ export async function generateSchedule(restaurantId, startDate, endDate) {
   }
 
   return schedule;
-} 
+}
+
+const hasRequiredRole = (emp, role) => {
+  return emp.roles?.some(r => r.toLowerCase() === role.toLowerCase());
+};
+
+const isEmployeeAvailable = (emp, dayOfWeek, req) => {
+  const availability = emp.availability?.find(a => 
+    a.day.toLowerCase() === dayOfWeek.toLowerCase() &&
+    a.shift === req.shift_time
+  );
+  return availability?.available === true;
+}; 

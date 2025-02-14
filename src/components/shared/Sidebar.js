@@ -19,6 +19,7 @@ export default function Sidebar() {
     { label: 'Smart Publishing', href: '/menu-generator' },
     { label: 'Restaurant Admin', href: '/restaurant-admin' },
     { label: 'Back Office', href: '/employee-management' },
+    { label: 'Employees', href: '/employee-management/employees' },
     { label: 'Research', href: '/research' },
     { label: 'Support', href: '/support' },
   ];

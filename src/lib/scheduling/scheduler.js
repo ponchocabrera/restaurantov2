@@ -3,15 +3,51 @@
 import { query } from '@/lib/db';
 
 /**
- * 1. Force local noon to avoid Monday -> Sunday shift from time zone.
+ * Converts any day input (full name or abbreviated, any case)
+ * to a standardized abbreviated form ("Mon", "Tue", etc.).
+ */
+function toAbbreviated(day) {
+  if (!day) return day;
+  const d = day.toLowerCase().trim();
+  switch (d) {
+    case 'monday':
+    case 'mon':
+      return 'Mon';
+    case 'tuesday':
+    case 'tue':
+    case 'tues':
+      return 'Tue';
+    case 'wednesday':
+    case 'wed':
+      return 'Wed';
+    case 'thursday':
+    case 'thu':
+    case 'thurs':
+      return 'Thu';
+    case 'friday':
+    case 'fri':
+      return 'Fri';
+    case 'saturday':
+    case 'sat':
+      return 'Sat';
+    case 'sunday':
+    case 'sun':
+      return 'Sun';
+    default:
+      return day;
+  }
+}
+
+/**
+ * Force local noon to avoid timezone issues.
  */
 function toLocalNoon(dateObj) {
-  const dateStr = dateObj.toISOString().split('T')[0]; // "YYYY-MM-DD"
+  const dateStr = dateObj.toISOString().split('T')[0];
   return new Date(`${dateStr}T12:00:00`);
 }
 
 /**
- * 2. Detect time overlap between (startA, endA) and (startB, endB).
+ * Check if two time ranges overlap.
  */
 function timesOverlap(startA, endA, startB, endB) {
   const [hA1, mA1] = startA.split(':').map(Number);
@@ -24,58 +60,44 @@ function timesOverlap(startA, endA, startB, endB) {
   const sB = hB1 * 60 + mB1;
   const eB = hB2 * 60 + mB2;
 
-  return (sA < eB) && (sB < eA);
+  return sA < eB && sB < eA;
 }
 
 /**
- * We'll treat these as the full week. 
- * We then derive `normalDays` by subtracting `restDays` from this list.
+ * All days abbreviated.
  */
-const ALL_DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+const ALL_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 /**
- * 3. Load employees from your DB, 
- *    reading `rest_days` directly, and deriving `normalDays`.
- *
- *    Your table already has:
- *    - id
- *    - rest_days (array)
- *    - days_per_week (int)
- *    plus a join to employee_roles if needed.
+ * Load employees from your DB.
+ * Updated to select "e.first_name" as the employee's name.
  */
 async function getEmployees(restaurantId) {
-  // Example query that:
-  //  - selects e.id
-  //  - aggregates roles
-  //  - includes e.rest_days (which you do have)
-  //  - includes e.days_per_week if you want
   const result = await query(
     `
     SELECT
       e.id,
+      e.first_name as name,  -- Adjusted: using first_name as the employee name.
       array_agg(DISTINCT er.role) AS roles,
       e.rest_days,
       e.days_per_week
     FROM employees e
     LEFT JOIN employee_roles er ON e.id = er.employee_id
     WHERE e.restaurant_id = $1
-    GROUP BY e.id, e.rest_days, e.days_per_week
+    GROUP BY e.id, e.first_name, e.rest_days, e.days_per_week
     `,
     [restaurantId]
   );
 
-  // For each row:
-  // rest_days is from your DB. 
-  // normalDays = ALL_DAYS - rest_days
-  // coverDays is empty (or you can define logic if needed).
   return result.rows.map(row => {
-    const restDays = row.rest_days || [];
+    // Normalize rest_days to abbreviated names.
+    const restDays = (row.rest_days || []).map(day => toAbbreviated(day));
     const normalDays = ALL_DAYS.filter(day => !restDays.includes(day));
-    const coverDays = []; // Currently not used unless you have a separate concept.
-
+    const coverDays = []; // (adjust if you add cover day logic)
     return {
       id: row.id,
-      roles: row.roles || [],
+      name: row.name, // Employee name from first_name
+      roles: (row.roles || []).map(role => role.toLowerCase()),
       restDays,
       normalDays,
       coverDays,
@@ -85,9 +107,7 @@ async function getEmployees(restaurantId) {
 }
 
 /**
- * 4. Load zones and their requirements. 
- *    e.g. from zone_roles_needed, 
- *    each requirement has day_of_week, role, required_count, shift_start, shift_end
+ * Load zones and their requirements.
  */
 async function getZones(restaurantId) {
   const zonesRes = await query(
@@ -115,29 +135,37 @@ async function getZones(restaurantId) {
   return zonesRes.rows.map(z => ({
     id: z.id,
     name: z.name,
-    requirements: (z.requirements || []).filter(r => r.day_of_week),
+    // Filter only valid requirements.
+    requirements: (z.requirements || []).filter(r => r.day_of_week && r.required_count > 0)
   }));
 }
 
 /**
- * 5. The scheduling function 
- *    that uses normalDays vs restDays
- *    plus a basic second pass for coverDays 
- *    (empty here, but you can fill if needed).
+ * Main scheduling function.
  */
 export async function generateSchedule(userId, startDate, endDate) {
-  // 1) find the user’s restaurant
-  const restaurantRes = await query('SELECT id FROM restaurants WHERE user_id = $1 LIMIT 1', [userId]);
+  // 1) Retrieve restaurant by userId.
+  const restaurantRes = await query(
+    'SELECT id FROM restaurants WHERE user_id = $1 LIMIT 1',
+    [userId]
+  );
   if (!restaurantRes.rows.length) {
     throw new Error('Restaurant not found');
   }
   const restaurantId = restaurantRes.rows[0].id;
 
-  // 2) load employees & zones
+  // 2) Load employees and zones concurrently.
   const [employees, zones] = await Promise.all([
     getEmployees(restaurantId),
     getZones(restaurantId)
   ]);
+
+  console.log('DEBUG: Employees:', employees);
+  console.log('DEBUG: Zones:', zones.map(z => ({
+    id: z.id,
+    name: z.name,
+    requirements: z.requirements.map(r => r.day_of_week)
+  })));
 
   const schedule = [];
   let current = new Date(startDate);
@@ -145,23 +173,36 @@ export async function generateSchedule(userId, startDate, endDate) {
 
   while (current <= end) {
     const midday = toLocalNoon(current);
-    const dayOfWeek = midday.toLocaleDateString('en-US', { weekday: 'long' });
+    // Use abbreviated weekday format.
+    const dayOfWeek = midday.toLocaleDateString('en-US', { weekday: 'short' });
     const dateString = midday.toISOString().split('T')[0];
 
-    // For each zone, find requirements for this day
+    console.log(`DEBUG: Processing ${dateString} (${dayOfWeek})`);
+
+    // For each zone, find requirements matching this day.
     for (const zone of zones) {
-      const zoneRequirements = zone.requirements.filter(r => r.day_of_week === dayOfWeek);
+      const zoneRequirements = zone.requirements.filter(r => {
+        const dbDay = toAbbreviated(r.day_of_week);
+        return dbDay === dayOfWeek;
+      });
+
+      console.log(
+        `DEBUG: Zone "${zone.name}" raw days:`,
+        zone.requirements.map(r => r.day_of_week)
+      );
+      console.log(
+        `DEBUG: Zone "${zone.name}" normalized for ${dayOfWeek}:`,
+        zoneRequirements.map(r => toAbbreviated(r.day_of_week))
+      );
 
       for (const req of zoneRequirements) {
         let slotsRemaining = req.required_count;
 
-        // Pass A: normalDays 
+        // Pass A: normalDays
         let normalCandidates = employees.filter(emp => {
-          if (!emp.roles.includes(req.role)) return false;
+          if (!emp.roles.includes(req.role.toLowerCase())) return false;
           if (emp.restDays.includes(dayOfWeek)) return false;
           if (!emp.normalDays.includes(dayOfWeek)) return false;
-
-          // check if already assigned overlapping
           const alreadyAssigned = schedule.some(shift =>
             shift.employee_id === emp.id &&
             shift.shift_date === dateString &&
@@ -170,16 +211,17 @@ export async function generateSchedule(userId, startDate, endDate) {
           return !alreadyAssigned;
         });
 
-        // optional fairness sort
         normalCandidates.sort((a, b) => {
           const aCount = schedule.filter(s => s.employee_id === a.id).length;
           const bCount = schedule.filter(s => s.employee_id === b.id).length;
           return aCount - bCount;
         });
 
+        // Create shifts and include the employee's name.
         for (let i = 0; i < normalCandidates.length && slotsRemaining > 0; i++) {
           schedule.push({
             employee_id: normalCandidates[i].id,
+            employee_name: normalCandidates[i].name, // Include employee's name
             zone_id: zone.id,
             shift_date: dateString,
             start_time: req.shift_start,
@@ -190,14 +232,12 @@ export async function generateSchedule(userId, startDate, endDate) {
           slotsRemaining--;
         }
 
-        // Pass B: coverDays
-        // (currently empty, but let's keep the logic for completeness)
+        // Pass B: coverDays (if needed)
         if (slotsRemaining > 0) {
           let coverCandidates = employees.filter(emp => {
-            if (!emp.roles.includes(req.role)) return false;
+            if (!emp.roles.includes(req.role.toLowerCase())) return false;
             if (emp.restDays.includes(dayOfWeek)) return false;
             if (!emp.coverDays.includes(dayOfWeek)) return false;
-
             const alreadyAssigned = schedule.some(shift =>
               shift.employee_id === emp.id &&
               shift.shift_date === dateString &&
@@ -215,6 +255,7 @@ export async function generateSchedule(userId, startDate, endDate) {
           for (let i = 0; i < coverCandidates.length && slotsRemaining > 0; i++) {
             schedule.push({
               employee_id: coverCandidates[i].id,
+              employee_name: coverCandidates[i].name, // Include employee's name
               zone_id: zone.id,
               shift_date: dateString,
               start_time: req.shift_start,
@@ -225,13 +266,13 @@ export async function generateSchedule(userId, startDate, endDate) {
             slotsRemaining--;
           }
         }
-
-        // If you want a third pass that uses restDays, add it here if needed.
       }
     }
 
     current.setDate(current.getDate() + 1);
   }
+
+  console.log('DEBUG: Final schedule:', schedule);
 
   return { schedule };
 }

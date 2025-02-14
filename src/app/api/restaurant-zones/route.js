@@ -102,7 +102,9 @@ export async function GET(request) {
           )
         ) as roles_needed
        FROM restaurant_zones z
-       LEFT JOIN zone_roles_needed zr ON z.id = zr.zone_id
+       LEFT JOIN zone_roles_needed zr ON 
+         z.id = zr.zone_id AND
+         zr.required_count > 0
        WHERE z.restaurant_id = $1
        GROUP BY z.id`,
       [restaurantId]

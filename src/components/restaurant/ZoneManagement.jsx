@@ -10,6 +10,7 @@ export default function ZoneManagement() {
   const [expandedZone, setExpandedZone] = useState(null);
   const [editingZone, setEditingZone] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [isAddingZone, setIsAddingZone] = useState(false);
   
   const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
   const roles = ['server', 'chef', 'host', 'bartender'];
@@ -154,7 +155,7 @@ export default function ZoneManagement() {
                         </tr>
                       </thead>
                       <tbody>
-                        {zone.roles_needed?.map((role, idx) => (
+                        {(zone.roles_needed || []).map((role, idx) => (
                           <tr key={idx}>
                             <td className="border p-2">{role.day_of_week}</td>
                             <td className="border p-2">{role.role}</td>
@@ -170,8 +171,11 @@ export default function ZoneManagement() {
                   </div>
                   <div className="mt-4 flex justify-end space-x-2">
                     <button
-                      onClick={() => handleEditZone(zone)}
-                      className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleEdit(zone);
+                      }}
+                      className="px-3 py-1.5 text-blue-600 hover:bg-blue-50 rounded-md text-sm font-medium"
                     >
                       Edit
                     </button>
@@ -210,75 +214,72 @@ export default function ZoneManagement() {
     }
   };
 
-  const handleEditZone = (zone) => {
-    // Convert the zone's roles_needed back into our requirements format
+  const handleEdit = (zone) => {
+    setEditingZone(zone);
+    setIsEditing(true);
+    setIsAddingZone(true);
+    
+    // Transform zone requirements to match form structure
     const requirements = createInitialRequirements();
-    
-    zone.roles_needed?.forEach(role => {
-      requirements[role.day_of_week][role.role][role.shift_time] = role.required_count;
-    });
-    
+    (zone.roles_needed || [])
+      .filter(({ required_count }) => required_count > 0)
+      .forEach(({ day_of_week, role, required_count, shift_time }) => {
+        if (!day_of_week) return;
+        const day = day_of_week.charAt(0).toUpperCase() + day_of_week.slice(1).toLowerCase();
+        requirements[day][role][shift_time] = required_count;
+      });
+
     setFormData({
-      id: zone.id,
       name: zone.name,
       description: zone.description,
       requirements
     });
-    setIsEditing(true);
-    setExpandedZone(null);
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (isEditing) {
-      await updateZone();
-    } else {
-      await createZone();
-    }
-  };
-
-  const updateZone = async () => {
+  const handleSubmit = async () => {
     try {
-      setStatus({ type: 'loading', message: 'Updating zone...' });
+      const url = isEditing 
+        ? `/api/restaurant-zones/${editingZone.id}`
+        : '/api/restaurant-zones';
+        
+      const method = isEditing ? 'PUT' : 'POST';
       
-      const rolesNeeded = [];
+      // Transform requirements to match API format
+      const roles_needed = [];
       Object.entries(formData.requirements).forEach(([day, roles]) => {
         Object.entries(roles).forEach(([role, shifts]) => {
           Object.entries(shifts).forEach(([shift, count]) => {
             if (count > 0) {
-              rolesNeeded.push({
-                day_of_week: day,
-                role: role,
+              roles_needed.push({
+                day_of_week: day.toLowerCase(),
+                role,
                 required_count: count,
                 shift_time: shift,
-                shift_start: shift === 'morning' ? '09:00' : shift === 'afternoon' ? '14:00' : '18:00',
-                shift_end: shift === 'morning' ? '14:00' : shift === 'afternoon' ? '18:00' : '23:00'
+                shift_start: '08:00',
+                shift_end: '16:00'
               });
             }
           });
         });
       });
 
-      const res = await fetch(`/api/restaurant-zones/${formData.id}`, {
-        method: 'PUT',
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: formData.name,
           description: formData.description,
-          roles_needed: rolesNeeded
-        })
+          roles_needed
+        }),
       });
 
-      if (!res.ok) throw new Error('Failed to update zone');
+      if (!res.ok) throw new Error(isEditing ? 'Failed to update zone' : 'Failed to create zone');
       
-      setStatus({ type: 'success', message: 'Zone updated successfully!' });
-      setIsEditing(false);
-      setFormData({
-        name: '',
-        description: '',
-        requirements: createInitialRequirements()
-      });
       fetchZones();
+      setIsAddingZone(false);
+      setEditingZone(null);
+      setIsEditing(false);
+      
     } catch (error) {
       console.error('Error:', error);
       setStatus({ type: 'error', message: error.message });
@@ -286,84 +287,93 @@ export default function ZoneManagement() {
   };
 
   return (
-    <div className="p-6 bg-white rounded-lg shadow">
-      <h2 className="text-xl font-semibold mb-4">Restaurant Zones</h2>
-      
-      {status.message && (
-        <div className={`mb-4 p-4 rounded ${
-          status.type === 'success' ? 'bg-green-100 text-green-700' :
-          status.type === 'error' ? 'bg-red-100 text-red-700' :
-          'bg-blue-100 text-blue-700'
-        }`}>
-          {status.message}
-        </div>
-      )}
+    <div className="space-y-6">
+      <div className="border rounded-lg p-4 bg-white shadow-sm">
+        <button
+          onClick={() => setIsAddingZone(!isAddingZone)}
+          className="flex items-center gap-2 text-blue-600 hover:text-blue-800"
+        >
+          <svg 
+            xmlns="http://www.w3.org/2000/svg" 
+            className={`h-5 w-5 transition-transform ${isAddingZone ? 'rotate-180' : ''}`}
+            viewBox="0 0 20 20" 
+            fill="currentColor"
+          >
+            <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+          </svg>
+          {isAddingZone ? 'Cancel' : 'Add New Zone'}
+        </button>
+
+        {isAddingZone && (
+          <div className="mt-4 space-y-4">
+            <div className="space-y-4">
+              <div>
+                <label className="block mb-2">Zone Name</label>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                  className="w-full p-2 border rounded"
+                />
+              </div>
+              
+              <div className="overflow-x-auto">
+                <table className="min-w-full border">
+                  <thead>
+                    <tr>
+                      <th className="border p-2">Day</th>
+                      {roles.map(role => (
+                        <th key={role} className="border p-2" colSpan={3}>
+                          {role.charAt(0).toUpperCase() + role.slice(1)}
+                        </th>
+                      ))}
+                    </tr>
+                    <tr>
+                      <th className="border p-2"></th>
+                      {roles.map(role => (
+                        shifts.map(shift => (
+                          <th key={`${role}-${shift}`} className="border p-2">
+                            {shift.charAt(0).toUpperCase() + shift.slice(1)}
+                          </th>
+                        ))
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {daysOfWeek.map(day => (
+                      <tr key={day}>
+                        <td className="border p-2 font-medium">{day}</td>
+                        {roles.map(role => (
+                          shifts.map(shift => (
+                            <td key={`${day}-${role}-${shift}`} className="border p-2">
+                              <input
+                                type="number"
+                                min="0"
+                                value={formData.requirements[day][role]?.[shift] || 0}
+                                onChange={(e) => handleRequirementChange(day, role, shift, e.target.value)}
+                                className="w-16 p-1 border rounded text-center"
+                              />
+                            </td>
+                          ))
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <button
+                onClick={handleSubmit}
+                className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+              >
+                {isEditing ? 'Update Zone' : 'Create Zone'}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
 
       {renderExistingZones()}
-      
-      <h3 className="text-lg font-semibold mb-4">Add New Zone</h3>
-
-      <div className="space-y-4">
-        <input
-          type="text"
-          placeholder="Zone Name"
-          value={formData.name}
-          onChange={(e) => setFormData({...formData, name: e.target.value})}
-          className="w-full p-2 border rounded"
-        />
-
-        <div className="overflow-x-auto">
-          <table className="min-w-full border">
-            <thead>
-              <tr>
-                <th className="border p-2">Day</th>
-                {roles.map(role => (
-                  <th key={role} className="border p-2" colSpan={3}>
-                    {role.charAt(0).toUpperCase() + role.slice(1)}
-                  </th>
-                ))}
-              </tr>
-              <tr>
-                <th className="border p-2"></th>
-                {roles.map(role => (
-                  shifts.map(shift => (
-                    <th key={`${role}-${shift}`} className="border p-2">
-                      {shift.charAt(0).toUpperCase() + shift.slice(1)}
-                    </th>
-                  ))
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {daysOfWeek.map(day => (
-                <tr key={day}>
-                  <td className="border p-2 font-medium">{day}</td>
-                  {roles.map(role => (
-                    shifts.map(shift => (
-                      <td key={`${day}-${role}-${shift}`} className="border p-2">
-                        <input
-                          type="number"
-                          min="0"
-                          value={formData.requirements[day][role]?.[shift] || 0}
-                          onChange={(e) => handleRequirementChange(day, role, shift, e.target.value)}
-                          className="w-16 p-1 border rounded text-center"
-                        />
-                      </td>
-                    ))
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        <button
-          onClick={handleSubmit}
-          className="bg-blue-500 text-white px-4 py-2 rounded"
-        >
-          {isEditing ? 'Update Zone' : 'Create Zone'}
-        </button>
-      </div>
     </div>
   );
 } 

@@ -16,9 +16,9 @@ export async function POST(request) {
     const { startDate, endDate } = await request.json();
 
     // 1. Generate the schedule with the new logic
-    const scheduleResult = await generateSchedule(session.user.id, startDate, endDate);
+    const schedule = await generateSchedule(session.user.id, startDate, endDate);
     // 2. Analyze schedule if needed
-    const analyzedResult = await analyzeSchedule(scheduleResult);
+    const analyzedResult = await analyzeSchedule(schedule);
 
     // 3. Save the schedule into the DB (transaction)
     const client = await pool.connect();

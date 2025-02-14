@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { query, pool } from '@/lib/db';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../auth/[...nextauth]/auth.config';
-import { generateSchedule } from '@/lib/scheduling/scheduler';
+import { generateSchedule } from '@/lib/employee-management/scheduler';
 import { analyzeSchedule } from '@/lib/scheduling/schedule-analyzer';
 
 /**
@@ -27,14 +27,20 @@ export async function GET(request) {
         s.*,
         CONCAT(e.first_name, ' ', e.last_name) AS employee_name,
         z.name AS zone_name,
-        e.role AS employee_role
+        e.role AS employee_role,
+        COALESCE(MAX(zr.required_count), 0) AS required_count
       FROM schedules s
       JOIN employees e ON s.employee_id = e.id
       JOIN restaurant_zones z ON s.zone_id = z.id
+      LEFT JOIN zone_roles_needed zr ON 
+        zr.zone_id = z.id AND
+        TRIM(TO_CHAR(s.shift_date, 'Day')) ILIKE zr.day_of_week AND
+        zr.role = s.role
       WHERE s.shift_date BETWEEN $1 AND $2
         AND e.restaurant_id = (
           SELECT id FROM restaurants WHERE user_id = $3 LIMIT 1
         )
+      GROUP BY s.id, e.id, z.id
       ORDER BY s.shift_date ASC, s.start_time ASC
       `,
       [startDate, endDate, session.user.id]

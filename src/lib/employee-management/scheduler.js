@@ -63,7 +63,9 @@ export async function getZonesWithRequirements(restaurantId) {
 
   return result.rows.map(zone => ({
     ...zone,
-    requirements: zone.requirements.filter(req => req.day_of_week)
+    requirements: (zone.requirements || []).filter(req => 
+      req.day_of_week && req.required_count > 0
+    )
   }));
 }
 
@@ -87,32 +89,38 @@ export async function generateSchedule(userId, startDate, endDate) {
     getZonesWithRequirements(restaurantId)
   ]);
 
+  // Initialize assignment counts properly
+  const assignments = {};
+  employees.forEach(emp => assignments[emp.id] = 0);
+
   // 3. Initialize the schedule and an assignment counter for fairness
   const schedule = [];
-  const assignments = {};
-  employees.forEach(emp => (assignments[emp.id] = 0));
 
   // 4. Loop through each day in the given date range
-  let currentDate = new Date(startDate);
-  const endDateObj = new Date(endDate);
-  while (currentDate <= endDateObj) {
-    const dateString = currentDate.toISOString().split('T')[0];
-    const dayOfWeek = currentDate.toLocaleDateString('en-US', { weekday: 'long' });
+  const current = new Date(startDate);
+  const end = new Date(endDate);
+  end.setDate(end.getDate() + 1); // Include end date
+  
+  while (current < end) {
+    const dateString = current.toISOString().split('T')[0];
+    const dayOfWeek = current.toLocaleDateString('en-US', { weekday: 'long' });
 
     // Loop through zones and their requirements for the day
     zones.forEach(zone => {
       const zoneRequirements = zone.requirements.filter(
-        req => req.day_of_week === dayOfWeek
+        req => req.day_of_week?.toLowerCase() === dayOfWeek.toLowerCase()
       );
       zoneRequirements.forEach(requirement => {
         // Find employees who have the required role and are available during the shift
         const availableEmployees = employees.filter(emp => {
-          const hasRole = emp.roles.includes(requirement.role);
+          const hasRole = emp.roles?.some(r => 
+            r.trim().toLowerCase() === requirement.role.trim().toLowerCase()
+          );
           const isAvailable = emp.availability.some(av =>
-            av.day_of_week === dayOfWeek &&
+            av.day_of_week?.toLowerCase() === dayOfWeek.toLowerCase() &&
             av.can_work &&
-            av.start_time <= requirement.shift_start &&
-            av.end_time >= requirement.shift_end
+            av.shift_start <= requirement.shift_end &&
+            av.shift_end >= requirement.shift_start
           );
           return hasRole && isAvailable;
         });
@@ -131,7 +139,8 @@ export async function generateSchedule(userId, startDate, endDate) {
             start_time: requirement.shift_start,
             end_time: requirement.shift_end,
             role: requirement.role,
-            status: 'scheduled'
+            status: 'scheduled',
+            required_count: requirement.required_count
           });
           assignments[employee.id]++; // update assignment count
         }
@@ -139,8 +148,13 @@ export async function generateSchedule(userId, startDate, endDate) {
     });
 
     // Move to the next day
-    currentDate.setDate(currentDate.getDate() + 1);
+    current.setDate(current.getDate() + 1);
   }
 
   return { schedule };
+}
+
+function toLocalTime(dateStr) {
+  const date = new Date(dateStr);
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60000);
 }
