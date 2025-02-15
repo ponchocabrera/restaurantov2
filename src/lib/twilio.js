@@ -316,7 +316,8 @@ export async function sendSMSToEmployeeForCoverage(coverageId) {
     const { phone, shift_date, start_time, end_time } = coverageReq.rows[0];
 
     // Dynamically build the response URL with coverageId as a query parameter.
-    const responseUrl = `${process.env.TWILIO_BASE_URL}/api/sms/coverage-response?coverageId=${coverageId}`;
+    const baseUrl = (process.env.TWILIO_BASE_URL || '').replace(/(\/api)?\/?$/, '');
+    const responseUrl = `${baseUrl}/api/sms/coverage-response?coverageId=${coverageId}`;
 
     const message = `You're requested to cover a shift on ${shift_date} from ${start_time} to ${end_time}. Reply YES to accept or NO to decline: ${responseUrl}`;
 

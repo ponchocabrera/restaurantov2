@@ -269,6 +269,36 @@ export default function ScheduleManager({ compact }) {
     }
   }
 
+  async function handleDeleteWeek() {
+    if (!confirm('Are you sure you want to delete this schedule? This cannot be undone!')) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const weekStr = selectedWeek.toISOString().split('T')[0];
+      const response = await fetch('/api/schedules/weeks', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ weekStart: weekStr })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete schedule');
+      }
+
+      // Update generated weeks list and clear the current schedule immediately
+      setGeneratedWeeks(prev => prev.filter(w => w !== weekStr));
+      setSchedule({});
+
+      alert('Schedule deleted successfully');
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   function getEmployeeIdByName(name, requiredRole) {
     const candidate = allEmployees.find((emp) => {
       const fullName = `${emp.first_name} ${emp.last_name}`;
@@ -932,21 +962,31 @@ export default function ScheduleManager({ compact }) {
         {/* Label & dropdown & "How we schedule" */}
         <div className="flex items-center gap-4 mb-4">
           <label className="text-sm font-medium mr-2">Select Week:</label>
-          <select
-            value={selectedWeek.toISOString().split('T')[0]}
-            onChange={(e) => {
-              const newWeek = new Date(e.target.value);
-              setSelectedWeek(newWeek);
-              handleWeekClick(newWeek);
-            }}
-            className="p-2 border rounded-full"
-          >
-            {generateWeekOptions().map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
+          <div className="flex items-center gap-2">
+            <select
+              value={selectedWeek.toISOString().split('T')[0]}
+              onChange={(e) => {
+                const newWeek = new Date(e.target.value);
+                setSelectedWeek(newWeek);
+                handleWeekClick(newWeek);
+              }}
+              className="p-2 border rounded-full"
+            >
+              {generateWeekOptions().map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={handleDeleteWeek}
+              className="p-2 text-red-500 hover:text-red-700"
+              title="Delete this schedule"
+              disabled={!generatedWeeks.includes(selectedWeek.toISOString().split('T')[0])}
+            >
+              🗑️ Delete
+            </button>
+          </div>
 
           <button
             className="px-6 py-3 rounded-full bg-gradient-to-r from-[#222452] to-[#42469F] text-white font-bold hover:opacity-90 transition-opacity flex items-center gap-2"

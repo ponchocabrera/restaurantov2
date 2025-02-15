@@ -29,3 +29,31 @@ export async function GET(request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
+
+export async function DELETE(request) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { weekStart } = await request.json();
+    const result = await query(
+      `DELETE FROM schedules
+       WHERE shift_date BETWEEN $1 AND $1::date + interval '6 days'
+         AND employee_id IN (
+           SELECT id FROM employees 
+           WHERE restaurant_id = (SELECT id FROM restaurants WHERE user_id = $2)
+         )`,
+      [weekStart, session.user.id]
+    );
+
+    return NextResponse.json({ 
+      success: true,
+      deletedCount: result.rowCount 
+    });
+  } catch (error) {
+    console.error('Error deleting schedule:', error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}

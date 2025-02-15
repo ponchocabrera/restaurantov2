@@ -46,7 +46,7 @@ export async function POST(request) {
   const smsBody = formData.get('Body');
   
   // Assume that you include the coverageId in the webhook URL
-  const baseUrl = (process.env.TWILIO_BASE_URL || '').replace(/\/api\/?$/, '');
+  const baseUrl = (process.env.TWILIO_BASE_URL || '').replace(/(\/api)?\/?$/, '');
   const responseUrl = `${baseUrl}/api/sms/coverage-response?coverageId=${coverageId}`;
 
   const MessagingResponse = twilio.twiml.MessagingResponse;
