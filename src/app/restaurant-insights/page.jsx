@@ -16,6 +16,10 @@ export default function RestaurantInsightsPage() {
   const [circle, setCircle] = useState(null);
   const [filterOption, setFilterOption] = useState('bestRated');
 
+  // For saved search trends
+  const [searchTrends, setSearchTrends] = useState([]);
+  const [selectedTrend, setSelectedTrend] = useState(null);
+
   // Grab the API key and Map ID from the environment.
   const mapsApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
   const mapId = process.env.NEXT_PUBLIC_GOOGLE_MAP_ID;
@@ -121,6 +125,8 @@ export default function RestaurantInsightsPage() {
 
       const result = await res.json();
       setData(result.data);
+      // Optionally update the trends after a new search.
+      fetchSearchTrends();
     } catch (err) {
       if (err.message.includes('Restaurant not found')) {
         setError("We couldn't find a restaurant with the provided address. Please double-check the address and try again.");
@@ -133,6 +139,26 @@ export default function RestaurantInsightsPage() {
       setLoading(false);
     }
   }
+
+  // Function to fetch and update search trends (saved searches)
+  async function fetchSearchTrends() {
+    try {
+      const res = await fetch('/api/restaurant-searches');
+      if (res.ok) {
+        const data = await res.json();
+        setSearchTrends(data.searches);
+        if (data.searches && data.searches.length > 0 && !selectedTrend) {
+          setSelectedTrend(data.searches[0]);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching search trends: ", error);
+    }
+  }
+
+  useEffect(() => {
+    fetchSearchTrends();
+  }, []);
 
   // Update or initialize the map once data is available.
   useEffect(() => {
@@ -295,6 +321,47 @@ export default function RestaurantInsightsPage() {
             </button>
           </form>
         </div>
+
+        {/* Past Search Trends Dropdown */}
+        {searchTrends.length > 0 && (
+          <div className="mb-4">
+            <label htmlFor="trendSelect" className="block text-sm font-medium text-gray-700 mb-1">
+              Past Searches
+            </label>
+            <select
+              id="trendSelect"
+              value={selectedTrend?.id || ''}
+              onChange={(e) => {
+                const trend = searchTrends.find((s) => s.id === parseInt(e.target.value));
+                setSelectedTrend(trend);
+              }}
+              className="p-2 border rounded w-full"
+            >
+              {searchTrends.map((search) => (
+                <option key={search.id} value={search.id}>
+                  {search.restaurant_name} - {new Date(search.created_at).toLocaleDateString()}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {selectedTrend && (
+          <div className="mt-4 p-4 bg-gray-100 rounded">
+            <p>
+              <strong>Restaurant:</strong> {selectedTrend.restaurant_name}
+            </p>
+            <p>
+              <strong>Rating:</strong> {selectedTrend.star_rating}
+            </p>
+            <p>
+              <strong>Position vs Competitors:</strong> {selectedTrend.position}
+            </p>
+            <p>
+              <strong>Date:</strong> {new Date(selectedTrend.created_at).toLocaleString()}
+            </p>
+          </div>
+        )}
 
         {/* Map & Restaurant Info in One Row */}
         <div className="flex flex-col md:flex-row gap-6 mb-6">

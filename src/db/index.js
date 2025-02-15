@@ -79,3 +79,19 @@ function extractSection(text, sectionName) {
 }
 
 export { extractSection };
+
+export async function saveRestaurantSearch(userId, restaurantName, starRating, position) {
+  const sql = `
+    INSERT INTO restaurant_searches (user_id, restaurant_name, star_rating, position)
+    VALUES ($1, $2, $3, $4)
+    RETURNING id, user_id, restaurant_name, star_rating, position, created_at
+  `;
+  const values = [userId, restaurantName, starRating, position];
+  try {
+    const res = await query(sql, values);
+    return res.rows[0];
+  } catch (error) {
+    console.error("Error saving restaurant search:", error);
+    throw error;
+  }
+}
