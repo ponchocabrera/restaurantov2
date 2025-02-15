@@ -7,6 +7,8 @@ import DashboardLayout from '@/components/shared/DashboardLayout';
 export default function Dashboard() {
   // State to hold restaurant statistics
   const [restaurantStats, setRestaurantStats] = useState({ menusCount: 0, totalItems: 0 });
+  // New state: last restaurant search (to get the last star rating)
+  const [lastSearch, setLastSearch] = useState(null);
 
   // Fetch restaurant stats on mount.  
   // Here we assume the API returns an array of restaurants;
@@ -56,6 +58,28 @@ export default function Dashboard() {
       }
     }
     fetchRestaurantStats();
+  }, []);
+
+  // New useEffect: Fetch the latest restaurant search trends
+  useEffect(() => {
+    async function fetchSearchTrends() {
+      try {
+        const res = await fetch('/api/restaurant-searches');
+        if (res.ok) {
+          const data = await res.json();
+          const searches = data.searches || [];
+          if (searches.length > 0) {
+            const sortedSearches = searches.sort(
+              (a, b) => new Date(b.created_at) - new Date(a.created_at)
+            );
+            setLastSearch(sortedSearches[0]);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching restaurant searches:', error);
+      }
+    }
+    fetchSearchTrends();
   }, []);
 
   return (
@@ -161,9 +185,20 @@ export default function Dashboard() {
                     <p className="text-5xl font-bold mt-1">{restaurantStats.totalItems}</p>
                   </div>
                   <div>
-                    <p className="text-md font-bold uppercase tracking-wide">Menu Excellence Score</p>
-                    <p className="text-5xl font-bold mt-1">9<span className="text-2xl">/10</span></p>
-                    <p className="text-sm text-gray-300">Find out your potential improvements</p>
+                    <p className="text-md font-bold uppercase tracking-wide">Your Restaurant Ranking</p>
+                    {lastSearch && lastSearch.star_rating ? (
+                      <>
+                        <p className="text-5xl font-bold mt-1">
+                          {lastSearch.star_rating}
+                          <span className="text-2xl">/5</span>
+                        </p>
+                        <p className="text-sm text-gray-300">Your last search star rating</p>
+                      </>
+                    ) : (
+                      <p className="text-sm text-gray-300">
+                        Find out your current restaurant ranking in your area
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
