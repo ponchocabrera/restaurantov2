@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server';
 import { query, pool } from '@/lib/db';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/auth.config';
-import { callEmployeeForCoverage } from '@/lib/twilio';
+import { callEmployeeForCoverage, sendSMSToEmployeeForCoverage } from '@/lib/twilio';
 import { revalidatePath } from 'next/cache';
 
 export async function PUT(request) {
@@ -20,8 +20,12 @@ export async function PUT(request) {
     const { schedule: nestedSchedule, coverageRequests, startDate, endDate } = await request.json();
     console.log("DEBUG: Received schedule data. StartDate:", startDate, "EndDate:", endDate);
     
-    // Flatten the nested schedule into an array of shift objects.
     const newShifts = [];
+    const seenShifts = new Set();
+
+    // Helper function to normalize dates.
+    const normalizeDate = (date) => new Date(date).toISOString().split("T")[0];
+
     for (const zone in nestedSchedule) {
       const employees = nestedSchedule[zone];
       for (const employee of employees) {
@@ -29,11 +33,21 @@ export async function PUT(request) {
         const zone_id = employee.zone_id;
         for (const day in employee.days) {
           for (const shift of employee.days[day]) {
+            const normalizedDate = normalizeDate(shift.shift_date);
+            // Deduplication key based on employee and day.
+            const key = `${employee_id}-${normalizedDate}`;
+            if (seenShifts.has(key)) {
+              // Skip if a shift for this employee on this day is already added.
+              continue;
+            }
+            seenShifts.add(key);
+
             const coverageStatus = shift.coverage_status
               ? shift.coverage_status
               : shift.isCoverage
                 ? 'pending'
                 : null;
+            
             newShifts.push({
               id: shift.id,
               tempId: shift.tempId,
@@ -92,7 +106,7 @@ export async function PUT(request) {
       // Delete existing schedules in the given date range.
       await client.query(
         `DELETE FROM schedules 
-         WHERE shift_date BETWEEN $1 AND $2 
+         WHERE DATE(shift_date) BETWEEN $1 AND $2 
            AND employee_id IN (
              SELECT id FROM employees WHERE restaurant_id = $3
            )`,
@@ -102,39 +116,33 @@ export async function PUT(request) {
 
       // Insert each new shift.
       for (const shift of newShifts) {
-        if (typeof shift.id !== 'number') {
-          console.log("DEBUG: Inserting auto-generated shift:", shift);
-          const res = await client.query(
-            `INSERT INTO schedules (
-                employee_id, zone_id, role, shift_date, start_time,
-                end_time, status, is_coverage, covered_for,
-                coverage_assigned, no_show_reason, coverage_status
-             )
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-             RETURNING id`,
-            [shift.employee_id, shift.zone_id, shift.role, shift.shift_date, shift.start_time,
-             shift.end_time, shift.status, shift.is_coverage, shift.covered_for, shift.coverage_assigned,
-             shift.no_show_reason, shift.coverage_status]
-          );
-          // Capture the new id.
-          const newId = res.rows[0].id;
-          // If this shift had a temporary key, update its record (for later updating coverage requests).
-          shift.newId = newId;
-        } else {
-          console.log("Inserting shift with provided id:", shift);
-          await client.query(
-            `INSERT INTO schedules (
-                id, employee_id, zone_id, role, shift_date, start_time,
-                end_time, status, is_coverage, covered_for, coverage_assigned,
-                no_show_reason, coverage_status
-             )
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
-            [shift.id, shift.employee_id, shift.zone_id, shift.role, shift.shift_date, shift.start_time,
-             shift.end_time, shift.status, shift.is_coverage, shift.covered_for, shift.coverage_assigned,
-             shift.no_show_reason, shift.coverage_status]
-          );
-          console.log("DEBUG: Shift inserted with provided id:", shift.id);
-        }
+        console.log("DEBUG: Inserting shift:", shift);
+        const res = await client.query(
+          `INSERT INTO schedules (
+              employee_id, zone_id, role, shift_date, start_time,
+              end_time, status, is_coverage, covered_for,
+              coverage_assigned, no_show_reason, coverage_status
+           )
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+           RETURNING id`,
+          [
+            shift.employee_id,
+            shift.zone_id,
+            shift.role,
+            shift.shift_date,
+            shift.start_time,
+            shift.end_time,
+            shift.status,
+            shift.is_coverage,
+            shift.covered_for,
+            shift.coverage_assigned,
+            shift.no_show_reason,
+            shift.coverage_status
+          ]
+        );
+        // Capture the new id.
+        const newId = res.rows[0].id;
+        shift.newId = newId;
       }
 
       await client.query('COMMIT');
@@ -173,6 +181,20 @@ export async function PUT(request) {
                 console.error(`ERROR: Coverage call failed for shift id ${shift.newId}:`, err);
               });
           }, delayMs);
+        }
+      });
+
+      // Automatically trigger outbound SMS notifications for new coverage shifts
+      newShifts.forEach(shift => {
+        if (shift.isCoverage && shift.coverage_status === 'notified' && shift.newId) {
+          console.log(`DEBUG: Triggering SMS notification for shift id ${shift.newId}`);
+          sendSMSToEmployeeForCoverage(shift.newId)
+            .then(() => {
+              console.log(`DEBUG: SMS successfully triggered for shift id ${shift.newId}`);
+            })
+            .catch(err => {
+              console.error(`ERROR: SMS triggering failed for shift id ${shift.newId}:`, err);
+            });
         }
       });
 

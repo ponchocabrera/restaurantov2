@@ -187,6 +187,9 @@ export async function PUT(request) {
               shift.coverage_status
             ]
           );
+          // Assign the provided id as the newId so that later the coverage_requests update
+          // and SMS trigger find a numeric, persisted schedule id.
+          shift.newId = shift.id;
         }
       }
 
@@ -228,6 +231,20 @@ export async function PUT(request) {
               console.error(`Error triggering coverage call for shift id ${shift.newId}:`, err);
             });
         }, delayMs);
+      }
+    });
+
+    // Add SMS triggering
+    newShifts.forEach(shift => {
+      if (shift.isCoverage && shift.coverage_status === 'notified' && shift.newId) {
+        console.log(`Triggering SMS for shift id ${shift.newId}`);
+        console.log("Using TWILIO_WHATSAPP_FROM:", process.env.TWILIO_WHATSAPP_FROM);
+        console.log("DEBUG: Sending WhatsApp message to:", `whatsapp:${phone}`);
+        sendSMSToEmployeeForCoverage(shift.newId)
+          .then(() => {
+            console.log(`SMS successfully triggered for shift ${shift.newId}`);
+          })
+          .catch(console.error);
       }
     });
 
@@ -273,5 +290,50 @@ export async function callEmployeeForCoverage(coverageId) {
     }
   } catch (err) {
     console.error("Error in callEmployeeForCoverage:", err);
+  }
+}
+
+export async function sendSMSToEmployeeForCoverage(coverageId) {
+  const client = await pool.connect();
+  try {
+    // Determine if the coverageId is numeric (schedule_id) or a temporary ID.
+    const isNumericId = !isNaN(coverageId);
+
+    // Retrieve coverage request details for the given coverageId.
+    const coverageReq = await client.query(
+      `SELECT cr.schedule_id, s.employee_id, e.phone, s.shift_date, s.start_time, s.end_time
+       FROM coverage_requests cr
+       JOIN schedules s ON cr.schedule_id = s.id
+       JOIN employees e ON s.employee_id = e.id
+       WHERE ${isNumericId ? 'cr.schedule_id' : 'cr.temp_id'} = $1`,
+      [coverageId]
+    );
+
+    if (coverageReq.rowCount === 0) {
+      throw new Error(`No coverage request found for ${isNumericId ? 'schedule' : 'temp'} ID: ${coverageId}`);
+    }
+
+    const { phone, shift_date, start_time, end_time } = coverageReq.rows[0];
+
+    // Dynamically build the response URL with coverageId as a query parameter.
+    const responseUrl = `${process.env.TWILIO_BASE_URL}/api/sms/coverage-response?coverageId=${coverageId}`;
+
+    const message = `You're requested to cover a shift on ${shift_date} from ${start_time} to ${end_time}. Reply YES to accept or NO to decline: ${responseUrl}`;
+
+    // Debug logs.
+    console.log("DEBUG: TWILIO_WHATSAPP_FROM:", process.env.TWILIO_WHATSAPP_FROM);
+    console.log("DEBUG: Recipient phone number (from DB):", phone);
+    console.log("DEBUG: Full recipient value:", `whatsapp:${phone}`);
+    console.log("DEBUG: Message body:", message);
+
+    // Send the WhatsApp SMS using the dynamically built URL.
+    await twilioClient.messages.create({
+      from: process.env.TWILIO_WHATSAPP_FROM,
+      body: message,
+      to: `whatsapp:${phone}`
+    });
+
+  } finally {
+    client.release();
   }
 }

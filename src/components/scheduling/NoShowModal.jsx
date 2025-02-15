@@ -11,9 +11,18 @@ export default function NoShowModal({
   const [reason, setReason] = useState('');
   const [requestCoverage, setRequestCoverage] = useState(false);
   const [selectedCoverage, setSelectedCoverage] = useState('');
+  const [selectedMethod, setSelectedMethod] = useState('call');
 
   const handleSubmit = () => {
-    onSubmit({ reason, requestCoverage, selectedCoverage });
+    // Do not trigger the SMS notification immediately.
+    // (If "call" is selected, you can still trigger its API if desired.)
+    if (requestCoverage && selectedMethod === 'call') {
+      fetch(`/api/coverage/${shift.tempId}/pending`, {
+        method: 'PUT'
+      }).catch(err => console.error('Call error:', err));
+    }
+    // Pass the notifyMethod along so that the save process knows how to handle notifications.
+    onSubmit({ reason, requestCoverage, selectedCoverage, notifyMethod: selectedMethod });
   };
 
   return (
@@ -78,6 +87,45 @@ export default function NoShowModal({
             )}
           </div>
         )}
+
+        <div className="notification-method mb-4">
+          <h4 className="text-sm font-medium text-gray-700 mb-2">Notification Method:</h4>
+          <div className="flex gap-2">
+            <button 
+              type="button" 
+              onClick={() => setSelectedMethod('call')}
+              className={`px-3 py-1 rounded ${
+                selectedMethod === 'call' 
+                  ? 'bg-blue-500 text-white' 
+                  : 'bg-gray-200 hover:bg-gray-300'
+              }`}
+            >
+              Phone Call
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedMethod('sms')}
+              className={`px-3 py-1 rounded ${
+                selectedMethod === 'sms' 
+                  ? 'bg-blue-500 text-white' 
+                  : 'bg-gray-200 hover:bg-gray-300'
+              }`}
+            >
+              SMS
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedMethod('donotify')}
+              className={`px-3 py-1 rounded ${
+                selectedMethod === 'donotify' 
+                  ? 'bg-blue-500 text-white' 
+                  : 'bg-gray-200 hover:bg-gray-300'
+              }`}
+            >
+              Don't Notify
+            </button>
+          </div>
+        </div>
 
         <div className="flex justify-end space-x-2">
           <button

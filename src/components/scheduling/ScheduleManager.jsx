@@ -414,6 +414,16 @@ export default function ScheduleManager({ compact }) {
   });
 
   //
+  // Convert day abbreviation -> actual date string for the selected week
+  //
+  function getDateForDay(dayAbbrev) {
+    const index = DAYS.indexOf(dayAbbrev);
+    return weekDates[index]
+      ? weekDates[index].toISOString().split('T')[0]
+      : '';
+  }
+
+  //
   // handleDragEnd from react-beautiful-dnd
   //
   function handleDragEnd(result) {
@@ -434,6 +444,7 @@ export default function ScheduleManager({ compact }) {
       .split('-')
       .map(sanitize);
 
+    // Must be same employee/zone if we're dragging within the same row
     if (employee !== destEmployee || zoneName !== destZone) return;
 
     const newSchedule = { ...schedule };
@@ -447,8 +458,9 @@ export default function ScheduleManager({ compact }) {
       const [movedShift] = sourceShifts.splice(source.index, 1);
       zoneEmployees[empIndex].days[sourceDay] = sourceShifts;
 
-      movedShift.userChanged = true; // Mark shift as changed
-      movedShift.shift_date = getDayName(destDay);
+      movedShift.userChanged = true;
+      // ***** FIXED: store the real date, not an invalid parse of "Mon"/"Tue"/"Sun" *****
+      movedShift.shift_date = getDateForDay(destDay);
       movedShift.conflict = isEmployeeBusy(newSchedule, employee, destDay);
 
       const destShifts = zoneEmployees[empIndex].days[destDay] || [];
@@ -456,16 +468,6 @@ export default function ScheduleManager({ compact }) {
     }
 
     setSchedule(newSchedule);
-  }
-
-  //
-  // Convert day abbreviation -> actual date string for the selected week
-  //
-  function getDateForDay(dayAbbrev) {
-    const index = DAYS.indexOf(dayAbbrev);
-    return weekDates[index]
-      ? weekDates[index].toISOString().split('T')[0]
-      : '';
   }
 
   //
@@ -501,7 +503,7 @@ export default function ScheduleManager({ compact }) {
       employee_name: employeeRow.employee_name,
       zone_id: employeeRow.zone_id,
       zone_name: employeeRow.zone_name,
-      shift_date: getDateForDay(day),
+      shift_date: getDateForDay(day), // actual date
       start_time: '09:00',
       end_time: '17:00',
       role: selectedRole,
@@ -577,7 +579,7 @@ export default function ScheduleManager({ compact }) {
     setNoShowModalOpen(true);
   }
 
-  function handleNoShowSubmit({ reason, requestCoverage, selectedCoverage }) {
+  function handleNoShowSubmit({ reason, requestCoverage, selectedCoverage, notifyMethod }) {
     const { shift, zoneName, employeeName, day } = noShowModalData;
     const newSchedule = { ...schedule };
 
@@ -597,7 +599,8 @@ export default function ScheduleManager({ compact }) {
             tempId: shift.tempId,
             status: 'no_show',
             coverageAssigned: requestCoverage && selectedCoverage ? selectedCoverage : undefined,
-            userChanged: true
+            userChanged: true,
+            notificationMethod: notifyMethod
           };
           employeeRow.days[day][shiftIndex] = updatedShift;
         }
@@ -620,9 +623,21 @@ export default function ScheduleManager({ compact }) {
           status: 'scheduled',
           coverageAssigned: selectedCoverage,
           coveredFor: employeeName,
-          coverage_status: 'pending',
+          coverage_status:
+            notifyMethod === 'call'
+              ? 'pending'
+              : notifyMethod === 'sms'
+              ? 'notified'
+              : 'pending',
           userChanged: true
         };
+        
+        if (notifyMethod === 'call') {
+          coverageShift.coverage_status = 'pending';
+        } else if (notifyMethod === 'sms') {
+          coverageShift.coverage_status = 'notified';
+        }
+        
         if (!coverageRow.days[day]) {
           coverageRow.days[day] = [];
         }
