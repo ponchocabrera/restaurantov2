@@ -254,10 +254,11 @@ export default function MyRestaurantsPage() {
 
   return (
     <DashboardLayout>
-      <main className="p-6 max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold font-outfit mb-4">Your Restaurant</h1>
+      <main className="p-4 max-w-4xl mx-auto">
+        <h1 className="text-5xl font-bold font-libre mb-6 leading-tight text-[#212350]">Your Restaurant</h1>
+        <h2 className="text-2xl outfit-bold mb-4 text-[#212350]">See your Restaurant's activity</h2>
         <p className="text-lg text-gray-600 mb-6">
-          Upload your menu and get AI-powered insights and recommendations for your menu.
+          Action on your Menu Reviews, and get insights on your Restaurant's activity.
         </p>
         {loading ? (
           <div className="text-center text-gray-500">Loading...</div>
