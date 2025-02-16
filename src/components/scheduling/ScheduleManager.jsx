@@ -6,6 +6,8 @@ import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import NoShowModal from './NoShowModal';
 import { startOfWeek, format } from 'date-fns';
 import { SHIFT_TIMES } from '@/lib/scheduling/scheduleConfigurations';
+import EmployeeUtilization from './EmployeeUtilization';
+import ZoneFillingStatus from './ZoneFillingStatus';
 
 console.log('ScheduleManager SHIFT_TIMES:', SHIFT_TIMES);
 
@@ -336,7 +338,7 @@ export default function ScheduleManager({ compact }) {
         // Optionally set schedule immediately, if the API returns the updated array:
         // setSchedule(data.schedule || {});
   
-        // Force a fresh fetch of the selected week’s schedule so the UI updates right away:
+        // Force a fresh fetch of the selected week's schedule so the UI updates right away:
         await handleWeekClick(selectedWeek);
   
         // If you want a message or modal pop-up:
@@ -630,7 +632,7 @@ export default function ScheduleManager({ compact }) {
           start_time: shiftTimes.start,
           end_time: shiftTimes.end,
 
-          // Assign coverage employee’s data
+          // Assign coverage employee's data
           employee_id: coverageRow.employee_id,
           employee_name: coverageRow.employee_name,
           zone_id: coverageRow.zone_id,
@@ -1059,6 +1061,9 @@ export default function ScheduleManager({ compact }) {
           ))}
         </div>
       )}
+
+      <EmployeeUtilization schedule={schedule} employees={allEmployees} />
+      <ZoneFillingStatus schedule={schedule} zoneRequirements={zoneRequirements} />
 
       <div className="flex flex-col gap-4 mt-6">
         <button

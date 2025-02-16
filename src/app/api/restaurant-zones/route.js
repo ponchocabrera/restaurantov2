@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../auth/[...nextauth]/auth.config';
+import { getZonesWithRequirements } from '@/lib/employee-management/scheduler';
 
 export async function POST(request) {
   try {
@@ -114,5 +115,17 @@ export async function GET(request) {
   } catch (error) {
     console.error('Error fetching zones:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
+export default async function handler(req, res) {
+  try {
+    // You might get the restaurant ID from req.query, session, or have a default.
+    const restaurantId = req.query.restaurantId || '1';
+    const zones = await getZonesWithRequirements(restaurantId);
+    res.status(200).json({ zones });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: error.message });
   }
 } 
