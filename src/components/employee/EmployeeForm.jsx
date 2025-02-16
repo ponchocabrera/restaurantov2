@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
+import { SHIFT_TIMES } from '@/lib/scheduling/scheduleConfigurations';
 
 export default function EmployeeForm({ onSuccess }) {
   const { data: session } = useSession();
@@ -26,11 +27,10 @@ export default function EmployeeForm({ onSuccess }) {
     days_per_week: 5,
     rest_days: [],
     rest_day_coverage: [],
-    shift_preferences: {
-      morning: true,    // 6am-2pm
-      afternoon: true,  // 2pm-10pm
-      night: false      // 10pm-6am
-    }
+    shift_preferences: Object.keys(SHIFT_TIMES).reduce((acc, shift) => ({
+      ...acc,
+      [shift]: true // Or false for default unchecked
+    }), {})
   });
 
   const [restaurants, setRestaurants] = useState([]);
@@ -85,11 +85,10 @@ export default function EmployeeForm({ onSuccess }) {
         days_per_week: 5,
         rest_days: [],
         rest_day_coverage: [],
-        shift_preferences: {
-          morning: true,
-          afternoon: true,
-          night: false
-        }
+        shift_preferences: Object.keys(SHIFT_TIMES).reduce((acc, shift) => ({
+          ...acc,
+          [shift]: true // Or false for default unchecked
+        }), {})
       });
 
       setStatus({ type: 'success', message: 'Employee created successfully!' });
@@ -265,27 +264,34 @@ export default function EmployeeForm({ onSuccess }) {
       <div className="mt-4">
         <label className="block text-sm font-medium text-gray-700">Shift Preferences</label>
         <div className="mt-2 space-y-2">
-          {Object.entries({
-            morning: '6am-2pm',
-            afternoon: '2pm-10pm',
-            night: '10pm-6am'
-          }).map(([shift, hours]) => (
-            <label key={shift} className="flex items-center">
-              <input
-                type="checkbox"
-                checked={formData.shift_preferences[shift]}
-                onChange={(e) => setFormData(prev => ({
-                  ...prev,
-                  shift_preferences: {
-                    ...prev.shift_preferences,
-                    [shift]: e.target.checked
-                  }
-                }))}
-                className="h-4 w-4 text-blue-600"
-              />
-              <span className="ml-2 text-sm text-gray-600">{hours}</span>
-            </label>
-          ))}
+          {Object.entries(SHIFT_TIMES).map(([shift, times]) => {
+            const formatTime = (time) => {
+              const [hour, minute] = time.split(':');
+              const hour12 = hour % 12 || 12;
+              const ampm = hour >= 12 ? 'pm' : 'am';
+              return `${hour12}${ampm}`;
+            };
+            return (
+              <label key={shift} className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={formData.shift_preferences[shift]}
+                  onChange={(e) => setFormData(prev => ({
+                    ...prev,
+                    shift_preferences: {
+                      ...prev.shift_preferences,
+                      [shift]: e.target.checked
+                    }
+                  }))}
+                  className="h-4 w-4 text-blue-600"
+                />
+                <span className="ml-2 text-sm text-gray-600">
+                  {shift.charAt(0).toUpperCase() + shift.slice(1)} (
+                  {formatTime(times.start)} - {formatTime(times.end)})
+                </span>
+              </label>
+            );
+          })}
         </div>
       </div>
 

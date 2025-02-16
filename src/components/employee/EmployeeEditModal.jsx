@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { SHIFT_TIMES } from '@/lib/scheduling/scheduleConfigurations';
 
 export default function EmployeeEditModal({ employee, onClose, onSave }) {
   const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -212,39 +213,24 @@ export default function EmployeeEditModal({ employee, onClose, onSave }) {
             <div>
               <label className="block text-sm font-medium text-gray-700">Shift Preferences</label>
               <div className="flex items-center">
-                <label className="mr-2">
-                  <input
-                    type="checkbox"
-                    checked={formData.shift_preferences.morning}
-                    onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      shift_preferences: { ...prev.shift_preferences, morning: e.target.checked }
-                    }))}
-                  />
-                  6am-2pm
-                </label>
-                <label className="mr-2">
-                  <input
-                    type="checkbox"
-                    checked={formData.shift_preferences.afternoon}
-                    onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      shift_preferences: { ...prev.shift_preferences, afternoon: e.target.checked }
-                    }))}
-                  />
-                  2pm-10pm
-                </label>
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={formData.shift_preferences.night}
-                    onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      shift_preferences: { ...prev.shift_preferences, night: e.target.checked }
-                    }))}
-                  />
-                  10pm-6am
-                </label>
+                {Object.entries(SHIFT_TIMES).map(([shiftKey, shiftTimes]) => (
+                  <div key={shiftKey} className="mr-2">
+                    <label>
+                      <input
+                        type="checkbox"
+                        name="availability"
+                        value={shiftKey}
+                        checked={formData.shift_preferences[shiftKey]}
+                        onChange={(e) => setFormData(prev => ({
+                          ...prev,
+                          shift_preferences: { ...prev.shift_preferences, [shiftKey]: e.target.checked }
+                        }))}
+                      />
+                      {shiftKey.charAt(0).toUpperCase() + shiftKey.slice(1)} (
+                      {shiftTimes.start} - {shiftTimes.end})
+                    </label>
+                  </div>
+                ))}
               </div>
             </div>
           </div>

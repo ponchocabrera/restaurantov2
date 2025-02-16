@@ -2,6 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
+import { SHIFT_TIMES } from '@/lib/scheduling/scheduleConfigurations';
+
+console.log('ZoneManagement SHIFT_TIMES:', SHIFT_TIMES);
 
 export default function ZoneManagement() {
   const { data: session } = useSession();
@@ -18,7 +21,7 @@ export default function ZoneManagement() {
 
   const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
   const roles = ['server', 'chef', 'host', 'bartender'];
-  const shifts = ['morning', 'afternoon', 'evening'];
+  const shifts = Object.keys(SHIFT_TIMES);
 
   // -------------------------
   // Initial requirements
@@ -63,6 +66,13 @@ export default function ZoneManagement() {
     }));
   };
 
+  function getShiftTimes(shift) {
+    if (SHIFT_TIMES[shift]) {
+      return { shift_start: SHIFT_TIMES[shift].start, shift_end: SHIFT_TIMES[shift].end };
+    }
+    return { shift_start: '00:00', shift_end: '00:00' };
+  }
+
   const createZone = async () => {
     try {
       setStatus({ type: 'loading', message: 'Saving zone...' });
@@ -78,18 +88,8 @@ export default function ZoneManagement() {
                 role: role,
                 required_count: count,
                 shift_time: shift,
-                shift_start:
-                  shift === 'morning'
-                    ? '09:00'
-                    : shift === 'afternoon'
-                    ? '14:00'
-                    : '18:00',
-                shift_end:
-                  shift === 'morning'
-                    ? '14:00'
-                    : shift === 'afternoon'
-                    ? '18:00'
-                    : '23:00'
+                start_time: SHIFT_TIMES[shift]?.start || '00:00',
+                end_time: SHIFT_TIMES[shift]?.end || '00:00',
               });
             }
           });
@@ -325,13 +325,14 @@ export default function ZoneManagement() {
         Object.entries(roles).forEach(([role, shifts]) => {
           Object.entries(shifts).forEach(([shift, count]) => {
             if (count > 0) {
+              const { shift_start, shift_end } = getShiftTimes(shift);
               roles_needed.push({
                 day_of_week: day.toLowerCase(),
                 role,
                 required_count: count,
                 shift_time: shift,
-                shift_start: '08:00',
-                shift_end: '16:00'
+                shift_start,
+                shift_end
               });
             }
           });

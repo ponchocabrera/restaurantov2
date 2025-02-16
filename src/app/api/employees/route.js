@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { query, pool } from '@/lib/db';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../auth/[...nextauth]/auth.config';
+import { SHIFT_TIMES } from '@/lib/scheduling/scheduleConfigurations';
 
 export async function GET(request) {
   try {
@@ -104,24 +105,27 @@ export async function POST(request) {
         );
       }
 
-      // Add rest day coverage
+      // Add rest day coverage using unified shift times (using morning shift as default)
       for (const day of rest_day_coverage) {
         await client.query(
           `INSERT INTO employee_availability (
-            employee_id, day_of_week, is_rest_day, can_cover,
-            start_time, end_time
-          ) VALUES ($1, $2, true, true, $3, $4)`,
-          [employeeId, day, '09:00', '17:00'] // Default shift times
+             employee_id, day_of_week, is_rest_day, can_cover,
+             start_time, end_time
+           ) VALUES ($1, $2, true, true, $3, $4)`,
+          [employeeId, day, SHIFT_TIMES.morning.start, SHIFT_TIMES.morning.end]
         );
       }
 
       // Add shift preferences
-      for (const shift of ['morning', 'afternoon', 'night']) {
+      const shiftPreferences = Object.entries(shift_preferences)
+        .filter(([_, value]) => value)
+        .map(([shift]) => shift);
+
+      for (const shift of shiftPreferences) {
         await client.query(
-          `INSERT INTO employee_shift_preferences 
-           (employee_id, shift_type, preferred)
+          `INSERT INTO employee_shift_preferences (employee_id, shift_type, preferred)
            VALUES ($1, $2, $3)`,
-          [employeeId, shift, shift_preferences.includes(shift)]
+          [employeeId, shift, true]
         );
       }
 

@@ -1,5 +1,3 @@
-// File: src/app/api/schedules/save/route.js
-
 import { NextResponse } from 'next/server';
 import { query, pool } from '@/lib/db';
 import { getServerSession } from 'next-auth';
@@ -8,209 +6,203 @@ import { callEmployeeForCoverage, sendSMSToEmployeeForCoverage } from '@/lib/twi
 import { revalidatePath } from 'next/cache';
 
 export async function PUT(request) {
+  let client;
   try {
     console.log("DEBUG: Starting schedule save PUT request.");
+
     // Verify user session.
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       console.error("ERROR: Unauthorized user.");
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    // Parse the incoming payload.
-    const { schedule: nestedSchedule, coverageRequests, startDate, endDate } = await request.json();
-    console.log("DEBUG: Received schedule data. StartDate:", startDate, "EndDate:", endDate);
-    
+
+    // Read the raw body once and parse it.
+    const rawBody = await request.text();
+    console.log("DEBUG: Raw request body:", rawBody);
+    const { shifts, startDate, endDate } = JSON.parse(rawBody);
+
+    console.log("DEBUG: Parsed startDate:", startDate);
+    console.log("DEBUG: Parsed endDate:", endDate);
+    console.log(`DEBUG: Received ${shifts.length} shifts from the client`);
+
+    // Build newShifts from a flat shifts array.
     const newShifts = [];
     const seenShifts = new Set();
 
     // Helper function to normalize dates.
-    const normalizeDate = (date) => new Date(date).toISOString().split("T")[0];
+    const normalizeDate = (date) =>
+      new Date(date).toISOString().split("T")[0];
 
-    for (const zone in nestedSchedule) {
-      const employees = nestedSchedule[zone];
-      for (const employee of employees) {
-        const employee_id = employee.employee_id;
-        const zone_id = employee.zone_id;
-        for (const day in employee.days) {
-          for (const shift of employee.days[day]) {
-            const normalizedDate = normalizeDate(shift.shift_date);
-            // Deduplication key based on employee and day.
-            const key = `${employee_id}-${normalizedDate}`;
-            if (seenShifts.has(key)) {
-              // Skip if a shift for this employee on this day is already added.
-              continue;
-            }
-            seenShifts.add(key);
+    // Iterate over shifts.
+    for (const shift of shifts) {
+      const employee_id = shift.employee_id;
+      const zone_id = shift.zone_id;
+      const normalizedDate = normalizeDate(shift.shift_date);
+      const key = `${employee_id}-${zone_id}-${normalizedDate}-${shift.start_time}`;
 
-            const coverageStatus = shift.coverage_status
-              ? shift.coverage_status
-              : shift.isCoverage
-                ? 'pending'
-                : null;
-            
-            newShifts.push({
-              id: shift.id,
-              tempId: shift.tempId,
-              isCoverage: shift.isCoverage === true,
-              employee_id,
-              zone_id,
-              role: shift.role,
-              shift_date: shift.shift_date,
-              start_time: shift.start_time,
-              end_time: shift.end_time,
-              status: shift.status || 'scheduled',
-              is_coverage: shift.isCoverage || false,
-              covered_for: shift.coveredFor || null,
-              coverage_assigned: shift.coverageAssigned || null,
-              no_show_reason: shift.noShowReason || null,
-              coverage_status: coverageStatus
-            });
-          }
-        }
+      console.log(`Processing shift: ${JSON.stringify(shift)}`);
+      if (seenShifts.has(key)) {
+        console.log(`Skipping duplicate shift: ${key}`);
+        continue;
       }
+      seenShifts.add(key);
+
+      // Decide coverage status if not explicitly set
+      const coverageStatus =
+        shift.coverage_status ||
+        (shift.isCoverage || shift.is_coverage ? 'pending' : null);
+
+      newShifts.push({
+        id: shift.id,
+        tempId: shift.tempId,
+        employee_id,
+        zone_id,
+        zone_name: shift.zone_name || 'Unknown Zone',
+        role: shift.role,
+        shift_date: shift.shift_date,
+        start_time: shift.start_time,
+        end_time: shift.end_time,
+        status: shift.status || 'scheduled',
+        is_coverage: shift.isCoverage || shift.is_coverage || false,
+        covered_for: shift.coveredFor || shift.covered_for || null,
+        coverage_assigned: shift.coverageAssigned || shift.coverage_assigned || null,
+        no_show_reason: shift.noShowReason || shift.no_show_reason || null,
+        coverage_status: coverageStatus
+      });
     }
+
     console.log("DEBUG: New Shifts to Insert:", newShifts);
-    console.log("DEBUG: Coverage Requests to Insert:", coverageRequests);
 
-    // Process each coverage request.
-    if (coverageRequests && Array.isArray(coverageRequests)) {
-      for (const reqObj of coverageRequests) {
-        const result = await query(
-          `INSERT INTO coverage_requests
-           (temp_id, schedule_id, requested_by, reason, status, replacement_employee)
-           VALUES ($1, $2, $3, $4, $5, $6)
-           RETURNING *`,
-          [reqObj.tempId, reqObj.schedule_id, reqObj.requested_by, reqObj.reason, reqObj.status, reqObj.replacement_employee]
-        );
-        console.log("DEBUG: Inserted coverage request:", result.rows[0]);
-      }
-    }
+    // Get a client from the pool.
+    client = await pool.connect();
+    await client.query('BEGIN');
 
-    // Retrieve the restaurant ID for the current user.
-    const restaurantRes = await query(
+    // Get restaurant id for the current user.
+    const resRestaurant = await client.query(
       'SELECT id FROM restaurants WHERE user_id = $1 LIMIT 1',
       [session.user.id]
     );
-    if (!restaurantRes.rows.length) {
-      throw new Error('Restaurant not found');
+    if (!resRestaurant.rows[0]?.id) {
+      throw new Error('Restaurant record not found for this user');
     }
-    const restaurantId = restaurantRes.rows[0].id;
+    const restaurantId = resRestaurant.rows[0].id;
     console.log("DEBUG: Retrieved restaurantId:", restaurantId);
 
-    // Begin a transaction.
-    const client = await pool.connect();
-    try {
-      await client.query('BEGIN');
-      console.log("DEBUG: Transaction started.");
+    // Delete existing schedules in the given date range.
+    await client.query(
+      `DELETE FROM schedules 
+       WHERE shift_date BETWEEN $1 AND $2 
+         AND employee_id IN (
+           SELECT id FROM employees WHERE restaurant_id = $3
+         )`,
+      [startDate, endDate, restaurantId]
+    );
+    console.log("DEBUG: Existing schedules deleted.");
 
-      // Delete existing schedules in the given date range.
-      await client.query(
-        `DELETE FROM schedules 
-         WHERE DATE(shift_date) BETWEEN $1 AND $2 
-           AND employee_id IN (
-             SELECT id FROM employees WHERE restaurant_id = $3
-           )`,
-        [startDate, endDate, restaurantId]
+    // Always insert every shift (full replace approach).
+    for (const shift of newShifts) {
+      console.log("DEBUG: Inserting shift:", shift);
+      const res = await client.query(
+        `INSERT INTO schedules (
+            employee_id, 
+            zone_id, 
+            role, 
+            shift_date, 
+            start_time, 
+            end_time, 
+            status, 
+            is_coverage, 
+            covered_for, 
+            coverage_assigned, 
+            no_show_reason,
+            coverage_status
+         )
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+         RETURNING id`,
+        [
+          shift.employee_id,
+          shift.zone_id,
+          shift.role,
+          shift.shift_date,
+          shift.start_time,
+          shift.end_time,
+          shift.status,
+          shift.is_coverage,
+          shift.covered_for,
+          shift.coverage_assigned,
+          shift.no_show_reason,
+          shift.coverage_status
+        ]
       );
-      console.log("DEBUG: Existing schedules deleted.");
+      const newId = res.rows[0].id;
+      shift.newId = newId;
+      console.log(`DEBUG: Inserted new shift with id ${newId}`);
+    }
 
-      // Insert each new shift.
-      for (const shift of newShifts) {
-        console.log("DEBUG: Inserting shift:", shift);
-        const res = await client.query(
-          `INSERT INTO schedules (
-              employee_id, zone_id, role, shift_date, start_time,
-              end_time, status, is_coverage, covered_for,
-              coverage_assigned, no_show_reason, coverage_status
-           )
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-           RETURNING id`,
-          [
-            shift.employee_id,
-            shift.zone_id,
-            shift.role,
-            shift.shift_date,
-            shift.start_time,
-            shift.end_time,
-            shift.status,
-            shift.is_coverage,
-            shift.covered_for,
-            shift.coverage_assigned,
-            shift.no_show_reason,
-            shift.coverage_status
-          ]
-        );
-        // Capture the new id.
-        const newId = res.rows[0].id;
-        shift.newId = newId;
-      }
+    await client.query('COMMIT');
+    console.log("DEBUG: Transaction committed.");
 
-      await client.query('COMMIT');
-      console.log("DEBUG: Transaction committed.");
+    // Automatically trigger coverage calls or SMS for coverage shifts.
+    const currentCallDelay = process.env.CALL_DELAY_MS;
+    console.log("DEBUG: CALL_DELAY_MS env value:", currentCallDelay);
+    const delayMs = currentCallDelay ? parseInt(currentCallDelay) : 10000;
+    console.log("DEBUG: Using delayMs:", delayMs, "ms");
 
-      // After inserting schedules, update any coverage_requests that have a temp_id.
-      // Loop through newShifts that have a tempId and a newId.
-      for (const shift of newShifts) {
-        if (shift.tempId && shift.newId) {
-          await client.query(
-            `UPDATE coverage_requests
-             SET schedule_id = $1
-             WHERE temp_id = $2`,
-            [shift.newId, shift.tempId]
-          );
-          console.log(`DEBUG: Updated coverage_requests for tempId ${shift.tempId} with schedule_id ${shift.newId}`);
-        }
-      }
-
-      // Automatically trigger outbound coverage calls for new coverage shifts.
-      const currentCallDelay = process.env.CALL_DELAY_MS;
-      console.log("DEBUG: CALL_DELAY_MS env value:", currentCallDelay);
-
-      const delayMs = currentCallDelay ? parseInt(currentCallDelay) : 10000;
-      console.log("DEBUG: Using delayMs:", delayMs, "ms");
-      newShifts.forEach(shift => {
-        if (shift.isCoverage && shift.coverage_status === 'pending' && shift.newId) {
-          console.log(`DEBUG: Scheduling coverage call for shift id ${shift.newId} (tempId: ${shift.tempId})`);
-          setTimeout(() => {
-            console.log(`DEBUG: Triggering callEmployeeForCoverage for shift id ${shift.newId}`);
-            callEmployeeForCoverage(shift.newId)
-              .then(() => {
-                console.log(`DEBUG: Coverage call successfully triggered for shift id ${shift.newId}`);
-              })
-              .catch(err => {
-                console.error(`ERROR: Coverage call failed for shift id ${shift.newId}:`, err);
-              });
-          }, delayMs);
-        }
-      });
-
-      // Automatically trigger outbound SMS notifications for new coverage shifts
-      newShifts.forEach(shift => {
-        if (shift.isCoverage && shift.coverage_status === 'notified' && shift.newId) {
-          console.log(`DEBUG: Triggering SMS notification for shift id ${shift.newId}`);
-          sendSMSToEmployeeForCoverage(shift.newId)
+    // Coverage calls
+    newShifts.forEach(shift => {
+      if ((shift.is_coverage) && shift.coverage_status === 'pending' && shift.newId) {
+        console.log(`DEBUG: Scheduling coverage call for shift id ${shift.newId} (tempId: ${shift.tempId})`);
+        setTimeout(() => {
+          console.log(`DEBUG: Triggering callEmployeeForCoverage for shift id ${shift.newId}`);
+          callEmployeeForCoverage(shift.newId)
             .then(() => {
-              console.log(`DEBUG: SMS successfully triggered for shift id ${shift.newId}`);
+              console.log(`DEBUG: Coverage call successfully triggered for shift id ${shift.newId}`);
             })
             .catch(err => {
-              console.error(`ERROR: SMS triggering failed for shift id ${shift.newId}:`, err);
+              console.error(`ERROR: Coverage call failed for shift id ${shift.newId}:`, err);
             });
-        }
-      });
+        }, delayMs);
+      }
+    });
 
-      // Revalidate the schedules page to force a fresh fetch of schedule data.
-      revalidatePath('/schedules');
+    // Coverage SMS
+    newShifts.forEach(shift => {
+      if ((shift.is_coverage) && shift.coverage_status === 'notified' && shift.newId) {
+        console.log(`DEBUG: Triggering SMS notification for shift id ${shift.newId}`);
+        sendSMSToEmployeeForCoverage(shift.newId)
+          .then(() => {
+            console.log(`DEBUG: SMS successfully triggered for shift id ${shift.newId}`);
+          })
+          .catch(err => {
+            console.error(`ERROR: SMS triggering failed for shift id ${shift.newId}:`, err);
+          });
+      }
+    });
 
-      return NextResponse.json({ message: 'Changes saved successfully' });
-    } catch (error) {
+    // Revalidate the schedules page to force a fresh fetch of schedule data.
+    revalidatePath('/schedules');
+
+    // Transform the flat array (newShifts) into a nested structure keyed by zone_name.
+    const nestedSchedule = newShifts.reduce((acc, shift) => {
+      const zone = shift.zone_name || 'Unknown Zone';
+      if (!acc[zone]) {
+        acc[zone] = [];
+      }
+      acc[zone].push(shift);
+      return acc;
+    }, {});
+
+    return NextResponse.json({ message: 'Changes saved successfully', schedule: nestedSchedule });
+  } catch (error) {
+    if (client) {
       await client.query('ROLLBACK');
-      console.error("ERROR: Transaction error:", error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    } finally {
+    }
+    console.error('Error in schedule save route:', error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  } finally {
+    if (client) {
       client.release();
     }
-  } catch (error) {
-    console.error("ERROR: In schedule save route:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

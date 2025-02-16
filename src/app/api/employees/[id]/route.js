@@ -1,37 +1,35 @@
 import { NextResponse } from 'next/server';
-import { query, pool } from '@/lib/db';
+import { pool } from '@/lib/db';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../auth/[...nextauth]/auth.config';
 
 export async function DELETE(request, { params }) {
   const { id } = params;
-  
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+  const client = await pool.connect();
 
-    const client = await pool.connect();
-    try {
-      await client.query('BEGIN');
-      
-      // Delete related records first
-      await client.query('DELETE FROM employee_roles WHERE employee_id = $1', [id]);
-      await client.query('DELETE FROM employee_availability WHERE employee_id = $1', [id]);
-      await client.query('DELETE FROM employees WHERE id = $1', [id]);
-      
-      await client.query('COMMIT');
-      return NextResponse.json({ success: true });
-    } catch (error) {
-      await client.query('ROLLBACK');
-      throw error;
-    } finally {
-      client.release();
-    }
+  try {
+    await client.query('BEGIN');
+
+    // Clear foreign key references in coverage_requests for this employee.
+    await client.query(
+      "UPDATE coverage_requests SET replacement_employee = NULL WHERE replacement_employee = $1",
+      [id]
+    );
+    await client.query(
+      "UPDATE coverage_requests SET requested_by = NULL WHERE requested_by = $1",
+      [id]
+    );
+
+    // Delete the employee record.
+    await client.query("DELETE FROM employees WHERE id = $1", [id]);
+
+    await client.query('COMMIT');
+    return NextResponse.json({ message: "Employee deleted successfully" });
   } catch (error) {
-    console.error('Error deleting employee:', error);
+    await client.query('ROLLBACK');
     return NextResponse.json({ error: error.message }, { status: 500 });
+  } finally {
+    client.release();
   }
 }
 

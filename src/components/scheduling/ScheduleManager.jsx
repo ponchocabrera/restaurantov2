@@ -2,17 +2,16 @@
 
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import {
-  DragDropContext,
-  Droppable,
-  Draggable
-} from 'react-beautiful-dnd';
+import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import NoShowModal from './NoShowModal';
 import { startOfWeek, format } from 'date-fns';
+import { SHIFT_TIMES } from '@/lib/scheduling/scheduleConfigurations';
 
-//
+console.log('ScheduleManager SHIFT_TIMES:', SHIFT_TIMES);
+
+const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
 // Utility to abbreviate day names
-//
 const abbreviateDay = (day) => {
   const map = {
     Monday: 'Mon',
@@ -26,14 +25,9 @@ const abbreviateDay = (day) => {
   return map[day] || day;
 };
 
-//
-// Use date-fns to get Monday (startOfWeek with { weekStartsOn: 1 })
-//
 const getCurrentWeekStart = (date) => startOfWeek(date, { weekStartsOn: 1 });
 
-//
 // Check if employee is busy for a given day
-//
 function isEmployeeBusy(schedule, employeeName, dayAbbrev) {
   for (const zoneName in schedule) {
     const employees = schedule[zoneName];
@@ -48,42 +42,70 @@ function isEmployeeBusy(schedule, employeeName, dayAbbrev) {
   return false;
 }
 
+// Parse "HH:MM" into total minutes
+function parseTime(timeStr) {
+  const [hours, minutes] = timeStr.split(':').map(Number);
+  return hours * 60 + minutes;
+}
+
+// Decide which block a shift belongs to
+export function getShiftBlock(shift) {
+  const startTime = shift.start_time || '00:00';
+  const startMinutes = parseTime(startTime);
+
+  const morningStart = parseTime(SHIFT_TIMES.morning.start);
+  const morningEnd   = parseTime(SHIFT_TIMES.morning.end);
+  const afternoonStart = parseTime(SHIFT_TIMES.afternoon.start);
+  const afternoonEnd   = parseTime(SHIFT_TIMES.afternoon.end);
+  const eveningStart   = parseTime(SHIFT_TIMES.evening.start);
+  const eveningEnd     = parseTime(SHIFT_TIMES.evening.end);
+
+  if (startMinutes >= morningStart && startMinutes < morningEnd) {
+    return 'Morning';
+  } else if (startMinutes >= afternoonStart && startMinutes < afternoonEnd) {
+    return 'Afternoon';
+  } else if (startMinutes >= eveningStart && startMinutes < eveningEnd) {
+    return 'Evening';
+  }
+  return 'Other';
+}
+
+function getShiftTimes(shift) {
+  if (SHIFT_TIMES[shift]) {
+    return {
+      shift_start: SHIFT_TIMES[shift].start,
+      shift_end: SHIFT_TIMES[shift].end
+    };
+  }
+  return { shift_start: '00:00', shift_end: '00:00' };
+}
+
 export default function ScheduleManager({ compact }) {
   const { data: session } = useSession();
 
+  const [zonesCollapsed, setZonesCollapsed] = useState({});
   const [schedule, setSchedule] = useState({});
   const [generatedWeeks, setGeneratedWeeks] = useState([]);
-
-  // Default to this week's Monday
   const [selectedWeek, setSelectedWeek] = useState(getCurrentWeekStart(new Date()));
-  
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showDatePicker, setShowDatePicker] = useState(false);
-
-  // Employee data
   const [employeeRestDaysMapping, setEmployeeRestDaysMapping] = useState({});
   const [employeeRolesMapping, setEmployeeRolesMapping] = useState({});
   const [allEmployees, setAllEmployees] = useState([]);
-
-  // Modals
   const [modalOpen, setModalOpen] = useState(false);
   const [modalData, setModalData] = useState(null);
-
   const [noShowModalOpen, setNoShowModalOpen] = useState(false);
   const [noShowModalData, setNoShowModalData] = useState(null);
-
-  // Save confirmation
   const [saveSummary, setSaveSummary] = useState(null);
-
-  // Toggle for "How do we schedule" dropdown
   const [showHowWeSchedule, setShowHowWeSchedule] = useState(false);
+  const [zoneRequirements, setZoneRequirements] = useState({});
+  const [selectedShiftType, setSelectedShiftType] = useState(null);
+  const [selectedRole, setSelectedRole] = useState(null);
 
-  const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const zones = Object.keys(schedule);
 
-  //
-  // Fetch employees
-  //
+  // Fetch all employees on mount
   useEffect(() => {
     const fetchEmployees = async () => {
       try {
@@ -96,9 +118,10 @@ export default function ScheduleManager({ compact }) {
         data.employees.forEach((emp) => {
           const fullName = `${emp.first_name} ${emp.last_name}`;
           restDaysMap[fullName] = (emp.rest_days || []).map((d) => abbreviateDay(d));
-          rolesMap[fullName] = emp.roles && emp.roles.length > 0
-            ? emp.roles
-            : ['Server', 'Bartender', 'Host'];
+          rolesMap[fullName] =
+            emp.roles && emp.roles.length > 0
+              ? emp.roles
+              : ['Server', 'Bartender', 'Host'];
         });
 
         setEmployeeRestDaysMapping(restDaysMap);
@@ -116,9 +139,7 @@ export default function ScheduleManager({ compact }) {
     return restDays.includes(day);
   }
 
-  //
-  // Fetch the list of generated week starts
-  //
+  // Fetch list of generated weeks
   useEffect(() => {
     const fetchGeneratedWeeks = async () => {
       setLoading(true);
@@ -136,18 +157,12 @@ export default function ScheduleManager({ compact }) {
     fetchGeneratedWeeks();
   }, []);
 
-  //
-  // Convert a shift's date string to day abbreviation
-  //
   function getDayName(dateStr) {
     const date = new Date(dateStr);
     const mapping = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     return mapping[date.getDay()];
   }
 
-  //
-  // Group shifts by employee & zone
-  //
   function groupShiftsByEmployeeAndZone(shifts) {
     const grouped = {};
     for (const shift of shifts) {
@@ -167,7 +182,7 @@ export default function ScheduleManager({ compact }) {
           ...shift,
           isCoverage: shift.is_coverage,
           coveredFor: shift.covered_for,
-          coverageAssigned: shift.coverage_assigned,
+          coverageAssigned: shift.covered_assigned,
           noShowReason: shift.no_show_reason,
           coverage_status: shift.coverage_status
         });
@@ -176,9 +191,6 @@ export default function ScheduleManager({ compact }) {
     return grouped;
   }
 
-  //
-  // Then group everything by zone
-  //
   function groupShiftsByArea(shifts) {
     const areaGrouped = {};
     const employeeZoneGrouped = groupShiftsByEmployeeAndZone(shifts);
@@ -200,14 +212,11 @@ export default function ScheduleManager({ compact }) {
     return areaGrouped;
   }
 
-  //
-  // Handle "Week Click" / fetch schedule for a given start date
-  //
+  // Fetch schedule for a given start date
   async function handleWeekClick(weekStart) {
     setLoading(true);
     setError('');
     try {
-      // Format start & end dates
       const startDate = format(weekStart, 'yyyy-MM-dd');
       const endWeek = new Date(weekStart.getTime() + 6 * 24 * 60 * 60 * 1000);
       const endDate = format(endWeek, 'yyyy-MM-dd');
@@ -224,18 +233,13 @@ export default function ScheduleManager({ compact }) {
     }
   }
 
-  //
   // On first mount, fetch the default week's schedule
-  //
   useEffect(() => {
     handleWeekClick(selectedWeek);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  //
   // Generate new schedule for the selected week
-  // (then re‐fetch from the GET endpoint to get the fresh data)
-  //
   async function handleGenerateSchedule() {
     setLoading(true);
     setError('');
@@ -255,10 +259,8 @@ export default function ScheduleManager({ compact }) {
         throw new Error('Failed to generate schedule');
       }
 
-      // Once generation is done, fetch the new schedule
       await handleWeekClick(selectedWeek);
 
-      // Optionally add this newly generated week to our local list
       setGeneratedWeeks((prev) => [
         ...new Set([...prev, selectedWeek.toISOString().split('T')[0]])
       ]);
@@ -287,8 +289,7 @@ export default function ScheduleManager({ compact }) {
         throw new Error('Failed to delete schedule');
       }
 
-      // Update generated weeks list and clear the current schedule immediately
-      setGeneratedWeeks(prev => prev.filter(w => w !== weekStr));
+      setGeneratedWeeks((prev) => prev.filter((w) => w !== weekStr));
       setSchedule({});
 
       alert('Schedule deleted successfully');
@@ -299,131 +300,59 @@ export default function ScheduleManager({ compact }) {
     }
   }
 
-  function getEmployeeIdByName(name, requiredRole) {
-    const candidate = allEmployees.find((emp) => {
-      const fullName = `${emp.first_name} ${emp.last_name}`;
-      return (
-        fullName === name &&
-        emp.roles.some((role) => role.toLowerCase() === requiredRole.toLowerCase())
-      );
-    });
-    return candidate ? candidate.id : null;
-  }
-
-  //
-  // For new coverage shifts, remove the "temp" ID on save
-  //
-  function sanitizeScheduleForSaving(sched) {
-    const newSched = {};
-    for (const zone in sched) {
-      newSched[zone] = sched[zone].map((employeeRow) => {
-        const newEmployeeRow = { ...employeeRow, days: {} };
-        for (const day in employeeRow.days) {
-          newEmployeeRow.days[day] = employeeRow.days[day].map((shift) => {
-            const newShift = { ...shift };
-            if (
-              typeof newShift.id === 'string' &&
-              (newShift.id.startsWith('new-') || newShift.id.startsWith('coverage-'))
-            ) {
-              delete newShift.id;
-              newShift.autoGen = true;
-            }
-            return newShift;
+  // Flatten out the schedule for saving
+    // Flatten out the schedule for saving
+    async function handleSaveChanges() {
+      const shiftsToSave = [];
+      for (const zoneName in schedule) {
+        const zoneEmployees = schedule[zoneName];
+        zoneEmployees.forEach((employee) => {
+          DAYS.forEach((day) => {
+            (employee.days[day] || []).forEach((shift) => {
+              shiftsToSave.push(shift);
+            });
           });
-        }
-        return newEmployeeRow;
-      });
-    }
-    return newSched;
-  }
-
-  //
-  // Handle Save Changes
-  //
-  async function handleSaveChanges() {
-    setError('');
-    const coverageRequests = [];
-    const noShowEvents = [];
-
-    for (const zone in schedule) {
-      schedule[zone].forEach((employeeRow) => {
-        for (const day in employeeRow.days) {
-          employeeRow.days[day].forEach((shift) => {
-            if (!shift.userChanged) return;
-
-            // If no-show, gather info
-            if (shift.status === 'no_show') {
-              noShowEvents.push({
-                day: shift.shift_date,
-                noShowEmployee: employeeRow.employee_name,
-                coverageEmployee: shift.coverageAssigned || null
-              });
-              if (shift.coverageRequested) {
-                coverageRequests.push({
-                  tempId: shift.tempId,
-                  schedule_id: shift.originalShiftId || shift.id,
-                  requested_by: shift.employee_id,
-                  reason: shift.noShowReason,
-                  status: 'pending',
-                  replacement_employee: shift.coverageAssigned
-                    ? getEmployeeIdByName(shift.coverageAssigned, shift.role)
-                    : null
-                });
-              }
-            }
-          });
-        }
-      });
-    }
-
-    const sanitizedSchedule = sanitizeScheduleForSaving(schedule);
-
-    try {
-      const response = await fetch('/api/schedules/save', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          schedule: sanitizedSchedule,
-          coverageRequests,
-          startDate: selectedWeek.toISOString().split('T')[0],
-          endDate: new Date(selectedWeek.getTime() + 6 * 24 * 60 * 60 * 1000)
-            .toISOString()
-            .split('T')[0]
-        })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to save changes');
+        });
       }
-
-      const data = await response.json();
-      const summary = {
-        message: data.message || 'Changes saved successfully',
-        noShowEvents
-      };
-      setSaveSummary(summary);
-
-      // Refresh the schedule
-      await handleWeekClick(selectedWeek);
-    } catch (error) {
-      console.error('Error saving changes:', error);
-      setError(error.message || 'Error saving changes');
+  
+      try {
+        const response = await fetch('/api/schedules/save', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            shifts: shiftsToSave,
+            startDate: selectedWeek.toISOString().split('T')[0],
+            endDate: new Date(selectedWeek.getTime() + 6 * 24 * 60 * 60 * 1000)
+              .toISOString()
+              .split('T')[0]
+          })
+        });
+  
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to save schedule');
+        }
+  
+        // Optionally set schedule immediately, if the API returns the updated array:
+        // setSchedule(data.schedule || {});
+  
+        // Force a fresh fetch of the selected week’s schedule so the UI updates right away:
+        await handleWeekClick(selectedWeek);
+  
+        // If you want a message or modal pop-up:
+        setSaveSummary({ message: 'Schedule saved successfully!' });
+      } catch (error) {
+        setError(error.message);
+      }
     }
-  }
+  
 
-  //
-  // Generate the <option> list from generatedWeeks + the current selected week
-  // 
+  // Generate <option> list for week selection
   function generateWeekOptions() {
-    // Combine weeks from state with the current selected week
     const currentWeekStr = selectedWeek.toISOString().split('T')[0];
     const allWeeks = new Set([...generatedWeeks, currentWeekStr]);
-
-    // Sort them in ascending date order
     const sortedWeeks = Array.from(allWeeks).sort((a, b) => new Date(a) - new Date(b));
 
-    // Build an array of { value, label }
     return sortedWeeks.map((weekStr) => {
       const weekDate = new Date(weekStr);
       return {
@@ -436,26 +365,18 @@ export default function ScheduleManager({ compact }) {
     });
   }
 
-  // Build an array of 7 consecutive days from the selectedWeek
   const weekDates = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(selectedWeek);
     d.setDate(selectedWeek.getDate() + i);
     return d;
   });
 
-  //
-  // Convert day abbreviation -> actual date string for the selected week
-  //
   function getDateForDay(dayAbbrev) {
-    const index = DAYS.indexOf(dayAbbrev);
-    return weekDates[index]
-      ? weekDates[index].toISOString().split('T')[0]
-      : '';
+    const idx = DAYS.indexOf(dayAbbrev);
+    if (idx < 0) return '';
+    return weekDates[idx].toISOString().split('T')[0];
   }
 
-  //
-  // handleDragEnd from react-beautiful-dnd
-  //
   function handleDragEnd(result) {
     const { source, destination } = result;
     if (!destination) return;
@@ -474,7 +395,7 @@ export default function ScheduleManager({ compact }) {
       .split('-')
       .map(sanitize);
 
-    // Must be same employee/zone if we're dragging within the same row
+    // We only allow reordering within the same droppable
     if (employee !== destEmployee || zoneName !== destZone) return;
 
     const newSchedule = { ...schedule };
@@ -489,7 +410,6 @@ export default function ScheduleManager({ compact }) {
       zoneEmployees[empIndex].days[sourceDay] = sourceShifts;
 
       movedShift.userChanged = true;
-      // ***** FIXED: store the real date, not an invalid parse of "Mon"/"Tue"/"Sun" *****
       movedShift.shift_date = getDateForDay(destDay);
       movedShift.conflict = isEmployeeBusy(newSchedule, employee, destDay);
 
@@ -500,9 +420,6 @@ export default function ScheduleManager({ compact }) {
     setSchedule(newSchedule);
   }
 
-  //
-  // Delete shift
-  //
   function handleDeleteShift(zoneName, employeeName, day, shiftIndex) {
     const newSchedule = { ...schedule };
     const zoneEmployees = newSchedule[zoneName];
@@ -515,17 +432,18 @@ export default function ScheduleManager({ compact }) {
     setSchedule(newSchedule);
   }
 
-  //
   // Add Shift Modal
-  //
   function openAddShiftModal(zoneName, employeeRow, day) {
     setModalData({ zoneName, employeeRow, day });
+    setSelectedShiftType(null);
+    setSelectedRole(null);
     setModalOpen(true);
   }
 
-  function handleAddShiftModal(selectedRole) {
+  function handleConfirmAddShift() {
     const { zoneName, employeeRow, day } = modalData;
     const uniqueId = `new-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+    const { shift_start, shift_end } = getShiftTimes(selectedShiftType);
 
     const newShift = {
       id: uniqueId,
@@ -533,65 +451,111 @@ export default function ScheduleManager({ compact }) {
       employee_name: employeeRow.employee_name,
       zone_id: employeeRow.zone_id,
       zone_name: employeeRow.zone_name,
-      shift_date: getDateForDay(day), // actual date
-      start_time: '09:00',
-      end_time: '17:00',
-      role: selectedRole,
+      shift_date: getDateForDay(day),
+      start_time: shift_start,
+      end_time: shift_end,
+      role: selectedRole || 'Role?',
       userChanged: true,
       conflict: isEmployeeBusy(schedule, employeeRow.employee_name, day),
       required_count: 1
     };
 
-    const newSchedule = { ...schedule };
-    const zoneEmployees = newSchedule[zoneName];
-    const index = zoneEmployees.findIndex((row) => row.employee_name === employeeRow.employee_name);
-    if (index !== -1) {
-      if (!zoneEmployees[index].days[day]) {
-        zoneEmployees[index].days[day] = [];
-      }
-      zoneEmployees[index].days[day].push(newShift);
-    }
-    setSchedule(newSchedule);
+    setSchedule((prev) => ({
+      ...prev,
+      [zoneName]: prev[zoneName].map((emp) => {
+        if (emp.employee_name === employeeRow.employee_name) {
+          return {
+            ...emp,
+            days: {
+              ...emp.days,
+              [day]: [...(emp.days[day] || []), newShift]
+            }
+          };
+        }
+        return emp;
+      })
+    }));
+
     setModalOpen(false);
     setModalData(null);
+    setSelectedShiftType(null);
+    setSelectedRole(null);
   }
 
   function renderAddShiftModal() {
     if (!modalOpen || !modalData) return null;
     const { employeeRow, day } = modalData;
-    const availableRoles =
-      employeeRow.availableRoles && employeeRow.availableRoles.length > 0
-        ? employeeRow.availableRoles
-        : ['Server', 'Bartender', 'Host'];
+    const shiftOptions = ['morning', 'afternoon', 'evening'];
+    const roleOptions =
+      employeeRolesMapping[employeeRow.employee_name] &&
+      employeeRolesMapping[employeeRow.employee_name].length > 0
+        ? employeeRolesMapping[employeeRow.employee_name]
+        : ['barman', 'server'];
 
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
         <div className="bg-white p-6 rounded shadow-lg max-w-sm w-full">
-          <h3 className="text-lg font-bold mb-4">Select a Role</h3>
+          <h3 className="text-lg font-bold mb-4">Add Shift</h3>
           <p className="mb-4">
-            Choose a role for <strong>{employeeRow.employee_name}</strong> on{' '}
-            <strong>{day}</strong>.
+            Select shift type and role for <strong>{employeeRow.employee_name}</strong> on <strong>{day}</strong>.
           </p>
-          <div className="space-y-2">
-            {availableRoles.map((role) => (
-              <button
-                key={role}
-                onClick={() => handleAddShiftModal(role)}
-                className="w-full text-left p-2 bg-blue-100 rounded hover:bg-blue-200"
-              >
-                {role}
-              </button>
-            ))}
+
+          <div className="mb-4">
+            <p className="font-semibold">Select Shift Type:</p>
+            <div className="space-x-2 mt-2">
+              {shiftOptions.map((shift) => (
+                <button
+                  key={shift}
+                  onClick={() => setSelectedShiftType(shift)}
+                  className={`px-3 py-1 rounded ${
+                    selectedShiftType === shift
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-blue-100 text-blue-700'
+                  }`}
+                >
+                  {shift.charAt(0).toUpperCase() + shift.slice(1)}
+                </button>
+              ))}
+            </div>
           </div>
-          <div className="mt-4 flex justify-end">
+
+          <div className="mb-4">
+            <p className="font-semibold">Select Role:</p>
+            <div className="space-x-2 mt-2">
+              {roleOptions.map((role) => (
+                <button
+                  key={role}
+                  onClick={() => setSelectedRole(role)}
+                  className={`px-3 py-1 rounded ${
+                    selectedRole === role
+                      ? 'bg-green-500 text-white'
+                      : 'bg-green-100 text-green-700'
+                  }`}
+                >
+                  {role.charAt(0).toUpperCase() + role.slice(1)}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex justify-end space-x-2">
             <button
               onClick={() => {
                 setModalOpen(false);
                 setModalData(null);
+                setSelectedShiftType(null);
+                setSelectedRole(null);
               }}
               className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
             >
               Cancel
+            </button>
+            <button
+              onClick={handleConfirmAddShift}
+              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+              disabled={!selectedShiftType || !selectedRole}
+            >
+              Confirm
             </button>
           </div>
         </div>
@@ -599,9 +563,7 @@ export default function ScheduleManager({ compact }) {
     );
   }
 
-  //
   // No-Show Modal
-  //
   function openNoShowModal(shift, zoneName, employeeName, day) {
     const tempId = shift.tempId || `temp-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
     shift.tempId = tempId;
@@ -613,6 +575,7 @@ export default function ScheduleManager({ compact }) {
     const { shift, zoneName, employeeName, day } = noShowModalData;
     const newSchedule = { ...schedule };
 
+    // Mark the shift as no-show
     if (newSchedule[zoneName]) {
       const employeeRowIndex = newSchedule[zoneName].findIndex(
         (row) => row.employee_name === employeeName
@@ -637,13 +600,16 @@ export default function ScheduleManager({ compact }) {
       }
     }
 
-    // coverage shift
+    // If coverage is requested, create a coverage shift for the assigned employee
     if (requestCoverage && selectedCoverage) {
       const coverageRowIndex = newSchedule[zoneName].findIndex(
         (row) => row.employee_name === selectedCoverage
       );
       if (coverageRowIndex !== -1) {
         const coverageRow = newSchedule[zoneName][coverageRowIndex];
+        const shiftBlock = getShiftBlock(shift).toLowerCase();
+        const shiftTimes = SHIFT_TIMES[shiftBlock];
+
         const coverageShift = {
           ...shift,
           id: `coverage-${shift.id || shift.tempId}-${Date.now()}`,
@@ -651,23 +617,28 @@ export default function ScheduleManager({ compact }) {
           originalShiftId: shift.id,
           tempId: shift.tempId,
           status: 'scheduled',
-          coverageAssigned: selectedCoverage,
           coveredFor: employeeName,
+          userChanged: true,
           coverage_status:
             notifyMethod === 'call'
               ? 'pending'
               : notifyMethod === 'sms'
               ? 'notified'
               : 'pending',
-          userChanged: true
+
+          // Times from SHIFT_TIMES based on the block
+          start_time: shiftTimes.start,
+          end_time: shiftTimes.end,
+
+          // Assign coverage employee’s data
+          employee_id: coverageRow.employee_id,
+          employee_name: coverageRow.employee_name,
+          zone_id: coverageRow.zone_id,
+          zone_name: coverageRow.zone_name,
+
+          coverageAssigned: selectedCoverage
         };
-        
-        if (notifyMethod === 'call') {
-          coverageShift.coverage_status = 'pending';
-        } else if (notifyMethod === 'sms') {
-          coverageShift.coverage_status = 'notified';
-        }
-        
+
         if (!coverageRow.days[day]) {
           coverageRow.days[day] = [];
         }
@@ -680,213 +651,6 @@ export default function ScheduleManager({ compact }) {
     setNoShowModalData(null);
   }
 
-  //
-  // Calculate staff required for each day in a zone
-  //
-  function computeStaffRequiredForZone(employees) {
-    const totals = { Mon: 0, Tue: 0, Wed: 0, Thu: 0, Fri: 0, Sat: 0, Sun: 0 };
-    employees.forEach((emp) => {
-      DAYS.forEach((day) => {
-        const shifts = emp.days[day] || [];
-        shifts.forEach((shift) => {
-          totals[day] += shift.required_count || 0;
-        });
-      });
-    });
-    return totals;
-  }
-
-  //
-  // Collapsible zones
-  //
-  const [zonesCollapsed, setZonesCollapsed] = useState({});
-
-  function toggleZoneCollapse(zoneName) {
-    setZonesCollapsed((prev) => ({
-      ...prev,
-      [zoneName]: !prev[zoneName]
-    }));
-  }
-
-  //
-  // Render each zone's table
-  //
-  function renderZone(zoneName) {
-    const sortedEmployees = schedule[zoneName].sort((a, b) =>
-      a.employee_name.localeCompare(b.employee_name)
-    );
-    const totals = computeStaffRequiredForZone(sortedEmployees);
-
-    return (
-      <DragDropContext onDragEnd={handleDragEnd}>
-        {!zonesCollapsed[zoneName] && (
-          <div className="pt-2">
-            <div className="overflow-x-auto w-full">
-              <table className="w-full text-sm border-collapse">
-                <thead>
-                  <tr className="border-b">
-                    <th className="py-2 text-left pl-4">Employee</th>
-                    {weekDates.map((date, idx) => (
-                      <th key={idx} className="py-2 text-center">
-                        <div>
-                          {DAYS[idx]}{' '}
-                          {date.toLocaleDateString('en-US', {
-                            month: 'short',
-                            day: 'numeric'
-                          })}
-                        </div>
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {sortedEmployees.map((employeeRow) => (
-                    <tr
-                      key={employeeRow.employee_name}
-                      className="border-b last:border-b-0"
-                    >
-                      <td className="py-2 font-semibold pl-4">
-                        {employeeRow.employee_name}
-                      </td>
-                      {DAYS.map((day) => {
-                        const cellShifts = employeeRow.days[day] || [];
-                        const isRest = isEmployeeRestDay(employeeRow, day);
-
-                        return (
-                          <td
-                            key={day}
-                            className={`p-2 text-center align-top ${
-                              isRest ? 'bg-gray-100 text-gray-500' : 'bg-white'
-                            }`}
-                          >
-                            <Droppable
-                              droppableId={`${employeeRow.employee_name.replace(/\s+/g, '_')}-${day}-${zoneName.replace(
-                                /\s+/g,
-                                '_'
-                              )}`}
-                            >
-                              {(provided) => (
-                                <div
-                                  ref={provided.innerRef}
-                                  {...provided.droppableProps}
-                                  className="flex flex-col items-center gap-1 min-h-[40px]"
-                                  onClick={() => {
-                                    // If empty + not rest day, open Add Shift
-                                    if (cellShifts.length === 0 && !isRest) {
-                                      openAddShiftModal(zoneName, employeeRow, day);
-                                    }
-                                  }}
-                                >
-                                  {cellShifts.map((shift, index) => {
-                                    const isNoShow = shift.status === 'no_show';
-                                    const isCoverage = shift.isCoverage;
-
-                                    let bgColor = 'bg-green-100';
-                                    let textColor = 'text-green-800';
-                                    if (isNoShow) {
-                                      bgColor = 'bg-red-100';
-                                      textColor = 'text-red-800';
-                                    } else if (isCoverage) {
-                                      bgColor = 'bg-yellow-100';
-                                      textColor = 'text-yellow-800';
-                                    } else if (isRest) {
-                                      bgColor = 'bg-gray-100';
-                                      textColor = 'text-gray-500';
-                                    }
-
-                                    const roleLabel = shift.role || 'Role?';
-                                    let pillText = roleLabel;
-                                    if (isNoShow && shift.noShowReason) {
-                                      pillText = `${roleLabel} - No Show: ${shift.noShowReason}`;
-                                    } else if (isNoShow) {
-                                      pillText = `${roleLabel} - No Show`;
-                                    } else if (isCoverage) {
-                                      pillText = `${roleLabel} (Cover for: ${
-                                        shift.coveredFor || '?'
-                                      })`;
-                                      if (shift.coverage_status) {
-                                        pillText += `, Status: ${shift.coverage_status}`;
-                                      }
-                                    }
-
-                                    return (
-                                      <Draggable
-                                        key={`shift-${shift.id}`}
-                                        draggableId={`shift-${shift.id}`}
-                                        index={index}
-                                      >
-                                        {(provided) => (
-                                          <div
-                                            ref={provided.innerRef}
-                                            {...provided.draggableProps}
-                                            {...provided.dragHandleProps}
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              openNoShowModal(
-                                                shift,
-                                                zoneName,
-                                                employeeRow.employee_name,
-                                                day
-                                              );
-                                            }}
-                                            className={`inline-flex items-center px-2 py-1 w-40 rounded-full cursor-pointer ${bgColor} ${textColor}`}
-                                            style={{
-                                              whiteSpace: 'normal',
-                                              wordBreak: 'break-word'
-                                            }}
-                                          >
-                                            <span className="flex-1">
-                                              {pillText}
-                                            </span>
-                                            <button
-                                              className="ml-2 text-xs text-red-500"
-                                              onClick={(ev) => {
-                                                ev.stopPropagation();
-                                                handleDeleteShift(
-                                                  zoneName,
-                                                  employeeRow.employee_name,
-                                                  day,
-                                                  index
-                                                );
-                                              }}
-                                            >
-                                              &times;
-                                            </button>
-                                          </div>
-                                        )}
-                                      </Draggable>
-                                    );
-                                  })}
-                                  {provided.placeholder}
-                                </div>
-                              )}
-                            </Droppable>
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  ))}
-
-                  <tr className="bg-gray-50 font-semibold">
-                    <td className="py-2 text-right pr-4">Staff Required</td>
-                    {DAYS.map((day) => (
-                      <td key={day} className="py-2 text-center">
-                        {totals[day] || '—'}
-                      </td>
-                    ))}
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-      </DragDropContext>
-    );
-  }
-
-  //
-  // Save confirmation modal
-  //
   function renderSaveConfirmationModal() {
     if (!saveSummary) return null;
     const { message, noShowEvents } = saveSummary;
@@ -928,7 +692,7 @@ export default function ScheduleManager({ compact }) {
             </table>
           ) : (
             <p className="text-sm text-gray-500 mb-4">
-              No newly marked no‐show shifts this time.
+              No newly marked no-show shifts this time.
             </p>
           )}
 
@@ -945,9 +709,244 @@ export default function ScheduleManager({ compact }) {
     );
   }
 
-  //
-  // MAIN RENDER
-  //
+  function computeStaffRequiredForZone(employees) {
+    const totals = { Mon: 0, Tue: 0, Wed: 0, Thu: 0, Fri: 0, Sat: 0, Sun: 0 };
+    employees.forEach((emp) => {
+      DAYS.forEach((day) => {
+        const shifts = emp.days[day] || [];
+        shifts.forEach((shift) => {
+          totals[day] += shift.required_count || 0;
+        });
+      });
+    });
+    return totals;
+  }
+
+  function renderZone(zoneName) {
+    // 1) Make sure schedule[zoneName] is an array
+    if (!Array.isArray(schedule[zoneName])) return null;
+
+    // 2) Filter out items that have no valid employee_name
+    const zoneEmployees = schedule[zoneName].filter(
+      (emp) => emp && typeof emp.employee_name === 'string'
+    );
+
+    // 3) Sort safely
+    const sortedEmployees = zoneEmployees.sort((a, b) =>
+      a.employee_name.localeCompare(b.employee_name)
+    );
+
+    // Gather every shift's block
+    const blockSet = new Set();
+    sortedEmployees.forEach((emp) => {
+      DAYS.forEach((day) => {
+        (emp.days[day] || []).forEach((shift) => {
+          blockSet.add(getShiftBlock(shift));
+        });
+      });
+    });
+
+    // For each block, create a sub-table
+    const blockTables = Array.from(blockSet).sort().map((block) => {
+      const filtered = sortedEmployees.map((emp) => {
+        const newDays = {};
+        DAYS.forEach((day) => {
+          const shifts = emp.days[day] || [];
+          newDays[day] = shifts.filter((s) => getShiftBlock(s) === block);
+        });
+        return { ...emp, days: newDays };
+      });
+
+      const finalEmployees = filtered.filter((emp) =>
+        DAYS.some((day) => emp.days[day] && emp.days[day].length > 0)
+      );
+      if (!finalEmployees.length) return null;
+
+      const totals = { Mon: 0, Tue: 0, Wed: 0, Thu: 0, Fri: 0, Sat: 0, Sun: 0 };
+      finalEmployees.forEach((emp) => {
+        DAYS.forEach((day) => {
+          (emp.days[day] || []).forEach((shift) => {
+            totals[day] += shift.required_count || 0;
+          });
+        });
+      });
+
+      return (
+        <div key={block} className="my-4 border rounded">
+          <div className="bg-gray-50 p-2 font-semibold">
+            {zoneName} — {block}
+          </div>
+          <DragDropContext onDragEnd={handleDragEnd}>
+            <div className="overflow-x-auto w-full">
+              <table className="table-fixed w-full text-sm border-collapse">
+                <colgroup>
+                  <col style={{ width: '15%' }} />
+                  {DAYS.map((_, idx) => (
+                    <col key={idx} style={{ width: `${(85 / 7).toFixed(2)}%` }} />
+                  ))}
+                </colgroup>
+                <thead>
+                  <tr className="border-b">
+                    <th className="py-2 text-left pl-4">Employee</th>
+                    {weekDates.map((date, idx) => (
+                      <th key={idx} className="py-2 text-center">
+                        {DAYS[idx]}{' '}
+                        {date.toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric'
+                        })}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {finalEmployees.map((employeeRow) => (
+                    <tr
+                      key={employeeRow.employee_name}
+                      className="border-b last:border-b-0"
+                    >
+                      <td className="py-2 font-semibold pl-4">
+                        {employeeRow.employee_name}
+                      </td>
+                      {DAYS.map((day) => {
+                        const cellShifts = employeeRow.days[day] || [];
+                        const isRest = isEmployeeRestDay(employeeRow, day);
+
+                        return (
+                          <td
+                            key={day}
+                            className={`p-2 text-center align-top ${
+                              isRest ? 'bg-gray-100 text-gray-500' : 'bg-white'
+                            }`}
+                          >
+                            <Droppable
+                              droppableId={`${employeeRow.employee_name.replace(/\s+/g, '_')}-${day}-${zoneName.replace(
+                                /\s+/g,
+                                '_'
+                              )}`}
+                            >
+                              {(provided) => (
+                                <div
+                                  ref={provided.innerRef}
+                                  {...provided.droppableProps}
+                                  className="flex flex-col items-center gap-1 min-h-[40px]"
+                                  onClick={() => {
+                                    if (cellShifts.length === 0 && !isRest) {
+                                      openAddShiftModal(zoneName, employeeRow, day);
+                                    }
+                                  }}
+                                >
+                                  {cellShifts.map((shift, index) => {
+                                    const isNoShow = shift.status === 'no_show';
+                                    const isCoverage = shift.isCoverage;
+
+                                    let bgColor = 'bg-green-100';
+                                    let textColor = 'text-green-800';
+                                    if (isNoShow) {
+                                      bgColor = 'bg-red-100';
+                                      textColor = 'text-red-800';
+                                    } else if (isCoverage) {
+                                      bgColor = 'bg-yellow-100';
+                                      textColor = 'text-yellow-800';
+                                    } else if (isRest) {
+                                      bgColor = 'bg-gray-100';
+                                      textColor = 'text-gray-500';
+                                    }
+
+                                    const roleLabel = shift.role || 'Role?';
+                                    const shiftTimes =
+                                      shift.start_time && shift.end_time
+                                        ? ` (${shift.start_time} - ${shift.end_time})`
+                                        : '';
+                                    let pillText = `${roleLabel}${shiftTimes}`;
+
+                                    if (isNoShow && shift.noShowReason) {
+                                      pillText += ` - No Show: ${shift.noShowReason}`;
+                                    } else if (isNoShow) {
+                                      pillText += ` - No Show`;
+                                    } else if (isCoverage) {
+                                      pillText += ` (Cover for: ${shift.coveredFor || '?'}`;
+                                      if (shift.coverage_status) {
+                                        pillText += `, Status: ${shift.coverage_status}`;
+                                      }
+                                      pillText += `)`;
+                                    }
+
+                                    return (
+                                      <Draggable
+                                        key={`shift-${shift.id}`}
+                                        draggableId={`shift-${shift.id}`}
+                                        index={index}
+                                      >
+                                        {(provided) => (
+                                          <div
+                                            ref={provided.innerRef}
+                                            {...provided.draggableProps}
+                                            {...provided.dragHandleProps}
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              openNoShowModal(
+                                                shift,
+                                                zoneName,
+                                                employeeRow.employee_name,
+                                                day
+                                              );
+                                            }}
+                                            className={`inline-flex items-center px-2 py-1 w-full rounded-sm cursor-pointer ${bgColor} ${textColor}`}
+                                            style={{
+                                              whiteSpace: 'normal',
+                                              wordBreak: 'break-word'
+                                            }}
+                                          >
+                                            <span className="flex-1">{pillText}</span>
+                                            <button
+                                              className="ml-2 text-xs text-red-500"
+                                              onClick={(ev) => {
+                                                ev.stopPropagation();
+                                                handleDeleteShift(
+                                                  zoneName,
+                                                  employeeRow.employee_name,
+                                                  day,
+                                                  index
+                                                );
+                                              }}
+                                            >
+                                              &times;
+                                            </button>
+                                          </div>
+                                        )}
+                                      </Draggable>
+                                    );
+                                  })}
+                                  {provided.placeholder}
+                                </div>
+                              )}
+                            </Droppable>
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                  <tr className="bg-gray-50 font-semibold">
+                    <td className="py-2 text-right pr-4">Staff Required</td>
+                    {DAYS.map((day) => (
+                      <td key={day} className="py-2 text-center">
+                        {totals[day] || '—'}
+                      </td>
+                    ))}
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </DragDropContext>
+        </div>
+      );
+    });
+
+    if (blockTables.every((x) => x === null)) return null;
+    return <div className="pt-2">{!zonesCollapsed[zoneName] && blockTables}</div>;
+  }
+
   return (
     <div className="w-full p-6">
       <section className="mb-9">
@@ -956,10 +955,9 @@ export default function ScheduleManager({ compact }) {
         </h4>
         <p className="text-sm text-gray-600 mb-2">
           Schedule new weekly shifts and review previous shift structures. 
-          Add No-show records and request for coverage.
+          Add No-show records and request coverage.
         </p>
 
-        {/* Label & dropdown & "How we schedule" */}
         <div className="flex items-center gap-4 mb-4">
           <label className="text-sm font-medium mr-2">Select Week:</label>
           <div className="flex items-center gap-2">
@@ -1006,7 +1004,6 @@ export default function ScheduleManager({ compact }) {
           </div>
         )}
 
-        {/* Button to open date picker for generating schedule */}
         <button
           onClick={() => setShowDatePicker(!showDatePicker)}
           className="px-6 py-3 rounded-full bg-gradient-to-r from-[#222452] to-[#42469F] text-white font-bold hover:opacity-90 transition-opacity flex items-center gap-2 mt-4"
@@ -1036,31 +1033,33 @@ export default function ScheduleManager({ compact }) {
         )}
       </section>
 
-      {/* If no schedule data, show a message */}
-      {Object.keys(schedule).length === 0 ? (
+      {Object.keys(schedule || {}).length === 0 ? (
         <p className="text-gray-500">No shifts upcoming for this week.</p>
       ) : (
         <div>
-          {Object.keys(schedule)
-            .sort()
-            .map((zoneName) => (
-              <div key={zoneName} className="mb-4 border border-gray-200 rounded">
-                <div
-                  className="flex items-center justify-between bg-gray-50 p-3 cursor-pointer"
-                  onClick={() => toggleZoneCollapse(zoneName)}
-                >
-                  <span className="font-semibold">{zoneName}</span>
-                  <span className="text-sm">
-                    {zonesCollapsed[zoneName] ? '▸' : '▾'}
-                  </span>
-                </div>
-                {renderZone(zoneName)}
+          {zones.map((zoneName) => (
+            <div key={zoneName} className="mb-4 border border-gray-200 rounded">
+              <div
+                className="flex items-center justify-between bg-gray-50 p-3 cursor-pointer"
+                onClick={() =>
+                  setZonesCollapsed((prev) => ({
+                    ...prev,
+                    [zoneName]: !prev[zoneName]
+                  }))
+                }
+              >
+                <span className="font-semibold">{zoneName}</span>
+                <span className="text-sm">
+                  {zonesCollapsed[zoneName] ? '▸' : '▾'}
+                </span>
               </div>
-            ))}
+
+              {!zonesCollapsed[zoneName] && renderZone(zoneName)}
+            </div>
+          ))}
         </div>
       )}
 
-      {/* Bottom Save button */}
       <div className="flex flex-col gap-4 mt-6">
         <button
           onClick={handleSaveChanges}
@@ -1072,7 +1071,6 @@ export default function ScheduleManager({ compact }) {
 
       {error && <p className="text-red-500 mt-4">{error}</p>}
 
-      {/* Modals */}
       {modalOpen && renderAddShiftModal()}
 
       {noShowModalOpen && noShowModalData && (
