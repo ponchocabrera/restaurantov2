@@ -18,4 +18,17 @@ pool.query('SELECT NOW()', (err, res) => {
 });
 
 export const query = (text, params) => pool.query(text, params);
-export { pool };
+
+export async function getLatestMenuAnalysis() {
+  const query = 'SELECT * FROM menu_analysis ORDER BY created_at DESC LIMIT 1';
+  const { rows } = await pool.query(query);
+  return rows[0];
+}
+
+export async function getLatestRestaurantSearch() {
+  const query = 'SELECT * FROM restaurant_searches ORDER BY created_at DESC LIMIT 1';
+  const { rows } = await pool.query(query);
+  return rows[0];
+}
+
+export default pool;

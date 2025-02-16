@@ -80,13 +80,13 @@ function extractSection(text, sectionName) {
 
 export { extractSection };
 
-export async function saveRestaurantSearch(userId, restaurantName, starRating, position) {
+export async function saveRestaurantSearch(userId, restaurantName, starRating, position, dishInsights, areaInsights) {
   const sql = `
-    INSERT INTO restaurant_searches (user_id, restaurant_name, star_rating, position)
-    VALUES ($1, $2, $3, $4)
-    RETURNING id, user_id, restaurant_name, star_rating, position, created_at
+    INSERT INTO restaurant_searches (user_id, restaurant_name, star_rating, position, dish_insights, area_insights)
+    VALUES ($1, $2, $3, $4, $5, $6)
+    RETURNING id, user_id, restaurant_name, star_rating, position, dish_insights, area_insights, created_at
   `;
-  const values = [userId, restaurantName, starRating, position];
+  const values = [userId, restaurantName, starRating, position, dishInsights, areaInsights];
   try {
     const res = await query(sql, values);
     return res.rows[0];

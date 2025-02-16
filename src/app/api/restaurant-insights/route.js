@@ -195,16 +195,17 @@ export async function POST(request) {
       }
     }
     
-    // 6. Pricing comparison (omitted for brevity)
+    // 7. Generate area review summary using reviews from nearby restaurants.
+    const areaReviewSummary = await getAreaReviewSummary(nearbyRestaurants);
     
-    // 7. Calculate "position" of the restaurant using star ratings.
+    // 6. Calculate "position" of the restaurant using star ratings.
     const restaurantRating = restaurant.rating;
     const nearbyRatings = nearbyRestaurants.map(r => r.rating).filter(r => r != null);
     const allRatings = [...nearbyRatings, restaurantRating].sort((a, b) => b - a);
     const rank = allRatings.indexOf(restaurantRating) + 1;
     
-    // Save search trend for the current user.
-    await saveRestaurantSearch(session.user.id, restaurant.name, restaurant.rating, rank);
+    // Save search trend for the current user with dish insights and the new area insights.
+    await saveRestaurantSearch(session.user.id, restaurant.name, restaurant.rating, rank, dishInsights, areaReviewSummary);
     
     const result = {
       restaurantInfo: {
@@ -223,8 +224,8 @@ export async function POST(request) {
         price_level: r.price_level,
       })),
       dishInsights,
-      pricingComparison: 'Not available', // or computed as needed
-      areaReviewSummary: 'No area review summary available'
+      pricingComparison: 'Not available',
+      areaReviewSummary,
     };
     
     return NextResponse.json({ data: result });

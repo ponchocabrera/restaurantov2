@@ -5,6 +5,8 @@ import DashboardLayout from '@/components/shared/DashboardLayout';
 import { ChevronUp, ChevronDown } from 'lucide-react';
 import RawMaterialModal from '@/components/RawMaterialModal';
 import Link from 'next/link';
+import ActionableSuggestion from '@/components/ActionableSuggestion';
+import MasterRecommendation from "@/components/MasterRecommendation";
 
 // Optional formatting helper if needed
 function formatAnalysis(raw) {
@@ -123,7 +125,14 @@ function renderRecommendations(recommendations) {
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className="space-y-8">
+      <Link 
+        href={`/special-recommendations?id=${recommendations.id}`}
+        className="inline-block bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+      >
+        View Special Dish & Market Recommendations →
+      </Link>
+
       {sectionConfig.map(({ key, title }) => {
         const recs = recommendations[key];
         if (!Array.isArray(recs) || recs.length === 0) return null;
@@ -165,6 +174,10 @@ export default function MyRestaurantsPage() {
   const [analyses, setAnalyses] = useState([]);
   const [expandedAnalysisIds, setExpandedAnalysisIds] = useState([]);
   const [rawModalData, setRawModalData] = useState(null);
+  const [latestSearch, setLatestSearch] = useState(null);
+  const [latestAnalysis, setLatestAnalysis] = useState(null);
+  const [fullPrompt, setFullPrompt] = useState("");
+  const [loadingPrompt, setLoadingPrompt] = useState(false);
 
   useEffect(() => {
     async function fetchRestaurantsData() {
@@ -233,9 +246,46 @@ export default function MyRestaurantsPage() {
         console.error('Error fetching analyses data:', error);
       }
     }
+    
+    async function fetchLatestSearch() {
+      try {
+        const res = await fetch('/api/restaurant-searches');
+        if (res.ok) {
+          const data = await res.json();
+          const searches = data.searches || [];
+          if (searches.length > 0) {
+            const sortedSearches = searches.sort(
+              (a, b) => new Date(b.created_at) - new Date(a.created_at)
+            );
+            setLatestSearch(sortedSearches[0]);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching latest restaurant search:', error);
+      }
+    }
+
+    async function fetchLatestAnalysis() {
+      try {
+        const res = await fetch('/api/menuAnalysis');
+        if (!res.ok) throw new Error('Failed to fetch analyses');
+        const data = await res.json();
+        const analyses = data.analyses || [];
+        if (analyses.length > 0) {
+          const sortedAnalyses = analyses.sort(
+            (a, b) => new Date(b.created_at) - new Date(a.created_at)
+          );
+          setLatestAnalysis(sortedAnalyses[0]);
+        }
+      } catch (error) {
+        console.error('Error fetching analyses:', error);
+      }
+    }
 
     fetchRestaurantsData();
     fetchAnalysesData();
+    fetchLatestSearch();
+    fetchLatestAnalysis();
   }, []);
 
   const toggleAnalysis = (id) => {
@@ -251,6 +301,33 @@ export default function MyRestaurantsPage() {
   const handleCloseModal = () => {
     setRawModalData(null);
   };
+
+  async function handleGenerateFullPrompt() {
+    if (!latestAnalysis || !latestSearch) {
+      console.error('Missing latest analysis or search data');
+      return;
+    }
+    setLoadingPrompt(true);
+    try {
+      const response = await fetch('/api/ai/generateAIPrompt', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          analysis: latestAnalysis,
+          search: latestSearch
+        })
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch full prompt');
+      }
+      const data = await response.json();
+      setFullPrompt(data.prompt);
+    } catch (error) {
+      console.error('Error generating full prompt:', error);
+    } finally {
+      setLoadingPrompt(false);
+    }
+  }
 
   return (
     <DashboardLayout>
@@ -422,9 +499,22 @@ export default function MyRestaurantsPage() {
             })
           )}
         </section>
+
+        {/* Actionable Suggestion Component */}
+        {(latestSearch || latestAnalysis) && (
+          <ActionableSuggestion
+            latestSearch={latestSearch}
+          />
+        )}
+
+       
+
         {rawModalData && (
           <RawMaterialModal raw={rawModalData} onClose={handleCloseModal} />
         )}
+
+        {/* Display the master recommendation */}
+        <MasterRecommendation />
       </main>
     </DashboardLayout>
   );
