@@ -1,4 +1,4 @@
-import { pool } from '@/lib/db';
+import { query } from '@/lib/db';
 import bcrypt from 'bcrypt';
 
 export async function POST(request) {
@@ -14,7 +14,7 @@ export async function POST(request) {
     console.log('Hashed password length:', hashedPassword.length);
 
     // Insert user with hashed password
-    const result = await pool.query(
+    const result = await query(
       'INSERT INTO users (email, password_hash) VALUES ($1, $2) RETURNING id, email',
       [email, hashedPassword]
     );

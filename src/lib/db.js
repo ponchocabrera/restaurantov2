@@ -1,6 +1,6 @@
 import { Pool } from 'pg';
 
-const pool = new Pool({
+export const pool = new Pool({
   user: process.env.DB_USER,
   host: process.env.DB_HOST,
   database: process.env.DB_NAME,
@@ -19,16 +19,26 @@ pool.query('SELECT NOW()', (err, res) => {
 
 export const query = (text, params) => pool.query(text, params);
 
-export async function getLatestMenuAnalysis() {
-  const query = 'SELECT * FROM menu_analysis ORDER BY created_at DESC LIMIT 1';
-  const { rows } = await pool.query(query);
+export async function getLatestMenuAnalysis(userId) {
+  const queryText = `
+    SELECT *
+    FROM menu_analysis
+    WHERE user_id = $1
+    ORDER BY created_at DESC
+    LIMIT 1
+  `;
+  const { rows } = await pool.query(queryText, [userId]);
   return rows[0];
 }
 
-export async function getLatestRestaurantSearch() {
-  const query = 'SELECT * FROM restaurant_searches ORDER BY created_at DESC LIMIT 1';
-  const { rows } = await pool.query(query);
+export async function getLatestRestaurantSearch(userId, restaurantName) {
+  const queryText = `
+    SELECT *
+    FROM restaurant_searches
+    WHERE user_id = $1 AND restaurant_name = $2
+    ORDER BY created_at DESC
+    LIMIT 1
+  `;
+  const { rows } = await pool.query(queryText, [userId, restaurantName]);
   return rows[0];
 }
-
-export default pool;

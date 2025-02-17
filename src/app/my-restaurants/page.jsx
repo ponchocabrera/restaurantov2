@@ -38,7 +38,6 @@ function formatAnalysis(raw) {
 }
 
 // Render a nicely formatted analysis details view.
-// Now the raw analysis material is hidden and a button is provided to open it.
 function renderAnalysisDetails(analysis) {
   if (!analysis || typeof analysis !== 'object') return null;
   
@@ -86,29 +85,6 @@ function renderAnalysisDetails(analysis) {
       })}
     </div>
   );
-}
-
-// New component that renders a recommendation (object or string) in a list item.
-function RecommendationItem({ recommendation }) {
-  if (typeof recommendation === 'object' && recommendation !== null) {
-    return (
-      <li className="text-sm">
-        {recommendation.recommendation && (
-          <div><strong>Recommendation:</strong> {recommendation.recommendation}</div>
-        )}
-        {recommendation.reasoning && (
-          <div><strong>Reasoning:</strong> {recommendation.reasoning}</div>
-        )}
-        {recommendation.impact && (
-          <div><strong>Impact:</strong> {recommendation.impact}</div>
-        )}
-        {recommendation.priority && (
-          <div><strong>Priority:</strong> {recommendation.priority}</div>
-        )}
-      </li>
-    );
-  }
-  return <li className="text-sm">{recommendation}</li>;
 }
 
 // Render recommendations details with custom RecommendationItem for each entry.
@@ -175,9 +151,9 @@ export default function MyRestaurantsPage() {
   const [expandedAnalysisIds, setExpandedAnalysisIds] = useState([]);
   const [rawModalData, setRawModalData] = useState(null);
   const [latestSearch, setLatestSearch] = useState(null);
-  const [latestAnalysis, setLatestAnalysis] = useState(null);
   const [fullPrompt, setFullPrompt] = useState("");
   const [loadingPrompt, setLoadingPrompt] = useState(false);
+  const [showAllAnalyses, setShowAllAnalyses] = useState(false); // Toggle for showing all analyses
 
   useEffect(() => {
     async function fetchRestaurantsData() {
@@ -265,27 +241,9 @@ export default function MyRestaurantsPage() {
       }
     }
 
-    async function fetchLatestAnalysis() {
-      try {
-        const res = await fetch('/api/menuAnalysis');
-        if (!res.ok) throw new Error('Failed to fetch analyses');
-        const data = await res.json();
-        const analyses = data.analyses || [];
-        if (analyses.length > 0) {
-          const sortedAnalyses = analyses.sort(
-            (a, b) => new Date(b.created_at) - new Date(a.created_at)
-          );
-          setLatestAnalysis(sortedAnalyses[0]);
-        }
-      } catch (error) {
-        console.error('Error fetching analyses:', error);
-      }
-    }
-
     fetchRestaurantsData();
     fetchAnalysesData();
     fetchLatestSearch();
-    fetchLatestAnalysis();
   }, []);
 
   const toggleAnalysis = (id) => {
@@ -303,8 +261,8 @@ export default function MyRestaurantsPage() {
   };
 
   async function handleGenerateFullPrompt() {
-    if (!latestAnalysis || !latestSearch) {
-      console.error('Missing latest analysis or search data');
+    if (!latestSearch) {
+      console.error('Missing latest search data');
       return;
     }
     setLoadingPrompt(true);
@@ -313,7 +271,6 @@ export default function MyRestaurantsPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          analysis: latestAnalysis,
           search: latestSearch
         })
       });
@@ -329,63 +286,96 @@ export default function MyRestaurantsPage() {
     }
   }
 
+  // Sort analyses by created date (descending) and decide which ones to show.
+  const sortedAnalyses = analyses
+    .slice()
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  const visibleAnalyses = showAllAnalyses ? sortedAnalyses : sortedAnalyses.slice(0, 3);
+
   return (
     <DashboardLayout>
-      <main className="p-4 max-w-4xl mx-auto">
-        <h1 className="text-5xl font-bold font-libre mb-6 leading-tight text-[#212350]">Your Restaurant</h1>
-        <h2 className="text-2xl outfit-bold mb-4 text-[#212350]">See your Restaurant's activity</h2>
-        <p className="text-lg text-gray-600 mb-6">
-          Action on your Menu Reviews, and get insights on your Restaurant's activity.
-        </p>
-        {loading ? (
-          <div className="text-center text-gray-500">Loading...</div>
-        ) : (
-          <div className="space-y-6">
-            {restaurants.map((restaurant) => (
-              <div
-                key={restaurant.id}
-                className="border rounded-lg p-5 shadow-lg cursor-pointer bg-white"
-                onClick={() =>
-                  setExpandedRestaurantId(
-                    expandedRestaurantId === restaurant.id ? null : restaurant.id
-                  )
-                }
-              >
-                <h2 className="text-2xl font-semibold font-outfit text-gray-800">
-                  {restaurant.name}
-                </h2>
-                <p className="text-gray-600">Number of Menus: {restaurant.menusCount}</p>
-                <p className="text-gray-600">Total Items: {restaurant.totalItems}</p>
-                {expandedRestaurantId === restaurant.id && (
-                  <div className="mt-4 ml-4 border-t pt-4">
-                    <h3 className="text-xl font-bold mb-3 text-gray-700">Menus</h3>
-                    {restaurant.menus.length > 0 ? (
-                      restaurant.menus.map((menu) => (
-                        <div key={menu.id} className="p-3 border-b">
-                          <p className="text-lg font-medium text-gray-800">{menu.name}</p>
-                          <p className="text-gray-600">Items: {menu.itemCount}</p>
-                          <p className="text-gray-600">Average Plate Price: ${menu.averagePrice}</p>
+      <main className="p-4 max-w-4xl mx-auto space-y-12">
+        <header className="space-y-4">
+          <h1 className="text-5xl font-bold font-libre leading-tight text-[#212350]">
+            Your Restaurant
+          </h1>
+          <h2 className="text-2xl outfit-bold text-[#212350]">
+            See your Restaurant's activity
+          </h2>
+          <p className="text-lg text-gray-600">
+            Action on your Menu Reviews, and get insights on your Restaurant's activity.
+          </p>
+        </header>
+
+        {/* Two Column Layout */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* Left Column: Actionable Suggestion styled like snippet */}
+          
+              {latestSearch && <ActionableSuggestion latestSearch={latestSearch} />}
+          
+
+          {/* Right Column: Restaurants List styled like snippet */}
+          <div className="flex flex-col h-full">
+            <h2 className="text-2xl font-outfit-bold mb-4 text-[#212350]">Restaurants</h2>
+            <div className="p-8 bg-gradient-to-br from-[#1D2C40] to-[#354861] text-white rounded-2xl flex-grow flex flex-col justify-between shadow-xl">
+              {loading ? (
+                <div className="text-center text-gray-300">Loading...</div>
+              ) : (
+                <div className="space-y-6">
+                  {restaurants.map((restaurant) => (
+                    <div
+                      key={restaurant.id}
+                      
+                      onClick={() =>
+                        setExpandedRestaurantId(
+                          expandedRestaurantId === restaurant.id ? null : restaurant.id
+                        )
+                      }
+                    >
+                      <h2 className="text-2xl font-semibold font-outfit text-white">
+                        {restaurant.name}
+                      </h2>
+                      <p className="text-white">Number of Menus: {restaurant.menusCount}</p>
+                      <p className="text-white">Total Items: {restaurant.totalItems}</p>
+                      {expandedRestaurantId === restaurant.id && (
+                        <div className="mt-4 ml-4 border-t pt-4 text-white">
+                          <h3 className="text-xl font-bold mb-3">Menus</h3>
+                          {restaurant.menus.length > 0 ? (
+                            restaurant.menus.map((menu) => (
+                              <div key={menu.id} className="p-3 border-b">
+                                <p className="text-lg font-medium">{menu.name}</p>
+                                <p>Items: {menu.itemCount}</p>
+                                <p>Average Plate Price: ${menu.averagePrice}</p>
+                              </div>
+                            ))
+                          ) : (
+                            <p>No menus available</p>
+                          )}
                         </div>
-                      ))
-                    ) : (
-                      <p className="text-gray-500">No menus available</p>
-                    )}
-                  </div>
-                )}
-              </div>
-            ))}
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
+        </div>
+
+        {/* Master Recommendation */}
+        {latestSearch ? (
+          <MasterRecommendation restaurantName={latestSearch.restaurant_name} />
+        ) : (
+          <p>No restaurant search found. Please conduct a restaurant search first.</p>
         )}
 
         {/* Banner Section */}
-        <div className="bg-blue-100 p-6 rounded-lg mb-8 mt-10 flex flex-col items-left text-left">
+        <div className="bg-blue-100 p-6 rounded-lg flex flex-col items-start text-left">
           <h2 className="text-3xl font-bold mb-2">Learn about your Restaurant</h2>
           <h3 className="text-xl font-semibold mb-2">
             Your Restaurant, its Area and New Food Trends
           </h3>
           <p className="text-gray-700 mb-4">
-            Understand the food business industry around your Area,
-            find trends and understand how to grow your business.
+            Understand the food business industry around your Area, find trends and learn how to grow your business.
           </p>
           <Link href="/restaurant-insights">
             <button className="bg-blue-600 text-white py-2 px-4 rounded-full hover:bg-blue-500 transition-colors">
@@ -395,126 +385,125 @@ export default function MyRestaurantsPage() {
         </div>
 
         {/* Saved Menu Analyses Section */}
-        <section className="mt-10">
+        <section>
           <h2 className="text-2xl font-bold mb-4">Saved Menu Analyses</h2>
-          {analyses.length === 0 ? (
+          {sortedAnalyses.length === 0 ? (
             <p>No menu analyses available yet.</p>
           ) : (
-            analyses.map((record) => {
-              const analysis = record.analysis;
-              let analyzedPointsCount = 0;
-              if (analysis && typeof analysis === 'object') {
-                analyzedPointsCount =
-                  (analysis.structure?.length || 0) +
-                  (analysis.design?.length || 0) +
-                  (analysis.pricing?.length || 0) +
-                  (analysis.color?.length || 0) +
-                  (analysis.visualElements?.length || 0) +
-                  (analysis.psychology?.length || 0) +
-                  (analysis.engineering?.length || 0) +
-                  (analysis.customerExperience?.length || 0);
-              }
-              
-              let recommendationsCount = 0;
-              if (
-                record.recommendations &&
-                typeof record.recommendations === 'object' &&
-                !Array.isArray(record.recommendations)
-              ) {
-                recommendationsCount = Object.values(record.recommendations).reduce(
-                  (acc, curr) => {
-                    if (Array.isArray(curr)) return acc + curr.length;
-                    else if (typeof curr === 'string')
-                      return acc + curr.split('\n').filter((line) => line.trim() !== '').length;
-                    return acc;
-                  },
-                  0
-                );
-              }
+            <>
+              {visibleAnalyses.map((record) => {
+                const analysis = record.analysis;
+                let analyzedPointsCount = 0;
+                if (analysis && typeof analysis === 'object') {
+                  analyzedPointsCount =
+                    (analysis.structure?.length || 0) +
+                    (analysis.design?.length || 0) +
+                    (analysis.pricing?.length || 0) +
+                    (analysis.color?.length || 0) +
+                    (analysis.visualElements?.length || 0) +
+                    (analysis.psychology?.length || 0) +
+                    (analysis.engineering?.length || 0) +
+                    (analysis.customerExperience?.length || 0);
+                }
+                
+                let recommendationsCount = 0;
+                if (
+                  record.recommendations &&
+                  typeof record.recommendations === 'object' &&
+                  !Array.isArray(record.recommendations)
+                ) {
+                  recommendationsCount = Object.values(record.recommendations).reduce(
+                    (acc, curr) => {
+                      if (Array.isArray(curr)) return acc + curr.length;
+                      else if (typeof curr === 'string')
+                        return acc + curr.split('\n').filter((line) => line.trim() !== '').length;
+                      return acc;
+                    },
+                    0
+                  );
+                }
 
-              return (
-                <div key={record.id} className="border rounded p-4 mb-4 bg-white shadow">
-                  <div
-                    className="flex items-center justify-between cursor-pointer"
-                    onClick={() => toggleAnalysis(record.id)}
-                  >
-                    {/* Left side: Mini Image & Analysis Info */}
-                    <div className="flex items-center space-x-4">
-                      <img
-                        src={record.image_data}
-                        alt="Analyzed Menu"
-                        className="w-16 h-16 object-cover rounded"
-                      />
-                      <div>
-                        <div className="font-medium text-sm">Analysis ID: {record.id}</div>
-                        <div className="text-gray-500 text-xs">
-                          {new Date(record.created_at).toLocaleString()}
+                return (
+                  <div key={record.id} className="border rounded p-4 mb-4 bg-white shadow">
+                    <div
+                      className="flex items-center justify-between cursor-pointer"
+                      onClick={() => toggleAnalysis(record.id)}
+                    >
+                      {/* Left side: Image & Analysis Info */}
+                      <div className="flex items-center space-x-4">
+                        {record.image_data && (
+                          <img
+                            src={record.image_data}
+                            alt="Analyzed Menu"
+                            className="w-16 h-16 object-cover rounded"
+                          />
+                        )}
+                        <div>
+                          <div className="font-medium text-sm">Analysis ID: {record.id}</div>
+                          <div className="text-gray-500 text-xs">
+                            {new Date(record.created_at).toLocaleString()}
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    {/* Middle: Counts for Analyzed Points & Recommendations */}
-                    <div className="flex items-center space-x-8">
-                      <div className="text-center">
-                        <div className="font-bold text-sm">{analyzedPointsCount}</div>
-                        <div className="text-gray-500 text-xs">Analyzed Points</div>
+                      {/* Middle: Counts for Analyzed Points & Recommendations */}
+                      <div className="flex items-center space-x-8">
+                        <div className="text-center">
+                          <div className="font-bold text-sm">{analyzedPointsCount}</div>
+                          <div className="text-gray-500 text-xs">Analyzed Points</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="font-bold text-sm">{recommendationsCount}</div>
+                          <div className="text-gray-500 text-xs">Recommendations</div>
+                        </div>
                       </div>
-                      <div className="text-center">
-                        <div className="font-bold text-sm">{recommendationsCount}</div>
-                        <div className="text-gray-500 text-xs">Recommendations</div>
-                      </div>
-                    </div>
 
-                    {/* Right side: Expand / Collapse icon */}
-                    <div>
-                      {expandedAnalysisIds.includes(record.id) ? (
-                        <ChevronUp className="w-5 h-5" />
-                      ) : (
-                        <ChevronDown className="w-5 h-5" />
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Expanded details view */}
-                  {expandedAnalysisIds.includes(record.id) && (
-                    <div className="mt-4">
-                      <div className="mb-4">
-                        <h3 className="font-medium">Analysis Details:</h3>
-                        {analysis ? (
-                          renderAnalysisDetails(analysis)
+                      {/* Right side: Expand / Collapse icon */}
+                      <div>
+                        {expandedAnalysisIds.includes(record.id) ? (
+                          <ChevronUp className="w-5 h-5" />
                         ) : (
-                          <p>No analysis available.</p>
+                          <ChevronDown className="w-5 h-5" />
                         )}
                       </div>
-                      <div>
-                        <h3 className="font-medium">Recommendations:</h3>
-                        {record.recommendations
-                          ? renderRecommendations(record.recommendations)
-                          : <p>No recommendations available.</p>}
-                      </div>
                     </div>
-                  )}
+
+                    {/* Expanded details view */}
+                    {expandedAnalysisIds.includes(record.id) && (
+                      <div className="mt-4">
+                        <div className="mb-4">
+                          <h3 className="font-medium">Analysis Details:</h3>
+                          {analysis ? (
+                            renderAnalysisDetails(analysis)
+                          ) : (
+                            <p>No analysis available.</p>
+                          )}
+                        </div>
+                        <div>
+                          <h3 className="font-medium">Recommendations:</h3>
+                          {record.recommendations
+                            ? renderRecommendations(record.recommendations)
+                            : <p>No recommendations available.</p>}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+
+              {sortedAnalyses.length > 3 && (
+                <div className="mt-4 text-center">
+                  <button
+                    onClick={() => setShowAllAnalyses(prev => !prev)}
+                    className="text-blue-600 hover:underline"
+                  >
+                    {showAllAnalyses ? "Show less" : "See all your analysis"}
+                  </button>
                 </div>
-              );
-            })
+              )}
+            </>
           )}
         </section>
-
-        {/* Actionable Suggestion Component */}
-        {(latestSearch || latestAnalysis) && (
-          <ActionableSuggestion
-            latestSearch={latestSearch}
-          />
-        )}
-
-       
-
-        {rawModalData && (
-          <RawMaterialModal raw={rawModalData} onClose={handleCloseModal} />
-        )}
-
-        {/* Display the master recommendation */}
-        <MasterRecommendation />
       </main>
     </DashboardLayout>
   );

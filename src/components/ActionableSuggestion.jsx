@@ -43,9 +43,13 @@ function ActionableSuggestion({ latestSearch, latestAnalysis }) {
   }
 
   return (
-    <div className="bg-green-50 border border-green-200 rounded p-4 mt-8">
-      <h3 className="text-xl font-semibold text-green-800 mb-2">Actionable Suggestion</h3>
-      <p className="text-green-700 whitespace-pre-line">{suggestion}</p>
+    <div className="flex flex-col h-full">
+      <h2 className="text-2xl font-outfit-bold mb-4 text-[#212350]">
+        Actionable Suggestion
+      </h2>
+      <div className="p-8 bg-gradient-to-br from-[#1D2C40] to-[#354861] text-white rounded-2xl flex-grow flex flex-col justify-between shadow-xl">
+        <p className="whitespace-pre-line">{suggestion}</p>
+      </div>
     </div>
   );
 }
