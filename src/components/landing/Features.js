@@ -1,57 +1,93 @@
 export default function Features() {
   return (
     <div className="bg-white">
-
-      {/* Menu Intelligence Section - Left Aligned */}
+      {/* Menu Intelligence Section */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="text-left max-w-3xl">
-          <h2 className="text-3xl font-bold font-libre text-black">Menu Intelligence</h2>
+          <h2 className="text-3xl font-bold font-libre text-black">
+            Menu Intelligence
+          </h2>
           <p className="text-gray-700 text-lg mt-2">
-            Your Menu, enhanced by AI and years of Menu Psychology research. Increase your revenue by selling more of your best products and grow your business with AI.
+            Your Menu, enhanced by AI and years of Menu Psychology research. Increase your
+            revenue by selling more of your best products and grow your business with AI.
           </p>
         </div>
 
-        {/* Menu Analysis Section (modified) */}
-        <div className="mt-12 space-y-10">
-
+        <div className="mt-12 space-y-16">
           {/* Menu Analysis with AI */}
-          <h3 className="text-2xl font-bold font-outfit text-black">Menu Analysis with AI</h3>
-          <div className="flex items-center justify-center h-48 border-2 border-dashed rounded-lg">
-            {/* Placeholder image */}
-            <img
-              src="/images/placeholder-analysis.jpg"
-              alt="Menu Analysis Placeholder"
-              className="max-w-full h-auto"
-            />
+          <div>
+            <h3 className="text-2xl font-bold font-outfit text-black mb-4">
+              Menu Analysis with AI
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+              {/* Left column */}
+              <div>
+                <p className="text-gray-700 mb-4">
+                  Get AI powered analysis based on more than 140 factors. Discovers what 
+                  your Menu says about your items and restaurant.
+                </p>
+                <img
+                  src="/images/landing/MenuAnalysis1.png"
+                  alt="Menu Analysis 1"
+                  className="w-full h-auto rounded-lg"
+                />
+              </div>
+
+              {/* Right column */}
+              <div>
+                <p className="text-gray-700 mb-4">
+                  Get Improvements for your Menu based on AI and years of Research on 
+                  Menu Engineering and Psychology.
+                </p>
+                <img
+                  src="/images/landing/MenuRecommendations1.png"
+                  alt="Menu Analysis 2"
+                  className="w-full h-auto rounded-lg"
+                />
+              </div>
+            </div>
           </div>
 
-          {/* AI Image & Item Description Section */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
-            <div className="text-lg font-bold text-black">
-              Create AI images and Item Descriptions tailored to your Menu and Restaurant’s voice.
-            </div>
-            <div className="flex items-center justify-center h-48 border-2 border-dashed rounded-lg">
-              {/* Another placeholder image */}
-              <img
-                src="/images/placeholder-ai-image.jpg"
-                alt="AI Image Placeholder"
-                className="max-w-full h-auto"
-              />
+          {/* AI Image & Item Description Section (UPDATED) */}
+          <div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {/* Left column: text is vertically centered */}
+              <div className="flex items-center">
+                <p className="text-xl font-bold text-black mb-4">
+                  Tailor your menu items with AI-generated images and descriptions to
+                  match your brand voice and captivate your customers.
+                </p>
+              </div>
+
+              {/* Right column: image with no margins */}
+              <div className="border-2 border-dashed rounded-lg p-4 flex items-center justify-center">
+                <img
+                  src="/images/landing/AiGenimage.png"
+                  alt="AI Image Placeholder"
+                  className="m-0 block w-full h-auto"
+                />
+              </div>
             </div>
           </div>
 
           {/* Menu Ready to Print Section */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
-            <div className="flex items-center justify-center h-48 border-2 border-dashed rounded-lg">
-              {/* Another placeholder image */}
-              <img
-                src="/images/placeholder-print.jpg"
-                alt="Print-Ready Menu Placeholder"
-                className="max-w-full h-auto"
-              />
-            </div>
-            <div className="text-lg font-bold text-black">
-              Build Beautiful Menus ready to print, based on a detailed analysis of your Menu, Brand, and Restaurant.
+          <div>
+            <h3 className="text-xl font-bold text-black mb-4">
+              Print-Ready Menus
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+              <div className="border-2 border-dashed rounded-lg p-4 flex items-center justify-center">
+                <img
+                  src="/images/placeholder-print.jpg"
+                  alt="Print-Ready Menu Placeholder"
+                  className="max-w-full h-auto"
+                />
+              </div>
+              <div className="text-gray-700">
+                Build beautiful, print-ready menus based on detailed analysis of your Menu,
+                Brand, and Restaurant. Enhance customer experience and boost profitability.
+              </div>
             </div>
           </div>
         </div>
@@ -60,12 +96,12 @@ export default function Features() {
       {/* Full-Width Brown Section */}
       <div className="w-full py-24 md:py-60 px-6 sm:px-10 text-white bg-gradient-to-r from-[#AB5B39] to-[#CF7850]">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between">
-          
           {/* Left Content */}
           <div className="max-w-xl text-center md:text-left">
             <h2 className="text-3xl font-bold font-libre">Transform your Menu</h2>
             <p className="mt-4 text-lg">
-              From a list of dishes into a strategic revenue engine. Our Menu Intelligence Platform combines AI forecasting with proven psychological triggers.
+              From a list of dishes into a strategic revenue engine. Our Menu Intelligence
+              Platform combines AI forecasting with proven psychological triggers.
             </p>
             <div className="mt-6">
               <a
@@ -81,7 +117,6 @@ export default function Features() {
           <div className="w-full sm:w-[300px] h-[300px] bg-gray-200 rounded-lg flex items-center justify-center mt-6 md:mt-0">
             <span className="text-gray-500">Image Placeholder</span>
           </div>
-
         </div>
       </div>
 
