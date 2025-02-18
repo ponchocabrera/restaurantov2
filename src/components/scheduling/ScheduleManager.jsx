@@ -9,8 +9,6 @@ import { SHIFT_TIMES } from '@/lib/scheduling/scheduleConfigurations';
 import EmployeeUtilization from './EmployeeUtilization';
 import ZoneFillingStatus from './ZoneFillingStatus';
 
-console.log('ScheduleManager SHIFT_TIMES:', SHIFT_TIMES);
-
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 // Utility to abbreviate day names
@@ -238,7 +236,7 @@ export default function ScheduleManager({ compact }) {
   // On first mount, fetch the default week's schedule
   useEffect(() => {
     handleWeekClick(selectedWeek);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Generate new schedule for the selected week
@@ -303,51 +301,45 @@ export default function ScheduleManager({ compact }) {
   }
 
   // Flatten out the schedule for saving
-    // Flatten out the schedule for saving
-    async function handleSaveChanges() {
-      const shiftsToSave = [];
-      for (const zoneName in schedule) {
-        const zoneEmployees = schedule[zoneName];
-        zoneEmployees.forEach((employee) => {
-          DAYS.forEach((day) => {
-            (employee.days[day] || []).forEach((shift) => {
-              shiftsToSave.push(shift);
-            });
+  async function handleSaveChanges() {
+    const shiftsToSave = [];
+    for (const zoneName in schedule) {
+      const zoneEmployees = schedule[zoneName];
+      zoneEmployees.forEach((employee) => {
+        DAYS.forEach((day) => {
+          (employee.days[day] || []).forEach((shift) => {
+            shiftsToSave.push(shift);
           });
         });
-      }
-  
-      try {
-        const response = await fetch('/api/schedules/save', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            shifts: shiftsToSave,
-            startDate: selectedWeek.toISOString().split('T')[0],
-            endDate: new Date(selectedWeek.getTime() + 6 * 24 * 60 * 60 * 1000)
-              .toISOString()
-              .split('T')[0]
-          })
-        });
-  
-        const data = await response.json();
-        if (!response.ok) {
-          throw new Error(data.error || 'Failed to save schedule');
-        }
-  
-        // Optionally set schedule immediately, if the API returns the updated array:
-        // setSchedule(data.schedule || {});
-  
-        // Force a fresh fetch of the selected week's schedule so the UI updates right away:
-        await handleWeekClick(selectedWeek);
-  
-        // If you want a message or modal pop-up:
-        setSaveSummary({ message: 'Schedule saved successfully!' });
-      } catch (error) {
-        setError(error.message);
-      }
+      });
     }
-  
+
+    try {
+      const response = await fetch('/api/schedules/save', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          shifts: shiftsToSave,
+          startDate: selectedWeek.toISOString().split('T')[0],
+          endDate: new Date(selectedWeek.getTime() + 6 * 24 * 60 * 60 * 1000)
+            .toISOString()
+            .split('T')[0]
+        })
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to save schedule');
+      }
+
+      // Force a fresh fetch so UI updates right away:
+      await handleWeekClick(selectedWeek);
+
+      setSaveSummary({ message: 'Schedule saved successfully!' });
+    } catch (error) {
+      setError(error.message);
+    }
+  }
 
   // Generate <option> list for week selection
   function generateWeekOptions() {
@@ -434,7 +426,8 @@ export default function ScheduleManager({ compact }) {
     setSchedule(newSchedule);
   }
 
-  // Add Shift Modal
+ 
+
   function openAddShiftModal(zoneName, employeeRow, day) {
     setModalData({ zoneName, employeeRow, day });
     setSelectedShiftType(null);
@@ -565,7 +558,7 @@ export default function ScheduleManager({ compact }) {
     );
   }
 
-  // No-Show Modal
+
   function openNoShowModal(shift, zoneName, employeeName, day) {
     const tempId = shift.tempId || `temp-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
     shift.tempId = tempId;
@@ -664,34 +657,36 @@ export default function ScheduleManager({ compact }) {
           <p className="mb-2">{message}</p>
 
           {noShowEvents && noShowEvents.length > 0 ? (
-            <table className="w-full mb-4 text-sm border">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="p-2 border-b text-left">Day</th>
-                  <th className="p-2 border-b text-left">No-Show Employee</th>
-                  <th className="p-2 border-b text-left">Covering Employee</th>
-                </tr>
-              </thead>
-              <tbody>
-                {noShowEvents.map((ev, index) => {
-                  const dayDate = new Date(ev.day);
-                  const niceDay = dayDate.toLocaleDateString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                    weekday: 'short'
-                  });
-                  return (
-                    <tr key={index}>
-                      <td className="p-2 border-b">{niceDay}</td>
-                      <td className="p-2 border-b">{ev.noShowEmployee}</td>
-                      <td className="p-2 border-b">
-                        {ev.coverageEmployee || 'No coverage assigned'}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+            <div className="overflow-x-auto w-full mb-4">
+              <table className="table-fixed min-w-[400px] text-xs sm:text-sm border">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="p-2 border-b text-left">Day</th>
+                    <th className="p-2 border-b text-left">No-Show Employee</th>
+                    <th className="p-2 border-b text-left">Covering Employee</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {noShowEvents.map((ev, index) => {
+                    const dayDate = new Date(ev.day);
+                    const niceDay = dayDate.toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      weekday: 'short'
+                    });
+                    return (
+                      <tr key={index}>
+                        <td className="p-2 border-b">{niceDay}</td>
+                        <td className="p-2 border-b">{ev.noShowEmployee}</td>
+                        <td className="p-2 border-b">
+                          {ev.coverageEmployee || 'No coverage assigned'}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           ) : (
             <p className="text-sm text-gray-500 mb-4">
               No newly marked no-show shifts this time.
@@ -711,34 +706,16 @@ export default function ScheduleManager({ compact }) {
     );
   }
 
-  function computeStaffRequiredForZone(employees) {
-    const totals = { Mon: 0, Tue: 0, Wed: 0, Thu: 0, Fri: 0, Sat: 0, Sun: 0 };
-    employees.forEach((emp) => {
-      DAYS.forEach((day) => {
-        const shifts = emp.days[day] || [];
-        shifts.forEach((shift) => {
-          totals[day] += shift.required_count || 0;
-        });
-      });
-    });
-    return totals;
-  }
-
+  // Renders each zone (and each shift block inside that zone)
   function renderZone(zoneName) {
-    // 1) Make sure schedule[zoneName] is an array
     if (!Array.isArray(schedule[zoneName])) return null;
-
-    // 2) Filter out items that have no valid employee_name
     const zoneEmployees = schedule[zoneName].filter(
       (emp) => emp && typeof emp.employee_name === 'string'
     );
-
-    // 3) Sort safely
     const sortedEmployees = zoneEmployees.sort((a, b) =>
       a.employee_name.localeCompare(b.employee_name)
     );
 
-    // Gather every shift's block
     const blockSet = new Set();
     sortedEmployees.forEach((emp) => {
       DAYS.forEach((day) => {
@@ -779,8 +756,9 @@ export default function ScheduleManager({ compact }) {
             {zoneName} — {block}
           </div>
           <DragDropContext onDragEnd={handleDragEnd}>
+            {/* Horizontal scroll container */}
             <div className="overflow-x-auto w-full">
-              <table className="table-fixed w-full text-sm border-collapse">
+              <table className="table-fixed w-full min-w-[700px] text-xs sm:text-sm border-collapse">
                 <colgroup>
                   <col style={{ width: '15%' }} />
                   {DAYS.map((_, idx) => (
@@ -807,9 +785,7 @@ export default function ScheduleManager({ compact }) {
                       key={employeeRow.employee_name}
                       className="border-b last:border-b-0"
                     >
-                      <td className="py-2 font-semibold pl-4">
-                        {employeeRow.employee_name}
-                      </td>
+                      <td className="py-2 font-semibold pl-4">{employeeRow.employee_name}</td>
                       {DAYS.map((day) => {
                         const cellShifts = employeeRow.days[day] || [];
                         const isRest = isEmployeeRestDay(employeeRow, day);
@@ -960,9 +936,9 @@ export default function ScheduleManager({ compact }) {
           Add No-show records and request coverage.
         </p>
 
-        <div className="flex items-center gap-4 mb-4">
-          <label className="text-sm font-medium mr-2">Select Week:</label>
+        <div className="flex items-center flex-wrap gap-4 mb-4">
           <div className="flex items-center gap-2">
+            <label className="text-sm font-medium mr-2">Select Week:</label>
             <select
               value={selectedWeek.toISOString().split('T')[0]}
               onChange={(e) => {
@@ -970,7 +946,7 @@ export default function ScheduleManager({ compact }) {
                 setSelectedWeek(newWeek);
                 handleWeekClick(newWeek);
               }}
-              className="p-2 border rounded-full"
+              className="p-2 border rounded-full text-sm"
             >
               {generateWeekOptions().map((option) => (
                 <option key={option.value} value={option.value}>
@@ -989,7 +965,7 @@ export default function ScheduleManager({ compact }) {
           </div>
 
           <button
-            className="px-6 py-3 rounded-full bg-gradient-to-r from-[#222452] to-[#42469F] text-white font-bold hover:opacity-90 transition-opacity flex items-center gap-2"
+            className="px-6 py-3 rounded-full bg-gradient-to-r from-[#222452] to-[#42469F] text-white font-bold hover:opacity-90 transition-opacity flex items-center gap-2 text-sm"
             onClick={() => setShowHowWeSchedule(!showHowWeSchedule)}
           >
             How do we schedule your shifts?
@@ -997,8 +973,8 @@ export default function ScheduleManager({ compact }) {
         </div>
 
         {showHowWeSchedule && (
-          <div className="mt-2 border border-gray-300 p-4 rounded">
-            <p className="text-sm">
+          <div className="mt-2 border border-gray-300 p-4 rounded text-sm">
+            <p>
               Here's some placeholder text explaining how shifts 
               are automatically generated. 
               Customize as needed for your app!
@@ -1008,13 +984,13 @@ export default function ScheduleManager({ compact }) {
 
         <button
           onClick={() => setShowDatePicker(!showDatePicker)}
-          className="px-6 py-3 rounded-full bg-gradient-to-r from-[#222452] to-[#42469F] text-white font-bold hover:opacity-90 transition-opacity flex items-center gap-2 mt-4"
+          className="px-6 py-3 rounded-full bg-gradient-to-r from-[#222452] to-[#42469F] text-white font-bold hover:opacity-90 transition-opacity flex items-center gap-2 mt-4 text-sm"
         >
           {showDatePicker ? 'Cancel' : 'Select Week to Generate Schedule'}
         </button>
 
         {showDatePicker && (
-          <div className="mt-4">
+          <div className="mt-4 flex items-center gap-2">
             <input
               type="date"
               value={selectedWeek.toISOString().split('T')[0]}
@@ -1022,11 +998,11 @@ export default function ScheduleManager({ compact }) {
                 const newWeek = new Date(e.target.value);
                 setSelectedWeek(newWeek);
               }}
-              className="border rounded p-2"
+              className="border rounded p-2 text-sm"
             />
             <button
               onClick={handleGenerateSchedule}
-              className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 ml-2"
+              className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 text-sm"
               disabled={loading}
             >
               {loading ? 'Loading...' : 'Generate Schedule'}
@@ -1068,7 +1044,7 @@ export default function ScheduleManager({ compact }) {
       <div className="flex flex-col gap-4 mt-6">
         <button
           onClick={handleSaveChanges}
-          className="px-6 py-3 rounded-full bg-gradient-to-r from-[#222452] to-[#42469F] text-white font-bold hover:opacity-90 transition-opacity flex items-center gap-2"
+          className="px-6 py-3 rounded-full bg-gradient-to-r from-[#222452] to-[#42469F] text-white font-bold hover:opacity-90 transition-opacity flex items-center gap-2 text-sm"
         >
           Save Changes
         </button>

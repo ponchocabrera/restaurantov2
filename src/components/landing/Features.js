@@ -1,6 +1,7 @@
 export default function Features() {
   return (
     <div className="bg-white">
+
       {/* Menu Intelligence Section - Left Aligned */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="text-left max-w-3xl">
@@ -10,23 +11,45 @@ export default function Features() {
           </p>
         </div>
 
-        {/* Features Layout (Following the Exact Image) */}
+        {/* Menu Analysis Section (modified) */}
         <div className="mt-12 space-y-10">
+
           {/* Menu Analysis with AI */}
           <h3 className="text-2xl font-bold font-outfit text-black">Menu Analysis with AI</h3>
-          <div className="w-full bg-gray-100 rounded-lg shadow-lg min-h-[200px]"></div>
+          <div className="flex items-center justify-center h-48 border-2 border-dashed rounded-lg">
+            {/* Placeholder image */}
+            <img
+              src="/images/placeholder-analysis.jpg"
+              alt="Menu Analysis Placeholder"
+              className="max-w-full h-auto"
+            />
+          </div>
 
           {/* AI Image & Item Description Section */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
             <div className="text-lg font-bold text-black">
               Create AI images and Item Descriptions tailored to your Menu and Restaurant’s voice.
             </div>
-            <div className="p-10 bg-gray-100 rounded-lg shadow-lg min-h-[200px]"></div>
+            <div className="flex items-center justify-center h-48 border-2 border-dashed rounded-lg">
+              {/* Another placeholder image */}
+              <img
+                src="/images/placeholder-ai-image.jpg"
+                alt="AI Image Placeholder"
+                className="max-w-full h-auto"
+              />
+            </div>
           </div>
 
           {/* Menu Ready to Print Section */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
-            <div className="p-10 bg-gray-100 rounded-lg shadow-lg min-h-[200px]"></div>
+            <div className="flex items-center justify-center h-48 border-2 border-dashed rounded-lg">
+              {/* Another placeholder image */}
+              <img
+                src="/images/placeholder-print.jpg"
+                alt="Print-Ready Menu Placeholder"
+                className="max-w-full h-auto"
+              />
+            </div>
             <div className="text-lg font-bold text-black">
               Build Beautiful Menus ready to print, based on a detailed analysis of your Menu, Brand, and Restaurant.
             </div>
@@ -72,7 +95,6 @@ export default function Features() {
           <div className="p-10 bg-white rounded-lg shadow-lg min-h-[250px] col-span-1 md:col-span-1"></div>
         </div>
       </div>
-      
     </div>
   );
 }

@@ -37,7 +37,6 @@ function formatAnalysis(raw) {
   });
 }
 
-// Render a nicely formatted analysis details view.
 function renderAnalysisDetails(analysis) {
   if (!analysis || typeof analysis !== 'object') return null;
   
@@ -57,9 +56,9 @@ function renderAnalysisDetails(analysis) {
   const processSectionItems = (items) => {
     if (!Array.isArray(items)) return [];
     return items.filter(item => {
-      const key = typeof item === 'string' ? 
-        item.toLowerCase().trim() : 
-        JSON.stringify(item).toLowerCase();
+      const key = typeof item === 'string' 
+        ? item.toLowerCase().trim() 
+        : JSON.stringify(item).toLowerCase();
       if (processedSections.has(key)) return false;
       processedSections.add(key);
       return true;
@@ -87,7 +86,6 @@ function renderAnalysisDetails(analysis) {
   );
 }
 
-// Render recommendations details with custom RecommendationItem for each entry.
 function renderRecommendations(recommendations) {
   if (!recommendations || typeof recommendations !== 'object') return null;
   
@@ -125,7 +123,9 @@ function renderRecommendations(recommendations) {
                       {rec.reasoning && <p className="text-gray-600 mt-1">Why: {rec.reasoning}</p>}
                       {rec.impact && <p className="text-gray-600">Impact: {rec.impact}</p>}
                       {rec.priority && (
-                        <p className={`text-${rec.priority.toLowerCase() === 'high' ? 'red' : 'gray'}-600`}>
+                        <p className={`text-${
+                          rec.priority.toLowerCase() === 'high' ? 'red' : 'gray'
+                        }-600`}>
                           Priority: {rec.priority}
                         </p>
                       )}
@@ -153,7 +153,7 @@ export default function MyRestaurantsPage() {
   const [latestSearch, setLatestSearch] = useState(null);
   const [fullPrompt, setFullPrompt] = useState("");
   const [loadingPrompt, setLoadingPrompt] = useState(false);
-  const [showAllAnalyses, setShowAllAnalyses] = useState(false); // Toggle for showing all analyses
+  const [showAllAnalyses, setShowAllAnalyses] = useState(false);
 
   useEffect(() => {
     async function fetchRestaurantsData() {
@@ -270,9 +270,7 @@ export default function MyRestaurantsPage() {
       const response = await fetch('/api/ai/generateAIPrompt', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          search: latestSearch
-        })
+        body: JSON.stringify({ search: latestSearch })
       });
       if (!response.ok) {
         throw new Error('Failed to fetch full prompt');
@@ -286,7 +284,6 @@ export default function MyRestaurantsPage() {
     }
   }
 
-  // Sort analyses by created date (descending) and decide which ones to show.
   const sortedAnalyses = analyses
     .slice()
     .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
@@ -294,56 +291,95 @@ export default function MyRestaurantsPage() {
 
   return (
     <DashboardLayout>
-      <main className="p-4 max-w-4xl mx-auto space-y-12">
-        <header className="space-y-4">
-          <h1 className="text-5xl font-bold font-libre leading-tight text-[#212350]">
-            Your Restaurant
+      <main className="p-4 w-full max-w-6xl mx-auto space-y-12">
+        {/* TITLE SECTION (Responsive) */}
+        <section>
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-2 sm:mb-4">
+            My Restaurants
           </h1>
-          <h2 className="text-2xl outfit-bold text-[#212350]">
-            See your Restaurant's activity
-          </h2>
-          <p className="text-lg text-gray-600">
-            Action on your Menu Reviews, and get insights on your Restaurant's activity.
+          <h2 className="text-lg sm:text-xl md:text-2xl font-semibold mb-2">Restaurant Dashboard</h2>
+          <p className="text-gray-600 max-w-prose">
+            Manage your restaurants and gain insights for business growth.
           </p>
-        </header>
+        </section>
 
-        {/* Two Column Layout */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* Left Column: Actionable Suggestion styled like snippet */}
-          
-              {latestSearch && <ActionableSuggestion latestSearch={latestSearch} />}
-          
+        {/* BANNER SECTION */}
+<section className="bg-white rounded-lg p-4 md:p-6 flex flex-col md:flex-row items-center gap-4 shadow-sm w-full">
+  {/* Banner Image (scaled down) */}
+  <div className="flex-shrink-0 w-full md:w-auto flex justify-center md:justify-start">
+    <img
+      src="/assets/icons/restaurant_locations.png"
+      alt="Restaurant Banner"
+      // Limit the size so it doesn't get too large
+      className="w-32 h-32 md:w-40 md:h-40 object-contain"
+    />
+  </div>
 
-          {/* Right Column: Restaurants List styled like snippet */}
-          <div className="flex flex-col h-full">
-            <h2 className="text-2xl font-outfit-bold mb-4 text-[#212350]">Restaurants</h2>
-            <div className="p-8 bg-gradient-to-br from-[#1D2C40] to-[#354861] text-white rounded-2xl flex-grow flex flex-col justify-between shadow-xl">
+  {/* Banner Text, fills remaining space */}
+  <div className="flex-1 text-center md:text-left mt-4 md:mt-0">
+    <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2">
+      Learn more about your Restaurant
+    </h2>
+    <h3 className="text-xl font-semibold mb-2">Its Area and New Food Trends</h3>
+    <p className="text-gray-700 mb-4">
+      Understand the food business industry around your area, find trends and learn
+      how to grow your business.
+    </p>
+    <Link href="/restaurant-insights">
+      <button className="bg-blue-600 text-white py-2 px-4 rounded-full hover:bg-blue-500 transition-colors">
+        Get Insights
+      </button>
+    </Link>
+  </div>
+</section>
+
+
+        {/* ACTIONABLE SUGGESTION + RESTAURANTS (2-Column on md+) */}
+        <section className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* Left: Actionable Suggestion Card */}
+          {latestSearch ? (
+            <ActionableSuggestion latestSearch={latestSearch} />
+          ) : (
+            <div className="p-4 border rounded shadow-sm">
+              <p className="text-gray-500">
+                Please perform a restaurant search to see actionable suggestions.
+              </p>
+            </div>
+          )}
+
+          {/* Right: Restaurants Card */}
+          <div className="flex flex-col">
+            <h2 className="text-lg sm:text-xl md:text-2xl font-semibold mb-4">Restaurants</h2>
+            <div className="p-6 sm:p-8 bg-gradient-to-br from-[#1D2C40] to-[#354861] text-white rounded-2xl shadow-xl flex-grow flex flex-col">
               {loading ? (
                 <div className="text-center text-gray-300">Loading...</div>
+              ) : restaurants.length === 0 ? (
+                <p className="text-white">No restaurants found.</p>
               ) : (
                 <div className="space-y-6">
                   {restaurants.map((restaurant) => (
                     <div
                       key={restaurant.id}
-                      
                       onClick={() =>
                         setExpandedRestaurantId(
                           expandedRestaurantId === restaurant.id ? null : restaurant.id
                         )
                       }
+                      className="cursor-pointer"
                     >
-                      <h2 className="text-2xl font-semibold font-outfit text-white">
+                      <h3 className="text-xl sm:text-2xl font-semibold font-outfit text-white">
                         {restaurant.name}
-                      </h2>
+                      </h3>
                       <p className="text-white">Number of Menus: {restaurant.menusCount}</p>
                       <p className="text-white">Total Items: {restaurant.totalItems}</p>
+                      {/* Expanded Menus */}
                       {expandedRestaurantId === restaurant.id && (
-                        <div className="mt-4 ml-4 border-t pt-4 text-white">
-                          <h3 className="text-xl font-bold mb-3">Menus</h3>
+                        <div className="mt-4 ml-4 border-t border-white/30 pt-4 text-white space-y-3">
+                          <h4 className="text-lg font-bold mb-3">Menus</h4>
                           {restaurant.menus.length > 0 ? (
                             restaurant.menus.map((menu) => (
-                              <div key={menu.id} className="p-3 border-b">
-                                <p className="text-lg font-medium">{menu.name}</p>
+                              <div key={menu.id} className="p-3 border-b border-white/30">
+                                <p className="text-base sm:text-lg font-medium">{menu.name}</p>
                                 <p>Items: {menu.itemCount}</p>
                                 <p>Average Plate Price: ${menu.averagePrice}</p>
                               </div>
@@ -359,34 +395,22 @@ export default function MyRestaurantsPage() {
               )}
             </div>
           </div>
-        </div>
+        </section>
 
-        {/* Master Recommendation */}
-        {latestSearch ? (
-          <MasterRecommendation restaurantName={latestSearch.restaurant_name} />
-        ) : (
-          <p>No restaurant search found. Please conduct a restaurant search first.</p>
-        )}
-
-        {/* Banner Section */}
-        <div className="bg-blue-100 p-6 rounded-lg flex flex-col items-start text-left">
-          <h2 className="text-3xl font-bold mb-2">Learn about your Restaurant</h2>
-          <h3 className="text-xl font-semibold mb-2">
-            Your Restaurant, its Area and New Food Trends
-          </h3>
-          <p className="text-gray-700 mb-4">
-            Understand the food business industry around your Area, find trends and learn how to grow your business.
-          </p>
-          <Link href="/restaurant-insights">
-            <button className="bg-blue-600 text-white py-2 px-4 rounded-full hover:bg-blue-500 transition-colors">
-              Get Insights
-            </button>
-          </Link>
-        </div>
-
-        {/* Saved Menu Analyses Section */}
+        {/* MASTER RECOMMENDATION SECTION */}
         <section>
-          <h2 className="text-2xl font-bold mb-4">Saved Menu Analyses</h2>
+          {latestSearch ? (
+            <MasterRecommendation restaurantName={latestSearch.restaurant_name} />
+          ) : (
+            <p className="text-gray-500">
+              No restaurant search found. Please conduct a restaurant search first.
+            </p>
+          )}
+        </section>
+
+        {/* SAVED MENU ANALYSES */}
+        <section>
+          <h2 className="text-lg sm:text-xl md:text-2xl font-semibold mb-4">Saved Menu Analyses</h2>
           {sortedAnalyses.length === 0 ? (
             <p>No menu analyses available yet.</p>
           ) : (
@@ -424,12 +448,13 @@ export default function MyRestaurantsPage() {
                 }
 
                 return (
-                  <div key={record.id} className="border rounded p-4 mb-4 bg-white shadow">
+                  <div key={record.id} className="border rounded p-4 mb-4 bg-white shadow-sm">
+                    {/* Card Header: flex-col on mobile, row on larger screens */}
                     <div
-                      className="flex items-center justify-between cursor-pointer"
+                      className="flex flex-col sm:flex-row items-start sm:items-center justify-between cursor-pointer gap-4"
                       onClick={() => toggleAnalysis(record.id)}
                     >
-                      {/* Left side: Image & Analysis Info */}
+                      {/* Left: image + basic info */}
                       <div className="flex items-center space-x-4">
                         {record.image_data && (
                           <img
@@ -446,8 +471,8 @@ export default function MyRestaurantsPage() {
                         </div>
                       </div>
 
-                      {/* Middle: Counts for Analyzed Points & Recommendations */}
-                      <div className="flex items-center space-x-8">
+                      {/* Middle: Analyzed Points & Recommendations Count */}
+                      <div className="flex items-center space-x-6 sm:space-x-8">
                         <div className="text-center">
                           <div className="font-bold text-sm">{analyzedPointsCount}</div>
                           <div className="text-gray-500 text-xs">Analyzed Points</div>
@@ -458,7 +483,7 @@ export default function MyRestaurantsPage() {
                         </div>
                       </div>
 
-                      {/* Right side: Expand / Collapse icon */}
+                      {/* Right: Expand/Collapse Icon */}
                       <div>
                         {expandedAnalysisIds.includes(record.id) ? (
                           <ChevronUp className="w-5 h-5" />
@@ -468,7 +493,7 @@ export default function MyRestaurantsPage() {
                       </div>
                     </div>
 
-                    {/* Expanded details view */}
+                    {/* Expanded View */}
                     {expandedAnalysisIds.includes(record.id) && (
                       <div className="mt-4">
                         <div className="mb-4">
@@ -491,6 +516,7 @@ export default function MyRestaurantsPage() {
                 );
               })}
 
+              {/* "See all" / "Show less" button */}
               {sortedAnalyses.length > 3 && (
                 <div className="mt-4 text-center">
                   <button
