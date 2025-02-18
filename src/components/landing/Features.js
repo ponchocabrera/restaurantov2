@@ -14,79 +14,162 @@ export default function Features() {
         </div>
 
         <div className="mt-12 space-y-16">
-          {/* Menu Analysis with AI */}
+          {/* --- 1) Menu Analysis with AI --- */}
           <div>
             <h3 className="text-2xl font-bold font-outfit text-black mb-4">
               Menu Analysis with AI
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+            {/* 
+              2 columns, each has a minHeight so they line up,
+              each column flexes text to the top, image to the bottom
+            */}
+            <div
+              className="grid grid-cols-1 md:grid-cols-2 gap-8"
+              style={{ minHeight: "450px" }}
+            >
               {/* Left column */}
-              <div>
-                <p className="text-gray-700 mb-4">
-                  Get AI powered analysis based on more than 140 factors. Discovers what 
-                  your Menu says about your items and restaurant.
-                </p>
-                <img
-                  src="/images/landing/MenuAnalysis1.png"
-                  alt="Menu Analysis 1"
-                  className="w-full h-auto rounded-lg"
-                />
+              <div className="flex flex-col justify-between">
+                {/* Top: text */}
+                <div>
+                  <p className="text-gray-700 mb-4">
+                    Get AI powered analysis based on more than 140 factors. 
+                    Discovers what your Menu says about your items and restaurant.
+                  </p>
+                </div>
+                {/* Bottom: image */}
+                <div>
+                  <img
+                    src="/images/landing/MenuAnalysis1.png"
+                    alt="Menu Analysis 1"
+                    className="m-0 p-0 block w-auto h-auto rounded-lg mx-auto"
+                  />
+                </div>
               </div>
 
               {/* Right column */}
-              <div>
-                <p className="text-gray-700 mb-4">
-                  Get Improvements for your Menu based on AI and years of Research on 
-                  Menu Engineering and Psychology.
-                </p>
-                <img
-                  src="/images/landing/MenuRecommendations1.png"
-                  alt="Menu Analysis 2"
-                  className="w-full h-auto rounded-lg"
-                />
+              <div className="flex flex-col justify-between">
+                {/* Top: text */}
+                <div>
+                  <p className="text-gray-700 mb-4">
+                    Get Improvements for your Menu based on AI and years of Research on 
+                    Menu Engineering and Psychology.
+                  </p>
+                </div>
+                {/* Bottom: image */}
+                <div>
+                  <img
+                    src="/images/landing/MenuRecommendations1.png"
+                    alt="Menu Analysis 2"
+                    className="m-0 p-0 block w-auto h-auto rounded-lg mx-auto"
+                  />
+                </div>
               </div>
             </div>
           </div>
 
-          {/* AI Image & Item Description Section (UPDATED) */}
+          {/* --- 1) Menu Analysis with AI --- */}
           <div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {/* Left column: text is vertically centered */}
-              <div className="flex items-center">
-                <p className="text-xl font-bold text-black mb-4">
-                  Tailor your menu items with AI-generated images and descriptions to
-                  match your brand voice and captivate your customers.
-                </p>
+            <h3 className="text-2xl font-bold font-outfit text-black mb-4">
+            Get AI to help you understand your Restaurant’s 
+            performance and what’s trending in your Area
+            </h3>
+            {/* 
+              2 columns, each has a minHeight so they line up,
+              each column flexes text to the top, image to the bottom
+            */}
+            <div
+              className="grid grid-cols-1 md:grid-cols-2 gap-8"
+              style={{ minHeight: "450px" }}
+            >
+              {/* Left column */}
+              <div className="flex flex-col justify-between">
+                {/* Top: text */}
+                <div>
+                  <p className="text-gray-700 mb-4">
+                  Get notified what is trending around your Restaurant’s Area, weather it is a new Menu, Dish, or improved ambiance. Get ahead your area with AI driven recommendations.
+                  </p>
+                </div>
+                {/* Bottom: image */}
+                <div>
+                  <img
+                    src="/images/landing/ZoneReviewerImage.png"
+                    alt="Menu Analysis 1"
+                    className="m-0 p-0 block w-auto h-auto rounded-lg mx-auto"
+                  />
+                </div>
               </div>
 
-              {/* Right column: image with no margins */}
-              <div className="border-2 border-dashed rounded-lg p-4 flex items-center justify-center">
+              {/* Right column */}
+              <div className="flex flex-col justify-between">
+                {/* Top: text */}
+                <div>
+                  <p className="text-gray-700 mb-4">
+                  Track your restaurant’s Score, and see where do you stand in comparison with other restaurants in your Area. Get AI driven recommendations on how to improve! 
+                  </p>
+                </div>
+                {/* Bottom: image */}
+                <div>
+                  <img
+                    src="/images/landing/RestaurantSearch.png"
+                    alt="Menu Analysis 2"
+                    className="m-0 p-0 block w-auto h-auto rounded-lg mx-auto"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* --- 2) AI Image & Item Description Section --- */}
+          <div
+            style={{ minHeight: "350px" }} 
+            // Adjust if you want them even taller/shorter
+          >
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 h-full">
+              {/* Left column: text top, image bottom if needed */}
+              <div className="flex flex-col justify-between">
+                <div>
+                  <p className="text-xl font-bold text-black mb-4">
+                    Tailor your menu items with AI-generated images and descriptions to
+                    match your brand voice and captivate your customers.
+                  </p>
+                </div>
+                <div>{/* if you wanted an image at bottom, place it here */}</div>
+              </div>
+
+              {/* Right column: image pinned at bottom if desired */}
+              <div className="border-2 border-dashed rounded-lg p-4 flex flex-col justify-end">
                 <img
                   src="/images/landing/AiGenimage.png"
                   alt="AI Image Placeholder"
-                  className="m-0 block w-full h-auto"
+                  className="m-0 block w-auto h-auto mx-auto"
                 />
               </div>
             </div>
           </div>
 
-          {/* Menu Ready to Print Section */}
-          <div>
+          {/* --- 3) Menu Ready to Print Section --- */}
+          <div
+            style={{ minHeight: "350px" }}
+          >
             <h3 className="text-xl font-bold text-black mb-4">
               Print-Ready Menus
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-              <div className="border-2 border-dashed rounded-lg p-4 flex items-center justify-center">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 h-full">
+              {/* Left column: pinned image at bottom */}
+              <div className="border-2 border-dashed rounded-lg p-4 flex flex-col justify-end">
                 <img
                   src="/images/placeholder-print.jpg"
                   alt="Print-Ready Menu Placeholder"
-                  className="max-w-full h-auto"
+                  className="m-0 p-0 block w-auto h-auto mx-auto"
                 />
               </div>
-              <div className="text-gray-700">
-                Build beautiful, print-ready menus based on detailed analysis of your Menu,
-                Brand, and Restaurant. Enhance customer experience and boost profitability.
+
+              {/* Right column: text at top, or pinned differently if you like */}
+              <div className="flex flex-col justify-center">
+                <p className="text-gray-700">
+                  Build beautiful, print-ready menus based on detailed analysis of your Menu,
+                  Brand, and Restaurant. Enhance customer experience and boost profitability.
+                </p>
               </div>
             </div>
           </div>
