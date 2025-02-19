@@ -398,19 +398,19 @@ export default function RestaurantInsightsPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
             {/* We'll leave the left column for the map IF data is available (the user said map only if there's a search). */}
             {data ? (
-              <div className="bg-gray-50 rounded-lg border flex justify-center items-center p-2">
+              <div className="bg-gray-50 rounded-lg flex justify-center items-center p-2">
                 <div ref={mapRef} style={{ height: '400px', width: '100%' }} />
               </div>
             ) : (
               // If no fresh "data", just show a placeholder on the left
-              <div className="flex justify-center items-center border rounded-lg p-4 text-gray-500">
+              <div className="flex justify-center items-center rounded-lg p-4 text-gray-500 bg-gray-50">
                 (Map will appear here after you perform a new Search)
               </div>
             )}
 
             {/* Right side: Last Search Details & Chart */}
             <div className="bg-white rounded-lg shadow p-4">
-              <h3 className="text-xl font-bold mb-2">Last Search Details</h3>
+              <h3 className="text-xl sm:text-2xl font-bold font-libre mb-2 sm:mb-4">Last Search Details</h3>
               <p>
                 <strong>Restaurant:</strong> {lastSearch.restaurant_name}
               </p>
@@ -439,7 +439,7 @@ export default function RestaurantInsightsPage() {
 
         {/* If there's absolutely no lastSearch, show an empty state or some message */}
         {!lastSearch && (
-          <div className="border rounded p-4 text-gray-500 mb-8">
+          <div className="rounded p-4 text-gray-500 mb-8 bg-gray-50">
             No past searches yet. Try searching for a restaurant above.
           </div>
         )}
@@ -448,8 +448,8 @@ export default function RestaurantInsightsPage() {
         {data && (
           <>
             {/* Restaurant Info & Quick Summary */}
-            <div className="border p-4 rounded-lg bg-white shadow mb-6">
-              <h3 className="text-2xl font-bold text-gray-800 mb-4">Restaurant Information</h3>
+            <div className="rounded-lg bg-white shadow mb-6 p-4">
+              <h3 className="text-xl sm:text-2xl font-bold font-libre mb-2 sm:mb-4">Restaurant Information</h3>
               <p className="text-xl font-bold">{data.restaurantInfo?.name}</p>
               <p className="text-gray-700">{data.restaurantInfo?.address}</p>
               <div className="flex items-center mt-2">
@@ -471,7 +471,7 @@ export default function RestaurantInsightsPage() {
                 <span className="mr-2">Total Reviews:</span>
                 <span>{data.restaurantInfo?.userRatingsTotal ?? 'N/A'}</span>
               </div>
-              <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="mt-4 bg-blue-50 rounded-lg p-4">
                 <h4 className="text-xl font-bold mb-2">Quick Summary</h4>
                 {(() => {
                   const restaurantRating = data.restaurantInfo?.rating ?? 0;
@@ -531,12 +531,12 @@ export default function RestaurantInsightsPage() {
 
             {/* Dish Insights + Area Review Summary side by side */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-              <section className="border p-4 rounded-lg bg-white shadow">
+              <section className="rounded-lg bg-white shadow p-4">
                 <h3 className="text-xl font-bold mb-2">Dish Insights</h3>
                 <p className="text-sm text-gray-500 mb-2">
                   Placeholder: Detailed analysis of popular dishes based on customer reviews.
                 </p>
-                <div className="bg-gray-50 p-4 rounded border border-gray-200">
+                <div className="bg-gray-50 p-4 rounded">
                   {data.dishInsights
                     ? data.dishInsights.split('\n').map((line, idx) => (
                         <p key={idx} className="mb-2">{line}</p>
@@ -545,7 +545,7 @@ export default function RestaurantInsightsPage() {
                 </div>
               </section>
 
-              <section className="border p-4 rounded-lg bg-white shadow">
+              <section className="rounded-lg bg-white shadow p-4">
                 <h3 className="text-xl font-bold mb-2">Area Review Summary</h3>
                 <p className="text-sm text-gray-500 mb-2">
                   Placeholder: A summary of nearby restaurant reviews will be displayed here.
@@ -557,7 +557,7 @@ export default function RestaurantInsightsPage() {
             </div>
 
             {/* Nearby Restaurants */}
-            <section className="border p-4 rounded-lg bg-white shadow mb-6">
+            <section className="rounded-lg bg-white shadow p-4 mb-6">
               <h3 className="text-xl font-bold mb-2">Nearby Restaurants</h3>
               <p className="text-sm text-gray-500 mb-2">
                 Placeholder: A list of nearby restaurants with ratings and pricing.
@@ -571,7 +571,7 @@ export default function RestaurantInsightsPage() {
                   id="filter"
                   value={filterOption}
                   onChange={(e) => setFilterOption(e.target.value)}
-                  className="p-2 border rounded"
+                  className="p-2 rounded"
                 >
                   <option value="bestRated">Best Rated</option>
                   <option value="moreExpensive">More Expensive</option>
@@ -592,7 +592,7 @@ export default function RestaurantInsightsPage() {
                   .map((rest, idx) => (
                     <div
                       key={idx}
-                      className="border p-4 rounded-lg bg-white shadow hover:shadow-md transition-shadow"
+                      className="rounded-lg bg-white shadow hover:shadow-md transition-shadow p-4"
                     >
                       <p className="font-bold text-lg">{rest.name}</p>
                       <p className="text-gray-700">{rest.address || rest.vicinity}</p>

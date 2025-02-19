@@ -176,11 +176,21 @@ export default function MenuAnalyzer() {
                     onClick={() => setCurrentStep(step)}
                     className={`w-full text-left px-4 py-5 rounded-lg text-sm transition-all min-h-[80px] ${
                       currentStep === step
-                        ? 'bg-[#FFFFFF] border border-[#F4AF54] text-black shadow-md'
+                        ? 'bg-[#FFFFFF] border border-[#222452] text-black shadow-md'
                         : 'bg-[#E2E2E2] text-gray-700 hover:bg-gray-300'
                     }`}
                   >
-                    Step {step}: {getStepDescription(step)}
+                    <div className="flex items-center space-x-4">
+                      {/* Icon Placeholder for each step with larger size */}
+                      <img
+                        src={`/assets/icons/step${step}.png`}
+                        alt={`Step ${step} icon placeholder`}
+                        className="w-8 h-8"
+                      />
+                      <span>
+                        Step {step}: {getStepDescription(step)}
+                      </span>
+                    </div>
                   </button>
                 ))}
               </div>

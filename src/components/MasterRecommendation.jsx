@@ -1,46 +1,38 @@
 import { useState } from "react";
 import ReactMarkdown from "react-markdown";
-import "./MasterRecommendation.css"; // Make sure this file is updated or remove if not needed
+import "./MasterRecommendation.css"; // optional CSS
 
-function CollapsibleBox({ title, subtitle, icon, error, content }) {
-  const [isOpen, setIsOpen] = useState(false);
+// A simple Card for each recommendation (no local dropdown state)
+function RecommendationCard({ index, title, subtitle, icon, error, activeIndex, setActiveIndex }) {
+  const isActive = activeIndex === index;
 
   return (
     <div
-      className="collapsible-box cursor-pointer rounded border bg-white shadow-sm p-4"
-      onClick={() => setIsOpen(!isOpen)}
+      className={`
+        cursor-pointer rounded bg-white shadow-sm p-4
+        transition-all hover:shadow-md
+        ${isActive ? "ring-2 ring-blue-300" : ""}
+      `}
+      onClick={() => setActiveIndex(isActive ? null : index)}
     >
-      <div className="box-header flex items-start space-x-3">
-        {/* Top-left icon */}
+      <div className="flex items-start space-x-3">
         <img
           src={icon}
           alt="icon"
-          className="icon-placeholder w-12 h-12 object-contain"
+          className="w-12 h-12 object-contain"
         />
-        {/* Title and subtitle */}
         <div>
-          <h3 className="box-title font-semibold text-base sm:text-lg mb-1">
+          <h3 className="font-semibold text-base sm:text-lg mb-1">
             {title}
           </h3>
           {subtitle && (
-            <p className="subtitle text-sm text-gray-600">{subtitle}</p>
+            <p className="text-sm text-gray-600">{subtitle}</p>
           )}
-          {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
+          {error && (
+            <p className="text-red-500 text-xs mt-1">{error}</p>
+          )}
         </div>
       </div>
-
-      {/* Collapsible content */}
-      {isOpen && (
-        <div className="box-content mt-3 text-sm text-gray-700">
-          {content && content.trim().length > 0 ? (
-            <ReactMarkdown>{content}</ReactMarkdown>
-          ) : (
-            <p className="text-gray-500">
-              No data yet. Please generate recommendations.
-            </p>
-          )}
-        </div>
-      )}
     </div>
   );
 }
@@ -49,6 +41,9 @@ export default function MasterRecommendation({ restaurantName }) {
   const [recommendations, setRecommendations] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  
+  // This state tracks which card is open (0 to 3), or null if none are open
+  const [activeIndex, setActiveIndex] = useState(null);
 
   const handleGenerateRecommendations = async () => {
     if (!restaurantName) {
@@ -77,19 +72,30 @@ export default function MasterRecommendation({ restaurantName }) {
     }
   };
 
+  // So we know which recommendation keys map to each card index
+  const contentMap = [
+    { key: "starDishRecommendation", title: "Star Dishes & Menu Analysis" },
+    { key: "dishInsightsRecommendation", title: "Dish-Specific Insights" },
+    { key: "areaOpportunityRecommendation", title: "Area Opportunities" },
+    { key: "localTrendRecommendation", title: "Local Food Trends" },
+  ];
+
+  // If a card is selected, pick out its recommendation text
+  let expandedContent = "";
+  if (activeIndex !== null && recommendations) {
+    const recKey = contentMap[activeIndex].key;
+    expandedContent = recommendations[recKey] || "";
+  }
+
   return (
     <div>
       <h2 className="text-2xl font-bold mb-4">Master Recommendations</h2>
-
-      {/* If loading is in progress, show a spinner or text */}
       {loading && <p>Loading recommendations…</p>}
 
-      {/* If no restaurant name is present, prompt the user */}
       {!restaurantName && !loading && (
         <p>Please select a restaurant before generating master recommendations.</p>
       )}
 
-      {/* Show any error messages */}
       {error &&
         (error === "Missing analysis or search data." ? (
           <p>Please create a restaurant search and a menu analysis first.</p>
@@ -98,38 +104,43 @@ export default function MasterRecommendation({ restaurantName }) {
         ))
       }
 
-      {/* 4 recommendation cards (placeholders or with data) */}
-      <div
-        // One column on small screens, two columns on medium, up to four on large
-        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 gap-6 mt-4"
-      >
-        <CollapsibleBox
+      {/* 4 recommendation cards in one row */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
+        <RecommendationCard
+          index={0}
           title="Star Dishes & Menu Analysis"
           subtitle="Generate Restaurant Review and Menu Analysis to view"
           icon="/assets/icons/stardishesandmenu.png"
           error={error}
-          content={recommendations?.starDishRecommendation ?? ""}
+          activeIndex={activeIndex}
+          setActiveIndex={setActiveIndex}
         />
-        <CollapsibleBox
+        <RecommendationCard
+          index={1}
           title="Dish-Specific Insights"
           subtitle="Generate Restaurant Review and Menu Analysis to view"
           icon="/assets/icons/dishspecificinsights.png"
           error={error}
-          content={recommendations?.dishInsightsRecommendation ?? ""}
+          activeIndex={activeIndex}
+          setActiveIndex={setActiveIndex}
         />
-        <CollapsibleBox
+        <RecommendationCard
+          index={2}
           title="Area Opportunities"
           subtitle="Generate Restaurant Review and Menu Analysis to view"
           icon="/assets/icons/restaurant_locations.png"
           error={error}
-          content={recommendations?.areaOpportunityRecommendation ?? ""}
+          activeIndex={activeIndex}
+          setActiveIndex={setActiveIndex}
         />
-        <CollapsibleBox
+        <RecommendationCard
+          index={3}
           title="Local Food Trends"
           subtitle="Generate Restaurant Review and Menu Analysis to view"
           icon="/assets/icons/localfoodtrends.png"
           error={error}
-          content={recommendations?.localTrendRecommendation ?? ""}
+          activeIndex={activeIndex}
+          setActiveIndex={setActiveIndex}
         />
       </div>
 
@@ -138,10 +149,26 @@ export default function MasterRecommendation({ restaurantName }) {
         <div className="mt-6">
           <button
             onClick={handleGenerateRecommendations}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            className="px-6 py-3 rounded-full bg-gradient-to-r from-[#222452] to-[#42469F] text-white font-bold hover:opacity-90 transition-opacity flex items-center gap-2"
           >
             Generate Recommendations
           </button>
+        </div>
+      )}
+
+      {/* Expanded dropdown area for the currently selected card */}
+      {activeIndex !== null && (
+        <div className="mt-6 p-4 rounded-lg bg-white shadow">
+          <h3 className="font-bold text-lg mb-2">
+            {contentMap[activeIndex].title}
+          </h3>
+          {expandedContent ? (
+            <ReactMarkdown>{expandedContent}</ReactMarkdown>
+          ) : (
+            <p className="text-gray-500">
+              No data yet. Please generate recommendations or select a different card.
+            </p>
+          )}
         </div>
       )}
     </div>

@@ -70,7 +70,7 @@ export default function StepUpload({ onUploadComplete, onStepComplete }) {
           onClick={() => setInputType('image')}
           className={`flex-1 p-5 sm:p-6 rounded-lg text-left transition-all border-2 ${
             inputType === 'image'
-              ? 'bg-white border-[#F4AF54] shadow-md'
+              ? 'bg-white border-[#222452] shadow-md'
               : 'bg-[#F6F6F6] text-gray-700 border-transparent hover:bg-gray-300'
           }`}
         >
@@ -83,7 +83,7 @@ export default function StepUpload({ onUploadComplete, onStepComplete }) {
           onClick={() => setInputType('text')}
           className={`flex-1 p-5 sm:p-6 rounded-lg text-left transition-all border-2 ${
             inputType === 'text'
-              ? 'bg-white border-[#F4AF54] shadow-md'
+              ? 'bg-white border-[#222452] shadow-md'
               : 'bg-[#F6F6F6] text-gray-700 border-transparent hover:bg-gray-300'
           }`}
         >

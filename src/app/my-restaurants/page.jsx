@@ -294,7 +294,7 @@ export default function MyRestaurantsPage() {
       <main className="p-4 w-full max-w-6xl mx-auto space-y-12">
         {/* TITLE SECTION (Responsive) */}
         <section>
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-2 sm:mb-4">
+          <h1 className="text-2xl sm:text-5xl font-bold font-libre mb-2 sm:mb-4">
             My Restaurants
           </h1>
           <h2 className="text-lg sm:text-xl md:text-2xl font-semibold mb-2">Restaurant Dashboard</h2>
@@ -326,7 +326,7 @@ export default function MyRestaurantsPage() {
       how to grow your business.
     </p>
     <Link href="/restaurant-insights">
-      <button className="bg-blue-600 text-white py-2 px-4 rounded-full hover:bg-blue-500 transition-colors">
+      <button className="px-6 py-3 rounded-full bg-gradient-to-r from-[#222452] to-[#42469F] text-white font-bold hover:opacity-90 transition-opacity flex items-center gap-2">
         Get Insights
       </button>
     </Link>
@@ -350,7 +350,7 @@ export default function MyRestaurantsPage() {
           {/* Right: Restaurants Card */}
           <div className="flex flex-col">
             <h2 className="text-lg sm:text-xl md:text-2xl font-semibold mb-4">Restaurants</h2>
-            <div className="p-6 sm:p-8 bg-gradient-to-br from-[#1D2C40] to-[#354861] text-white rounded-2xl shadow-xl flex-grow flex flex-col">
+            <div className="p-6 sm:p-8 bg-gradient-to-br from-[#212350] to-[#4B50B6] text-white rounded-2xl shadow-xl flex-grow flex flex-col">
               {loading ? (
                 <div className="text-center text-gray-300">Loading...</div>
               ) : restaurants.length === 0 ? (
