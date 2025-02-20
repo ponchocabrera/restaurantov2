@@ -3,14 +3,17 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function Hero() {
   const [image, setImage] = useState(null);
+  const router = useRouter();
 
   const handleImageUpload = (event) => {
     const file = event.target.files[0];
     if (file) {
       setImage(URL.createObjectURL(file));
+      router.push('/register');
     }
   };
 
