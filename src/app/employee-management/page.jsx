@@ -12,6 +12,8 @@ export default function EmployeeManagementPage() {
         <h1 className="text-2xl sm:text-5xl font-bold font-libre mb-2 sm:mb-4">Make the perfect Schedule. Effortless with AI.</h1>
         <h3 className="text-2xl font-bold mb-4">Shift Scheduler</h3>
 
+        
+
         <div className="mb-8">
           <ZoneManagement />
         </div>

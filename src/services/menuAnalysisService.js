@@ -1,3 +1,4 @@
+// Vision analysis for Menu Analyzer
 import OpenAI from 'openai';
 import { generateDesignRecommendations } from '@/utils/researchProcessor';
 
