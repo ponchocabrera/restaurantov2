@@ -1,4 +1,13 @@
+"use client";
+
+import { useLanguage } from "@/contexts/LanguageContext";
+import en from "@/locales/en.json";
+import es from "@/locales/es.json";
+
 export default function Features() {
+  const { language } = useLanguage();
+  const t = language === "es" ? es.features : en.features;
+
   return (
     <div className="bg-white">
       {/* Menu Intelligence Section */}
@@ -63,8 +72,7 @@ export default function Features() {
           {/* --- 1) Another Analysis Section --- */}
           <div>
             <h3 className="text-2xl font-bold font-outfit text-black mb-4">
-              Get AI to help you understand your Restaurant’s 
-              performance and what’s trending in your Area
+              {t.sectionTitle}
             </h3>
             <div
               className="grid grid-cols-1 md:grid-cols-2 gap-8"
@@ -74,15 +82,13 @@ export default function Features() {
               <div className="flex flex-col justify-between">
                 <div>
                   <p className="text-gray-700 mb-4">
-                    Get notified what is trending around your Restaurant’s Area, whether it
-                    is a new Menu, Dish, or improved ambiance. Get ahead in your area with 
-                    AI-driven recommendations.
+                    {t.leftText}
                   </p>
                 </div>
                 <div>
                   <img
                     src="/images/landing/ZoneReviewerImage.png"
-                    alt="Menu Analysis 1"
+                    alt={t.imageAltLeft}
                     className="m-0 p-0 block w-auto h-auto rounded-lg mx-auto"
                   />
                 </div>
@@ -92,7 +98,7 @@ export default function Features() {
               <div className="flex flex-col justify-between">
                 <div>
                   <p className="text-gray-700 mb-4">
-                    Track your restaurant’s Score, and see where you stand in comparison 
+                    Track your restaurant's Score, and see where you stand in comparison 
                     with other restaurants in your Area. Get AI-driven suggestions on how
                     to improve!
                   </p>
@@ -100,7 +106,7 @@ export default function Features() {
                 <div>
                   <img
                     src="/images/landing/RestaurantSearch.png"
-                    alt="Menu Analysis 2"
+                    alt={t.imageAltRight}
                     className="m-0 p-0 block w-auto h-auto rounded-lg mx-auto"
                   />
                 </div>
@@ -124,7 +130,7 @@ export default function Features() {
               <div className="flex justify-center">
                 <img
                   src="/images/landing/AiGenimage.png"
-                  alt="AI Image Placeholder"
+                  alt={t.imageAltLeft}
                   className="block w-[1500px] h-auto"
                 />
               </div>
@@ -143,7 +149,7 @@ export default function Features() {
           <div className="max-w-xl text-center md:text-left">
             <h2 className="text-6xl font-bold font-libre">Execute your Menu with proper staffing</h2>
             <p className="mt-6 text-xl">
-              Get AI to create your Restaurant’s staffing schedule for you. Save up to 2 hours per
+              Get AI to create your Restaurant's staffing schedule for you. Save up to 2 hours per
               week. If someone is a no show, let our AI powered communication system take care of it.
             </p>
             <div className="mt-8">

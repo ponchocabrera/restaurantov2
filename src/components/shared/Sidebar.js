@@ -5,29 +5,34 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
 import { LogOut, Menu, X } from 'lucide-react';
+import LanguageToggle from "../LanguageToggle";
+import { useLanguage } from "@/contexts/LanguageContext";
+import en from "@/locales/en.json";
+import es from "@/locales/es.json";
+import Logo from "@/components/Sidebar/Logo";
 
 export default function Sidebar() {
+  const { language } = useLanguage();
+  const t = language === "es" ? es.sidebar : en.sidebar;
   const pathname = usePathname();
   const { data: session } = useSession();
   const [isOpen, setIsOpen] = useState(false);
 
   const menuItems = [
-    { label: 'Home', href: '/dashboard' },
-    { label: 'Your Restaurant', href: '/my-restaurants' },
-    { label: 'Menu Analysis', href: '/menu-analyzer' },
-    { label: 'Menu Enhancement', href: '/menu-creator' },
-    { label: 'Smart Publishing', href: '/menu-generator' },
-    { label: 'Restaurant Admin', href: '/restaurant-admin' },
+    { key: "home", href: "/dashboard" },
+    { key: "yourRestaurant", href: "/my-restaurants" },
+    { key: "menuAnalysis", href: "/menu-analyzer" },
+    { key: "menuEnhancement", href: "/menu-creator" },
+    { key: "restaurantAdmin", href: "/restaurant-admin" },
     { 
-      label: 'Back Office', 
-      href: '/employee-management/dashboard',
+      key: "backOffice", 
+      href: "/employee-management/dashboard",
       children: [
-        { label: 'Employee Contracts', href: '/employee-management/employees' },
-        { label: 'Scheduler', href: '/employee-management' }
+        { key: "employeeContracts", href: "/employee-management/employees" },
+        { key: "scheduler", href: "/employee-management" }
       ]
     },
-    { label: 'Research', href: '/research' },
-    { label: 'Support', href: '/support' },
+    { key: "research", href: "/research" },
   ];
 
   const handleLogout = async () => {
@@ -36,16 +41,16 @@ export default function Sidebar() {
 
   const SidebarContent = () => (
     <div className="h-full flex flex-col bg-white shadow-lg">
-      <div className="p-4 border-b border-gray-100">
-        <span className="flex flex-col">
-          <span className="text-3xl font-bold text-black font-outfit">Carte</span>
-          <span className="text-sm text-gray-600 font-outfit">Menu Intelligence</span>
-        </span>
-        {session?.user?.email && (
-          <span className="text-sm text-gray-600 mt-2 font-outfit">
-            {session.user.email}
-          </span>
-        )}
+      <div className="border-b border-gray-100">
+        <Logo />
+        <div className="px-4 pb-4">
+          <span className="text-sm text-gray-600 font-outfit">{t.tagline}</span>
+          {session?.user?.email && (
+            <span className="text-sm text-gray-600 mt-2 font-outfit">
+              {session.user.email}
+            </span>
+          )}
+        </div>
       </div>
 
       <nav className="flex-1 flex flex-col p-2 space-y-1 overflow-y-auto">
@@ -57,7 +62,7 @@ export default function Sidebar() {
                   ? 'font-bold text-lg text-black' 
                   : 'hover:bg-gray-100 text-gray-700 font-outfit'
               }`}>
-                {item.label}
+                {t.menuItems[item.key]}
               </span>
             </Link>
             {item.children && item.children.map((child) => (
@@ -67,7 +72,7 @@ export default function Sidebar() {
                     ? 'font-bold text-black' 
                     : 'hover:bg-gray-100 text-gray-500 font-outfit'
                 }`}>
-                  {child.label}
+                  {t.menuItems[child.key]}
                 </span>
               </Link>
             ))}
@@ -81,8 +86,12 @@ export default function Sidebar() {
           className="w-full flex items-center px-3 py-2 text-black rounded-lg hover:bg-gray-100 font-outfit"
         >
           <LogOut className="w-5 h-5 mr-3" />
-          Sign Out
+          {t.signOut}
         </button>
+      </div>
+
+      <div className="mt-auto">
+        <LanguageToggle />
       </div>
     </div>
   );

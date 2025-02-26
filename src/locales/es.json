@@ -1,0 +1,73 @@
+{
+  "meta": {
+    "title": "RestaurantOS",
+    "description": "Sistema de Gestión de Menús de Restaurantes"
+  },
+  "languageToggle": {
+    "english": "Inglés",
+    "spanish": "Español"
+  },
+  "hero": {
+    "title": "Optimiza tu Menú con Inteligencia Artificial",
+    "description": "Tu menú es tu herramienta de ventas más poderosa. ¿Pero está trabajando tan duro como podría ser?",
+    "upload": {
+      "placeholder": "Haz clic para subir o arrastra y suelta",
+      "subtext": "Sube tu menú y obtén tus insights",
+      "altUploaded": "Menú Subido"
+    },
+    "illustrationAlt": "Ilustración de persona"
+  },
+  "ctaSection": {
+    "title": "Desbloquea el Potencial de tu Menú",
+    "description": "Únete a miles de restaurantes que ya utilizan nuestra plataforma de optimización de menús impulsada por IA",
+    "buttonText": "Empieza Ahora"
+  },
+  "features": {
+    "sectionTitle": "Deja que la IA te ayude a comprender el rendimiento de tu restaurante y las tendencias de tu área",
+    "leftText": "Infórmate sobre lo que está en tendencia en el área de tu restaurante, ya sea un nuevo menú, plato o mejor ambiente. Avanza en tu zona con recomendaciones impulsadas por IA.",
+    "rightText": "Lleva el control de la puntuación de tu restaurante y descubre cómo te comparas con otros restaurantes en tu área. Obtén sugerencias de IA para mejorar.",
+    "imageAltLeft": "Análisis de Menú 1",
+    "imageAltRight": "Análisis de Menú 2"
+  },
+  "dashboard": {
+    "mainTitle": "Transforma tu Menú en una Máquina de Ingresos",
+    "subtitle": "Hecho Fácil con IA",
+    "description": "De análisis a optimización, en tres simples pasos. Todo realizado por Inteligencia Artificial.",
+    "aiToolsTitle": "Herramientas de IA"
+  },
+  "menuAnalyzer": {
+    "mainTitle": "Obtén mejoras basadas en investigación para tu menú con IA",
+    "title": "Analizador de Menús",
+    "description": "Sube tu menú y obtén insights e ideas impulsadas por IA para mejorar tu menú.",
+    "sidebarTitle": "Descubre el potencial de tu menú"
+  },
+  "restaurantInsights": {
+    "header": "Tu Restaurante, su área y nuevas tendencias",
+    "description": "Comprende la industria gastronómica en tu área, encuentra tendencias y descubre cómo hacer crecer tu negocio."
+  },
+  "sidebar": {
+    "menuItems": {
+      "Home": "Inicio",
+      "yourRestaurant": "Tu Restaurante",
+      "menuAnalysis": "Análisis de Menús",
+      "menuEnhancement": "Mejora de Menú",
+      "restaurantAdmin": "Administración del Restaurante",
+      "backOffice": "Back Office",
+      "employeeContracts": "Contratos de Empleados",
+      "scheduler": "Planificador",
+      "research": "Investigación"
+    },
+    "signOut": "Cerrar Sesión"
+  },
+  "restaurantCreator": {
+    "title": "Añadir un Nuevo Restaurante",
+    "inputPlaceholder": "Nombre del Restaurante",
+    "buttonText": "Crear Restaurante"
+  },
+  "translateModal": {
+    "title": "Traducir Sitio al Español",
+    "buttonTranslate": "Traducir",
+    "translating": "Traduciendo...",
+    "close": "Cerrar"
+  }
+}

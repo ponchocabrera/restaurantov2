@@ -1,5 +1,6 @@
 import './globals.css';
 import { Providers } from './providers';
+import { LanguageProvider } from "@/contexts/LanguageContext";
 
 export const metadata = {
   title: 'RestaurantOS',
@@ -10,11 +11,13 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body>
-        <Providers>
-          <div className="relative">
-            {children}
-          </div>
-        </Providers>
+        <LanguageProvider>
+          <Providers>
+            <div className="relative">
+              {children}
+            </div>
+          </Providers>
+        </LanguageProvider>
       </body>
     </html>
   );

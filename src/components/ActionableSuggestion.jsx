@@ -45,7 +45,7 @@ function ActionableSuggestion({ latestSearch, latestAnalysis }) {
   return (
     <div className="flex flex-col h-full">
       <h2 className="text-2xl font-outfit-bold mb-4 text-[#212350]">
-        Actionable Suggestion
+        Your Restaurant's last search and analysis
       </h2>
       <div className="p-8 bg-gradient-to-br from-[#212350] to-[#4B50B6] text-white rounded-2xl flex-grow flex flex-col justify-between shadow-xl">
         <p className="whitespace-pre-line">{suggestion}</p>

@@ -1,13 +1,20 @@
 'use client';
 
+import { useLanguage } from "@/contexts/LanguageContext";
+import en from "@/locales/en.json";
+import es from "@/locales/es.json";
 import Image from 'next/image';
 import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function Hero() {
+  const { language } = useLanguage();
   const [image, setImage] = useState(null);
   const router = useRouter();
+
+  // Select the appropriate translations from the JSON files
+  const t = language === "es" ? es.hero : en.hero;
 
   const handleImageUpload = (event) => {
     const file = event.target.files[0];
@@ -53,10 +60,10 @@ export default function Hero() {
         {/* Left: Heading + Upload Box */}
         <div className="text-center md:text-left space-y-5 max-w-xl mt-16 md:mt-0">
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold font-libre text-[#FFFCFC] leading-tight">
-            Dynamic Menu Optimization
+            {t.title}
           </h1>
           <p className="mt-2 text-lg text-[#FFFCFC]/90">
-            Your menu is your most powerful sales tool. But is it working as hard as it could be?
+            {t.description}
           </p>
 
           <div className="mt-6 border-2 border-dashed border-[#FFFCFC] rounded-lg p-6 text-center bg-transparent shadow-lg cursor-pointer">
@@ -79,10 +86,10 @@ export default function Hero() {
               ) : (
                 <>
                   <p className="text-[#FFFCFC] text-md font-medium">
-                    Click to upload or drag and drop
+                    {t.upload.placeholder}
                   </p>
                   <p className="mt-2 text-sm text-[#FFFCFC]">
-                    Upload your Menu and get your insights
+                    {t.upload.subtext}
                   </p>
                 </>
               )}
@@ -94,7 +101,7 @@ export default function Hero() {
         <div className="mt-8 md:mt-0 flex-1 flex justify-center md:justify-end">
           <img
             src="/images/landing/HeroImage.png"
-            alt="Person Illustration"
+            alt={t.illustrationAlt}
             className="max-w-lg w-full h-auto"
           />
         </div>

@@ -1,0 +1,73 @@
+{
+  "meta": {
+    "title": "RestaurantOS",
+    "description": "Restaurant Menu Management System"
+  },
+  "languageToggle": {
+    "english": "English",
+    "spanish": "Español"
+  },
+  "hero": {
+    "title": "Dynamic Menu Optimization",
+    "description": "Your menu is your most powerful sales tool. But is it working as hard as it could be?",
+    "upload": {
+      "placeholder": "Click to upload or drag and drop",
+      "subtext": "Upload your Menu and get your insights",
+      "altUploaded": "Uploaded Menu"
+    },
+    "illustrationAlt": "Person Illustration"
+  },
+  "ctaSection": {
+    "title": "Unlock Your Menu's Potential",
+    "description": "Join thousands of restaurants already using our AI-powered menu optimization platform",
+    "buttonText": "Get Started Now"
+  },
+  "features": {
+    "sectionTitle": "Get AI to help you understand your Restaurant's performance and what's trending in your Area",
+    "leftText": "Get notified what is trending around your Restaurant's Area, whether it is a new Menu, Dish, or improved ambiance. Get ahead in your area with AI-driven recommendations.",
+    "rightText": "Track your restaurant's Score, and see where you stand in comparison with other restaurants in your Area. Get AI-driven suggestions on how to improve!",
+    "imageAltLeft": "Menu Analysis 1",
+    "imageAltRight": "Menu Analysis 2"
+  },
+  "dashboard": {
+    "mainTitle": "Transform Your Menu into a Revenue Engine",
+    "subtitle": "Made Easy with AI",
+    "description": "From Analysis to Optimization, in three simple steps. All done by Artificial Intelligence.",
+    "aiToolsTitle": "AI Tools"
+  },
+  "menuAnalyzer": {
+    "mainTitle": "Get AI to give you Research based upgrades to your menu",
+    "title": "Menu Analyzer",
+    "description": "Upload your menu and get AI-powered insights and recommendations for your menu.",
+    "sidebarTitle": "Discover your Menu's potential"
+  },
+  "restaurantInsights": {
+    "header": "Your Restaurant, it's area and new food trends",
+    "description": "Understand the food business industry around your Area, find trends and understand how to grow your business."
+  },
+  "sidebar": {
+    "menuItems": {
+      "home": "Home",
+      "yourRestaurant": "Your Restaurant",
+      "menuAnalysis": "Menu Analysis",
+      "menuEnhancement": "Menu Enhancement",
+      "restaurantAdmin": "Restaurant Admin",
+      "backOffice": "Back Office",
+      "employeeContracts": "Employee Contracts",
+      "scheduler": "Scheduler",
+      "research": "Research"
+    },
+    "signOut": "Sign Out"
+  },
+  "restaurantCreator": {
+    "title": "Add a New Restaurant",
+    "inputPlaceholder": "Restaurant Name",
+    "buttonText": "Create Restaurant"
+  },
+  "translateModal": {
+    "title": "Translate Site to Spanish",
+    "buttonTranslate": "Translate",
+    "translating": "Translating...",
+    "close": "Close"
+  }
+}
