@@ -23,7 +23,7 @@
     "buttonText": "Empieza Ahora"
   },
   "features": {
-    "sectionTitle": "Deja que la IA te ayude a comprender el rendimiento de tu restaurante y las tendencias de tu área",
+    "sectionTitle": "Deja que la Inteligencia Artificial te ayude a comprender el rendimiento de tu restaurante y las tendencias de tu área",
     "leftText": "Infórmate sobre lo que está en tendencia en el área de tu restaurante, ya sea un nuevo menú, plato o mejor ambiente. Avanza en tu zona con recomendaciones impulsadas por IA.",
     "rightText": "Lleva el control de la puntuación de tu restaurante y descubre cómo te comparas con otros restaurantes en tu área. Obtén sugerencias de IA para mejorar.",
     "imageAltLeft": "Análisis de Menú 1",
@@ -39,7 +39,15 @@
     "mainTitle": "Obtén mejoras basadas en investigación para tu menú con IA",
     "title": "Analizador de Menús",
     "description": "Sube tu menú y obtén insights e ideas impulsadas por IA para mejorar tu menú.",
-    "sidebarTitle": "Descubre el potencial de tu menú"
+    "sidebarTitle": "Descubre el potencial de tu menú",
+    "resultsTitle": "Resultados del Análisis de Menú",
+    "resultsSubtitle": "Insights impulsados por IA para tu menú basados en investigación científica",
+    "explanationToggleLabel": "¿Cómo se analiza tu menú?",
+    "explanationContent": "Nuestra IA analiza tu menú utilizando un proceso de múltiples pasos, evaluando el diseño, la estructura, la maqueta y la legibilidad. Analiza hasta 150 puntos diferentes de tu menú y proporciona explicaciones detalladas sobre por qué esto es beneficioso o no para tu negocio. Los insights se generan basados en investigaciones científicas y en las mejores prácticas de la industria.",
+    "analyzeButton": "Analizar Menú",
+    "analyzingLabel": "Analizando...",
+    "viewRecommendationsButton": "Ver Recomendaciones",
+    "applyAnalysisButton": "Aplicar Análisis"
   },
   "restaurantInsights": {
     "header": "Tu Restaurante, su área y nuevas tendencias",
@@ -49,12 +57,12 @@
     "menuItems": {
       "Home": "Inicio",
       "yourRestaurant": "Tu Restaurante",
-      "menuAnalysis": "Análisis de Menús",
-      "menuEnhancement": "Mejora de Menú",
-      "restaurantAdmin": "Administración del Restaurante",
+      "menuAnalysis": "Analiza tu Menú",
+      "menuEnhancement": "Mejora tu Menú",
+      "restaurantAdmin": "Administra tu Restaurante",
       "backOffice": "Back Office",
       "employeeContracts": "Contratos de Empleados",
-      "scheduler": "Planificador",
+      "scheduler": "Planificador de turnos",
       "research": "Investigación"
     },
     "signOut": "Cerrar Sesión"

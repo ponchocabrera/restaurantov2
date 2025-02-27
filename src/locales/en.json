@@ -39,7 +39,15 @@
     "mainTitle": "Get AI to give you Research based upgrades to your menu",
     "title": "Menu Analyzer",
     "description": "Upload your menu and get AI-powered insights and recommendations for your menu.",
-    "sidebarTitle": "Discover your Menu's potential"
+    "sidebarTitle": "Discover your Menu's potential",
+    "resultsTitle": "Menu Analysis Results",
+    "resultsSubtitle": "AI-powered insights for your menu backed by Scientific Research",
+    "explanationToggleLabel": "How does your Menu get Analyzed?",
+    "explanationContent": "Our AI analyzes your menu using a multi-step process, evaluating design, structure, layout, and readability. It analyzes up to 150 different points from your menu and provides detailed explanations on why this is beneficial or not for your business. Insights are generated based on scientific research and industry best practices.",
+    "analyzeButton": "Analyze Menu",
+    "analyzingLabel": "Analyzing...",
+    "viewRecommendationsButton": "View Recommendations",
+    "applyAnalysisButton": "Apply Analysis"
   },
   "restaurantInsights": {
     "header": "Your Restaurant, it's area and new food trends",
@@ -47,7 +55,7 @@
   },
   "sidebar": {
     "menuItems": {
-      "home": "Home",
+      "Home": "Home",
       "yourRestaurant": "Your Restaurant",
       "menuAnalysis": "Menu Analysis",
       "menuEnhancement": "Menu Enhancement",

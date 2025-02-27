@@ -15,6 +15,7 @@ import { MenuPreview } from '../menu-preview/MenuPreview';
 import ImportExportModal from './ImportExportModal';
 import { toast } from 'react-hot-toast';
 import { generateImage } from '@/services/imageService';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function MenuCreator() {
   // -------------------------------------------------------------------------
@@ -65,6 +66,186 @@ export default function MenuCreator() {
 
   // Success modal
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+
+  // Use context to get the current language (assumes "en" or "es")
+  const { language } = useLanguage();
+
+  // Define our inline translation strings. Feel free to add any additional keys needed.
+  const translations = {
+    en: {
+      pageTitle: "Create and Enhance Menu Items Images and Descriptions",
+      subTitle: "Menu Enhancement",
+      pageDescription: "Design and Manage your Menu with Ease. Add your Menu, and let the AI do the rest.",
+      selectRestaurant: "Select a Restaurant",
+      selectRestaurantOption: "Select a Restaurant",
+      selectOrCreateMenu: "Select or Create a Menu",
+      createNewMenuOption: "Create a new menu or pick an existing one",
+      ifNewMenu: "If New Menu: Add Menu Name Here",
+      addItem: "Add Item",
+      importMenu: "Import Menu",
+      deleteMenu: "Delete Menu",
+      aiSettings: "AI Settings",
+      brandVoice: "Brand Voice",
+      brandVoicePlaceholder: "e.g. upscale, fun, quirky...",
+      desiredStyle: "Desired Style",
+      styleOptions: {
+        modern: "Modern",
+        classic: "Classic",
+        rustic: "Rustic"
+      },
+      tone: "Tone",
+      toneOptions: {
+        friendly: "Friendly",
+        quirky: "Quirky",
+        serious: "Serious",
+        funny: "Funny",
+        romantic: "Romantic"
+      },
+      addNewItem: "Add New Item",
+      itemName: "Item Name",
+      price: "Price",
+      description: "Description",
+      performance: "Performance",
+      selectPerformance: "Select Performance",
+      performanceOptions: {
+        bestSeller: "Best Seller",
+        regularSeller: "Regular Seller",
+        notSelling: "Not Selling"
+      },
+      margin: "Margin",
+      selectMargin: "Select Margin",
+      marginOptions: {
+        highMargin: "High Margin",
+        midMargin: "Mid Margin",
+        lowMargin: "Low Margin",
+        redMargin: "Red Margin"
+      },
+      boost: "Boost",
+      boostLabel: "Want to Boost?",
+      cancel: "Cancel",
+      add: "Add Item",
+      searchPlaceholder: "Search menu items...",
+      table: {
+        name: "Name",
+        description: "Description",
+        price: "Price",
+        category: "Category",
+        performance: "Performance",
+        margin: "Margin",
+        boost: "Boost",
+        image: "Image",
+        actions: "Actions"
+      },
+      generateImage: "Generate",
+      generatingImage: "Generating...",
+      imageGeneratedSuccess: "Image generated successfully! Don't forget to save.",
+      removeImageConfirm: "Remove this image?",
+      imageRemoved: "Image removed. Remember to save!",
+      noMenuSelectedDelete: "No menu selected to delete.",
+      deleteMenuConfirm: "Are you sure you want to DELETE this menu?",
+      menuDeleted: "Menu deleted!",
+      deleteMenuFailed: "Failed to delete menu",
+      edit: "Edit",
+      enhance: "Enhance",
+      save: "Save",
+      close: "Close",
+      imageThumbnailAlt: "Item Image",
+      menuSaved: "Menu Saved Successfully!",
+      menuSavedMessage: "\"{menuName}\" has been saved to your restaurant's menu list.",
+      previewMenu: "Preview Menu",
+      saveChanges: "Save Changes",
+      createMenu: "Create Menu",
+      notSet: "(Not Set)"
+    },
+    es: {
+      pageTitle: "Crea y Mejora las Imágenes y Descripciones de los Ítems del Menú",
+      subTitle: "Mejora del Menú",
+      pageDescription: "Diseña y administra tu menú con facilidad. Agrega tu menú, y deja que la IA haga el resto.",
+      selectRestaurant: "Selecciona un Restaurante",
+      selectRestaurantOption: "Selecciona un Restaurante",
+      selectOrCreateMenu: "Selecciona o Crea un Menú",
+      createNewMenuOption: "Crea un menú nuevo o elige uno existente",
+      ifNewMenu: "Si es un menú nuevo: Ingresa el nombre del menú",
+      addItem: "Agregar Ítem",
+      importMenu: "Importar Menú",
+      deleteMenu: "Eliminar Menú",
+      aiSettings: "Configuración de la IA",
+      brandVoice: "Voz de Marca",
+      brandVoicePlaceholder: "p.ej. sofisticado, divertido, peculiar...",
+      desiredStyle: "Estilo Deseado",
+      styleOptions: {
+        modern: "Moderno",
+        classic: "Clásico",
+        rustic: "Rústico"
+      },
+      tone: "Tono",
+      toneOptions: {
+        friendly: "Amistoso",
+        quirky: "Peculiar",
+        serious: "Serio",
+        funny: "Divertido",
+        romantic: "Romántico"
+      },
+      addNewItem: "Agregar Nuevo Ítem",
+      itemName: "Nombre del Ítem",
+      price: "Precio",
+      description: "Descripción",
+      performance: "Desempeño",
+      selectPerformance: "Selecciona Desempeño",
+      performanceOptions: {
+        bestSeller: "Más Vendido",
+        regularSeller: "Vendedor Regular",
+        notSelling: "No se Vende"
+      },
+      margin: "Margen",
+      selectMargin: "Selecciona Margen",
+      marginOptions: {
+        highMargin: "Alto Margen",
+        midMargin: "Margen Medio",
+        lowMargin: "Bajo Margen",
+        redMargin: "Margen Rojo"
+      },
+      boost: "Impulso",
+      boostLabel: "¿Desea impulsar?",
+      cancel: "Cancelar",
+      add: "Agregar Ítem",
+      searchPlaceholder: "Buscar ítems del menú...",
+      table: {
+        name: "Nombre",
+        description: "Descripción",
+        price: "Precio",
+        category: "Categoría",
+        performance: "Desempeño",
+        margin: "Margen",
+        boost: "Impulso",
+        image: "Imagen",
+        actions: "Acciones"
+      },
+      generateImage: "Generar",
+      generatingImage: "Generando...",
+      imageGeneratedSuccess: "¡Imagen generada exitosamente! No olvides guardar.",
+      removeImageConfirm: "¿Eliminar esta imagen?",
+      imageRemoved: "Imagen eliminada. ¡Recuerda guardar!",
+      noMenuSelectedDelete: "No se seleccionó un menú para eliminar.",
+      deleteMenuConfirm: "¿Estás seguro de que deseas ELIMINAR este menú?",
+      menuDeleted: "¡Menú eliminado!",
+      deleteMenuFailed: "Error al eliminar el menú",
+      edit: "Editar",
+      enhance: "Mejorar",
+      save: "Guardar",
+      close: "Cerrar",
+      imageThumbnailAlt: "Imagen del Ítem",
+      menuSaved: "¡Menú guardado exitosamente!",
+      menuSavedMessage: "\"{menuName}\" ha sido guardado en la lista de menús de tu restaurante.",
+      previewMenu: "Previsualizar Menú",
+      saveChanges: "Guardar Cambios",
+      createMenu: "Crear Menú",
+      notSet: "(No establecido)"
+    }
+  };
+
+  // Pick the right translation set based on the current language.
+  const t = language === 'es' ? translations.es : translations.en;
 
   // -------------------------------------------------------------------------
   // [1A] FILTERED MENU ITEMS
@@ -382,7 +563,7 @@ export default function MenuCreator() {
         throw new Error(imageUrl.message);
       }
       updateMenuItem(index, 'image_url', imageUrl);
-      toast.success('Image generated successfully! Don’t forget to save.');
+      toast.success(t.imageGeneratedSuccess);
     } catch (err) {
       console.error('Image generation error:', err);
       toast.error(err.message);
@@ -392,9 +573,9 @@ export default function MenuCreator() {
   }
 
   function handleRemoveImage(index) {
-    if (!confirm('Remove this image?')) return;
+    if (!confirm(t.removeImageConfirm)) return;
     updateMenuItem(index, 'image_url', '');
-    alert('Image removed. Remember to save!');
+    alert(t.imageRemoved);
   }
 
   function enlargeImage(url) {
@@ -409,10 +590,10 @@ export default function MenuCreator() {
   // -------------------------------------------------------------------------
   async function deleteMenuFromDB() {
     if (!selectedMenuId) {
-      alert('No menu selected to delete.');
+      alert(t.noMenuSelectedDelete);
       return;
     }
-    if (!confirm('Are you sure you want to DELETE this menu?')) return;
+    if (!confirm(t.deleteMenuConfirm)) return;
     try {
       const res = await fetch(`/api/menus/${selectedMenuId}`, {
         method: 'DELETE',
@@ -425,10 +606,10 @@ export default function MenuCreator() {
       setMenuName('');
       setMenuItems([]);
       setIsMenuChanged(false);
-      alert('Menu deleted!');
+      alert(t.menuDeleted);
     } catch (error) {
       console.error('Error deleting menu:', error);
-      alert('Failed to delete menu');
+      alert(t.deleteMenuFailed);
     }
   }
 
@@ -515,13 +696,13 @@ export default function MenuCreator() {
       {/* Title Block */}
       <div className="max-w-screen-xl mx-auto pt-8 px-4">
         <h1 className="text-5xl font-bold font-libre text-gray-900 mb-1">
-          Create and Enhance Menu Items Images and Descriptions
+          {t.pageTitle}
         </h1>
         <h2 className="text-2xl outfit-bold text-gray-800 mb-2">
-          Menu Enhancement
+          {t.subTitle}
         </h2>
         <p className="text-lg font-work-sans text-gray-600 mb-8">
-          Design and Manage your Menu with Ease. Add your Menu, and let the AI do the rest.
+          {t.pageDescription}
         </p>
 
         {/* First row of selects: Restaurant, Menu, If new => input */}
@@ -529,7 +710,7 @@ export default function MenuCreator() {
           {/* Select a Restaurant */}
           <div className="flex flex-col">
             <label className="text-sm font-medium text-gray-700 mb-1">
-              Select a Restaurant
+              {t.selectRestaurant}
             </label>
             <select
               value={selectedRestaurantId || ''}
@@ -537,7 +718,7 @@ export default function MenuCreator() {
               className="p-3 border border-gray-200 rounded focus:outline-none bg-white"
             >
               <option value="" disabled>
-                Select a Restaurant
+                {t.selectRestaurantOption}
               </option>
               {restaurants.map((rest) => (
                 <option key={rest.id} value={rest.id}>
@@ -551,7 +732,7 @@ export default function MenuCreator() {
           {selectedRestaurantId && (
             <div className="flex flex-col">
               <label className="text-sm font-medium text-gray-700 mb-1">
-                Select or Create a Menu
+                {t.selectOrCreateMenu}
               </label>
               <select
                 value={selectedMenuId || ''}
@@ -559,7 +740,7 @@ export default function MenuCreator() {
                 className="p-3 border border-gray-200 rounded focus:outline-none bg-white"
               >
                 <option value="" disabled>
-                  Create a new menu or pick an existing one
+                  {t.createNewMenuOption}
                 </option>
                 {savedMenus.map((menu) => (
                   <option key={menu.id} value={menu.id}>
@@ -574,7 +755,7 @@ export default function MenuCreator() {
           {selectedRestaurantId && selectedMenuId === null && (
             <div className="flex flex-col">
               <label className="text-sm font-medium text-gray-700 mb-1">
-                If New Menu: Add Menu Name Here
+                {t.ifNewMenu}
               </label>
               <input
                 type="text"
@@ -590,20 +771,20 @@ export default function MenuCreator() {
           )}
         </div>
 
-        {/* Buttons row: Add Item, Import, AI Settings, Delete (if any), etc. */}
+        {/* Buttons row: Add Item, Import, AI Settings, Delete, etc. */}
         <div className="flex flex-wrap items-center gap-3 mb-6">
           <button
             onClick={() => setShowAddItemForm(!showAddItemForm)}
             className="bg-[#212350] text-white px-5 py-2 rounded-full font-work-sans hover:bg-[#322fc1]"
           >
-            Add Item
+            {t.addItem}
           </button>
 
           <button
             onClick={() => setShowImportExport(true)}
             className="px-5 py-2 border border-gray-300 rounded-full hover:bg-gray-50 text-sm font-medium"
           >
-            Import Menu
+            {t.importMenu}
           </button>
 
           {selectedMenuId && (
@@ -612,7 +793,7 @@ export default function MenuCreator() {
               className="flex items-center gap-1 text-red-600 hover:text-red-700 text-sm font-medium"
             >
               <Trash2 className="w-4 h-4" />
-              Delete Menu
+              {t.deleteMenu}
             </button>
           )}
 
@@ -620,7 +801,7 @@ export default function MenuCreator() {
             onClick={() => setShowAiSettings(!showAiSettings)}
             className="px-5 py-2 border border-gray-300 rounded-full hover:bg-gray-50 text-sm font-medium"
           >
-            AI Settings
+            {t.aiSettings}
           </button>
         </div>
 
@@ -628,52 +809,52 @@ export default function MenuCreator() {
         {showAiSettings && (
           <div className="p-4 mb-6 rounded bg-white shadow">
             <h3 className="text-lg font-semibold text-gray-800 mb-3">
-              AI Settings
+              {t.aiSettings}
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {/* Brand Voice */}
               <div className="flex flex-col">
                 <label className="text-sm font-medium text-gray-700 mb-1">
-                  Brand Voice
+                  {t.brandVoice}
                 </label>
                 <input
                   type="text"
                   value={brandVoice}
                   onChange={(e) => setBrandVoice(e.target.value)}
-                  placeholder="e.g. upscale, fun, quirky..."
+                  placeholder={t.brandVoicePlaceholder}
                   className="p-3 border border-gray-200 rounded"
                 />
               </div>
-              {/* Style Wanted */}
+              {/* Desired Style */}
               <div className="flex flex-col">
                 <label className="text-sm font-medium text-gray-700 mb-1">
-                  Desired Style
+                  {t.desiredStyle}
                 </label>
                 <select
                   value={styleWanted}
                   onChange={(e) => setStyleWanted(e.target.value)}
                   className="p-3 border border-gray-200 rounded"
                 >
-                  <option value="modern">Modern</option>
-                  <option value="classic">Classic</option>
-                  <option value="rustic">Rustic</option>
+                  <option value="modern">{t.styleOptions.modern}</option>
+                  <option value="classic">{t.styleOptions.classic}</option>
+                  <option value="rustic">{t.styleOptions.rustic}</option>
                 </select>
               </div>
               {/* Tone */}
               <div className="flex flex-col">
                 <label className="text-sm font-medium text-gray-700 mb-1">
-                  Tone
+                  {t.tone}
                 </label>
                 <select
                   value={tone}
                   onChange={(e) => setTone(e.target.value)}
                   className="p-3 border border-gray-200 rounded"
                 >
-                  <option value="friendly">Friendly</option>
-                  <option value="quirky">Quirky</option>
-                  <option value="serious">Serious</option>
-                  <option value="funny">Funny</option>
-                  <option value="romantic">Romantic</option>
+                  <option value="friendly">{t.toneOptions.friendly}</option>
+                  <option value="quirky">{t.toneOptions.quirky}</option>
+                  <option value="serious">{t.toneOptions.serious}</option>
+                  <option value="funny">{t.toneOptions.funny}</option>
+                  <option value="romantic">{t.toneOptions.romantic}</option>
                 </select>
               </div>
             </div>
@@ -683,20 +864,20 @@ export default function MenuCreator() {
         {/* Add Item Form (collapsible) */}
         {showAddItemForm && (
           <div className="p-4 mb-6 bg-white shadow rounded">
-            <h3 className="text-md font-semibold mb-3">Add New Item</h3>
+            <h3 className="text-md font-semibold mb-3">{t.addNewItem}</h3>
             <div className="space-y-4">
               {/* Row 1: Name & Price */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <input
                   type="text"
-                  placeholder="Item Name"
+                  placeholder={t.itemName}
                   value={newItemName}
                   onChange={(e) => setNewItemName(e.target.value)}
                   className="p-3 border border-gray-200 rounded"
                 />
                 <input
                   type="number"
-                  placeholder="Price"
+                  placeholder={t.price}
                   value={newItemPrice}
                   onChange={(e) => setNewItemPrice(e.target.value)}
                   className="p-3 border border-gray-200 rounded"
@@ -704,7 +885,7 @@ export default function MenuCreator() {
               </div>
               {/* Row 2: Description */}
               <textarea
-                placeholder="Description"
+                placeholder={t.description}
                 value={newItemDescription}
                 onChange={(e) => setNewItemDescription(e.target.value)}
                 rows={2}
@@ -717,21 +898,21 @@ export default function MenuCreator() {
                   onChange={(e) => setNewItemSalesPerformance(e.target.value)}
                   className="p-3 border border-gray-200 rounded"
                 >
-                  <option value="">Select Performance</option>
-                  <option value="best_seller">Best Seller</option>
-                  <option value="regular_seller">Regular Seller</option>
-                  <option value="not_selling">Not Selling</option>
+                  <option value="">{t.selectPerformance}</option>
+                  <option value="best_seller">{t.performanceOptions.bestSeller}</option>
+                  <option value="regular_seller">{t.performanceOptions.regularSeller}</option>
+                  <option value="not_selling">{t.performanceOptions.notSelling}</option>
                 </select>
                 <select
                   value={newItemMarginLevel}
                   onChange={(e) => setNewItemMarginLevel(e.target.value)}
                   className="p-3 border border-gray-200 rounded"
                 >
-                  <option value="">Select Margin</option>
-                  <option value="high_margin">High Margin</option>
-                  <option value="mid_margin">Mid Margin</option>
-                  <option value="low_margin">Low Margin</option>
-                  <option value="red_margin">Red Margin</option>
+                  <option value="">{t.selectMargin}</option>
+                  <option value="high_margin">{t.marginOptions.highMargin}</option>
+                  <option value="mid_margin">{t.marginOptions.midMargin}</option>
+                  <option value="low_margin">{t.marginOptions.lowMargin}</option>
+                  <option value="red_margin">{t.marginOptions.redMargin}</option>
                 </select>
                 <div className="flex items-center space-x-2">
                   <input
@@ -741,7 +922,7 @@ export default function MenuCreator() {
                     className="w-4 h-4"
                   />
                   <label className="text-sm text-gray-700">
-                    Want to Boost?
+                    {t.boostLabel}
                   </label>
                 </div>
               </div>
@@ -752,13 +933,13 @@ export default function MenuCreator() {
                 onClick={() => setShowAddItemForm(false)}
                 className="px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
               >
-                Cancel
+                {t.cancel}
               </button>
               <button
                 onClick={addMenuItem}
                 className="px-4 py-2 bg-[#3b3ace] text-white rounded font-medium hover:bg-[#322fc1]"
               >
-                Add Item
+                {t.add}
               </button>
             </div>
           </div>
@@ -768,7 +949,7 @@ export default function MenuCreator() {
         <div className="mb-4">
           <input
             type="text"
-            placeholder="Search menu items..."
+            placeholder={t.searchPlaceholder}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="p-3 border border-gray-200 rounded w-full"
@@ -780,15 +961,15 @@ export default function MenuCreator() {
           <table className="min-w-full text-sm">
             <thead className="bg-[#f8f8f8] text-[#666] uppercase text-xs">
               <tr>
-                <th className="px-4 py-3 text-left">Name</th>
-                <th className="px-4 py-3 text-left">Description</th>
-                <th className="px-4 py-3 text-left">Price</th>
-                <th className="px-4 py-3 text-left">Category</th>
-                <th className="px-4 py-3 text-left">Performance</th>
-                <th className="px-4 py-3 text-left">Margin</th>
-                <th className="px-4 py-3 text-left">Boost</th>
-                <th className="px-4 py-3 text-left">Image</th>
-                <th className="px-4 py-3 text-left">Actions</th>
+                <th className="px-4 py-3 text-left">{t.table.name}</th>
+                <th className="px-4 py-3 text-left">{t.table.description}</th>
+                <th className="px-4 py-3 text-left">{t.table.price}</th>
+                <th className="px-4 py-3 text-left">{t.table.category}</th>
+                <th className="px-4 py-3 text-left">{t.table.performance}</th>
+                <th className="px-4 py-3 text-left">{t.table.margin}</th>
+                <th className="px-4 py-3 text-left">{t.table.boost}</th>
+                <th className="px-4 py-3 text-left">{t.table.image}</th>
+                <th className="px-4 py-3 text-left">{t.table.actions}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 text-gray-700">
@@ -804,22 +985,16 @@ export default function MenuCreator() {
                   return (
                     <tr key={item.id ?? idx} className="hover:bg-gray-50">
                       {/* Name */}
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        {item.name}
-                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">{item.name}</td>
                       {/* Description */}
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        {item.description}
-                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">{item.description}</td>
                       {/* Price */}
                       <td className="px-4 py-3 whitespace-nowrap">
                         {isEditing ? (
                           <input
                             type="number"
                             value={item.price}
-                            onChange={(e) =>
-                              updateMenuItem(idx, 'price', e.target.value)
-                            }
+                            onChange={(e) => updateMenuItem(idx, 'price', e.target.value)}
                             className="w-20 p-1 border border-gray-200 rounded"
                           />
                         ) : (
@@ -832,9 +1007,7 @@ export default function MenuCreator() {
                           <input
                             type="text"
                             value={item.category || ''}
-                            onChange={(e) =>
-                              updateMenuItem(idx, 'category', e.target.value)
-                            }
+                            onChange={(e) => updateMenuItem(idx, 'category', e.target.value)}
                             className="p-1 border border-gray-200 rounded w-28"
                           />
                         ) : (
@@ -847,35 +1020,35 @@ export default function MenuCreator() {
                           <select
                             value={item.sales_performance || ''}
                             onChange={(e) =>
-                              updateMenuItem(
-                                idx,
-                                'sales_performance',
-                                e.target.value
-                              )
+                              updateMenuItem(idx, 'sales_performance', e.target.value)
                             }
                             className="p-1 border border-gray-200 rounded"
                           >
-                            <option value="">Not Set</option>
-                            <option value="best_seller">Best Seller</option>
-                            <option value="regular_seller">Regular Seller</option>
-                            <option value="not_selling">Not Selling</option>
+                            <option value="">{t.selectPerformance}</option>
+                            <option value="best_seller">
+                              {t.performanceOptions.bestSeller}
+                            </option>
+                            <option value="regular_seller">
+                              {t.performanceOptions.regularSeller}
+                            </option>
+                            <option value="not_selling">
+                              {t.performanceOptions.notSelling}
+                            </option>
                           </select>
                         ) : item.sales_performance === 'best_seller' ? (
                           <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs">
-                            Best Seller
+                            {t.performanceOptions.bestSeller}
                           </span>
                         ) : item.sales_performance === 'regular_seller' ? (
                           <span className="bg-gray-100 text-gray-800 px-2 py-1 rounded text-xs">
-                            Regular
+                            {t.performanceOptions.regularSeller}
                           </span>
                         ) : item.sales_performance === 'not_selling' ? (
                           <span className="bg-red-100 text-red-600 px-2 py-1 rounded text-xs">
-                            Not Selling
+                            {t.performanceOptions.notSelling}
                           </span>
                         ) : (
-                          <span className="text-xs text-gray-400">
-                            (Not Set)
-                          </span>
+                          <span className="text-xs text-gray-400">{t.notSet}</span>
                         )}
                       </td>
                       {/* Margin */}
@@ -888,32 +1061,38 @@ export default function MenuCreator() {
                             }
                             className="p-1 border border-gray-200 rounded"
                           >
-                            <option value="">Not Set</option>
-                            <option value="high_margin">High Margin</option>
-                            <option value="mid_margin">Mid Margin</option>
-                            <option value="low_margin">Low Margin</option>
-                            <option value="red_margin">Red Margin</option>
+                            <option value="">{t.selectMargin}</option>
+                            <option value="high_margin">
+                              {t.marginOptions.highMargin}
+                            </option>
+                            <option value="mid_margin">
+                              {t.marginOptions.midMargin}
+                            </option>
+                            <option value="low_margin">
+                              {t.marginOptions.lowMargin}
+                            </option>
+                            <option value="red_margin">
+                              {t.marginOptions.redMargin}
+                            </option>
                           </select>
                         ) : item.margin_level === 'high_margin' ? (
                           <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
-                            High Margin
+                            {t.marginOptions.highMargin}
                           </span>
                         ) : item.margin_level === 'mid_margin' ? (
                           <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs">
-                            Mid Margin
+                            {t.marginOptions.midMargin}
                           </span>
                         ) : item.margin_level === 'low_margin' ? (
                           <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs">
-                            Low Margin
+                            {t.marginOptions.lowMargin}
                           </span>
                         ) : item.margin_level === 'red_margin' ? (
                           <span className="bg-red-100 text-red-600 px-2 py-1 rounded text-xs">
-                            Red Margin
+                            {t.marginOptions.redMargin}
                           </span>
                         ) : (
-                          <span className="text-xs text-gray-400">
-                            (Not Set)
-                          </span>
+                          <span className="text-xs text-gray-400">{t.notSet}</span>
                         )}
                       </td>
                       {/* Boost */}
@@ -926,17 +1105,14 @@ export default function MenuCreator() {
                               updateMenuItem(idx, 'boost_desired', e.target.checked)
                             }
                           />
+                        ) : item.boost_desired ? (
+                          <span className="inline-block bg-[#E5DEFF] text-[#5B49FF] px-2 py-1 rounded-full text-xs font-medium">
+                            Active
+                          </span>
                         ) : (
-                          // Show a pill: Active (purple) / Inactive (gray)
-                          item.boost_desired ? (
-                            <span className="inline-block bg-[#E5DEFF] text-[#5B49FF] px-2 py-1 rounded-full text-xs font-medium">
-                              Active
-                            </span>
-                          ) : (
-                            <span className="inline-block bg-gray-200 text-gray-600 px-2 py-1 rounded-full text-xs font-medium">
-                              Inactive
-                            </span>
-                          )
+                          <span className="inline-block bg-gray-200 text-gray-600 px-2 py-1 rounded-full text-xs font-medium">
+                            Inactive
+                          </span>
                         )}
                       </td>
                       {/* Image */}
@@ -945,24 +1121,21 @@ export default function MenuCreator() {
                           <div className="flex items-center gap-1">
                             <img
                               src={item.image_url}
-                              alt="Item"
+                              alt={t.imageThumbnailAlt}
                               className="h-8 w-8 rounded-full cursor-pointer"
                               onClick={() => enlargeImage(item.image_url)}
                             />
-                            {/* Remove button if not editing in-line */}
                             {!isEditing && (
                               <button
                                 onClick={() => handleRemoveImage(idx)}
                                 className="text-red-600 text-xs hover:underline"
                               >
-                                Remove
+                                {t.removeImageConfirm}
                               </button>
                             )}
                           </div>
                         ) : isEditing ? (
-                          <span className="text-xs text-gray-400">
-                            (Generate or leave empty)
-                          </span>
+                          <span className="text-xs text-gray-400">(Generate or leave empty)</span>
                         ) : (
                           <button
                             onClick={() => generateImageForItem(item, idx)}
@@ -976,10 +1149,10 @@ export default function MenuCreator() {
                             {generatingImages[idx] ? (
                               <span className="flex items-center gap-1">
                                 <RefreshCw className="w-3 h-3 animate-spin" />
-                                Generating...
+                                {t.generatingImage}
                               </span>
                             ) : (
-                              'Generate'
+                              t.generateImage
                             )}
                           </button>
                         )}
@@ -994,14 +1167,14 @@ export default function MenuCreator() {
                                 className="text-green-600 hover:text-green-800 flex items-center gap-1"
                               >
                                 <Check className="w-4 h-4" />
-                                <span className="text-xs">Save</span>
+                                <span className="text-xs">{t.save}</span>
                               </button>
                               <button
                                 onClick={handleCancelEdit}
                                 className="text-red-600 hover:text-red-800 flex items-center gap-1"
                               >
                                 <X className="w-4 h-4" />
-                                <span className="text-xs">Cancel</span>
+                                <span className="text-xs">{t.cancel}</span>
                               </button>
                             </>
                           ) : (
@@ -1011,13 +1184,13 @@ export default function MenuCreator() {
                                 className="text-[#5B49FF] hover:text-[#3b3ace] flex items-center gap-1"
                               >
                                 <Edit2 className="w-4 h-4" />
-                                <span className="text-xs">Edit</span>
+                                <span className="text-xs">{t.edit}</span>
                               </button>
                               <button
                                 onClick={() => enhanceItemDescription(item, idx)}
                                 className="text-[#5B49FF] hover:text-[#3b3ace] flex items-center gap-1 text-xs"
                               >
-                                Enhance
+                                {t.enhance}
                               </button>
                               <button
                                 onClick={() => removeMenuItem(idx)}
@@ -1044,23 +1217,21 @@ export default function MenuCreator() {
             className="flex items-center justify-center px-4 py-2 border border-[#5B49FF] text-[#5B49FF] rounded-full hover:bg-[#5B49FF] hover:text-white"
           >
             <Eye className="w-4 h-4 mr-2" />
-            Preview Menu
+            {t.previewMenu}
           </button>
           {isMenuChanged && filteredMenuItems.length > 0 && (
             <button
               onClick={saveMenuToDB}
               disabled={!selectedRestaurantId || isLoading}
               className={`flex items-center justify-center px-4 py-2 rounded text-white ${
-                isLoading
-                  ? 'bg-opacity-70'
-                  : 'bg-[#5B49FF] hover:bg-[#3b3ace]'
+                isLoading ? 'bg-opacity-70' : 'bg-[#5B49FF] hover:bg-[#3b3ace]'
               }`}
             >
               {isLoading
                 ? 'Saving...'
                 : selectedMenuId
-                ? 'Save Changes'
-                : 'Create Menu'}
+                ? t.saveChanges
+                : t.createMenu}
             </button>
           )}
         </div>
@@ -1099,7 +1270,7 @@ export default function MenuCreator() {
               onClick={closeEnlargedImage}
               className="absolute top-2 right-2 text-white bg-black bg-opacity-50 rounded-full p-2 hover:bg-opacity-70 transition"
             >
-              <Minimize2 className="w-5 h-5" />
+              <X className="w-5 h-5" />
             </button>
           </div>
         </div>
@@ -1128,16 +1299,16 @@ export default function MenuCreator() {
                 <Check className="h-6 w-6 text-green-600" />
               </div>
               <h3 className="text-lg font-medium text-gray-900 mb-2">
-                Menu Saved Successfully!
+                {t.menuSaved}
               </h3>
               <p className="text-sm text-gray-500 mb-6">
-                “{menuName}” has been saved to your restaurant’s menu list.
+                {t.menuSavedMessage.replace("{menuName}", menuName)}
               </p>
               <button
                 onClick={() => setShowSuccessModal(false)}
                 className="w-full inline-flex justify-center rounded-md border border-transparent px-4 py-2 bg-green-600 text-sm font-medium text-white hover:bg-green-700"
               >
-                Close
+                {t.close}
               </button>
             </div>
           </div>

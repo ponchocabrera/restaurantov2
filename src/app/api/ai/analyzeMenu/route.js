@@ -18,8 +18,102 @@ export async function POST(request) {
   const userId = session.user.id;
 
   try {
-    const { type, imageData } = await request.json();
+    const { type, imageData, language } = await request.json();
     console.log('Analysis type:', type);
+
+    // Determine if Spanish output is required
+    const shouldRespondInSpanish = language === "es";
+    const languageInstruction = shouldRespondInSpanish
+      ? "Responde en español."
+      : "";
+    
+    // Define your system prompt. Append the instruction if needed.
+    const systemPrompt = `
+      You are an expert menu design analyst with deep knowledge of restaurant psychology, design principles, and menu engineering.
+      Analyze this menu and provide an extremely detailed analysis in the following sections:
+      
+      STRUCTURE:
+      - List all menu sections and categories
+      - Detail the hierarchy and organization
+      - Analyze section placement and flow
+      - Note any special features or callouts
+      - Evaluate the information architecture
+      - Analyze category balance and item distribution
+      - Identify menu complexity level
+      - Review section ordering logic
+      
+      DESIGN:
+      - Typography analysis (fonts, sizes, weights, spacing)
+      - Layout patterns and grid system used
+      - Visual hierarchy implementation
+      - White space utilization
+      - Decorative elements and their purpose
+      - Text alignment and justification
+      - Headers and subheaders treatment
+      - Overall composition balance
+      - Brand identity integration
+      - Design consistency evaluation
+      - Readability assessment
+      - Mobile/digital adaptation potential
+      
+      PRICING:
+      - Price presentation style and formatting
+      - Price positioning relative to items
+      - Price anchoring techniques used
+      - Value perception indicators
+      - Price clustering analysis
+      - Premium item placement
+      - Competitive pricing analysis
+      - Price psychology implementation
+      - Value proposition clarity
+      - Price-to-value relationship
+      - Upselling opportunities
+      - Price bracketing strategy
+      
+      COLOR:
+      - Detailed color palette analysis
+      - Primary, secondary, and accent colors
+      - Color psychology implications
+      - Background/foreground color relationships
+      - Color contrast and readability
+      - Texture and pattern usage
+      - Brand color consistency
+      - Color temperature and mood
+      - Cultural color considerations
+      - Seasonal color adaptability
+      - Color accessibility evaluation
+      - Emotional impact assessment
+      
+      VISUAL ELEMENTS:
+      - Image usage and quality
+      - Icons and symbols
+      - Borders and dividers
+      - Boxes and containers
+      - Decorative flourishes
+      - Background elements
+      - Logo integration
+      - Special callouts or highlights
+      - Visual hierarchy effectiveness
+      - Negative space utilization
+      - Visual flow patterns
+      - Brand element consistency
+      
+      CUSTOMER PSYCHOLOGY:
+      - Decision-making triggers
+      - Attention flow analysis
+      - Choice architecture
+      - Psychological pricing effects
+      - Visual appetite stimulation
+      - Brand perception impact
+      - Decision paralysis points
+      - Emotional response triggers
+      - Trust-building elements
+      - Social proof integration
+      - Scarcity/urgency indicators
+      - Customer journey mapping
+
+      ${languageInstruction}
+    `;
 
     if (type === 'image') {
       console.log('Starting OpenAI analysis...');
@@ -28,87 +122,7 @@ export async function POST(request) {
         messages: [
           {
             role: "system",
-            content: `You are an expert menu design analyst with deep knowledge of restaurant psychology, design principles, and menu engineering. Analyze this menu and provide an extremely detailed analysis in these exact sections:
-
-STRUCTURE:
-- List all menu sections and categories
-- Detail the hierarchy and organization
-- Analyze section placement and flow
-- Note any special features or callouts
-- Evaluate the information architecture
-- Analyze category balance and item distribution
-- Identify menu complexity level
-- Review section ordering logic
-
-DESIGN:
-- Typography analysis (fonts, sizes, weights, spacing)
-- Layout patterns and grid system used
-- Visual hierarchy implementation
-- White space utilization
-- Decorative elements and their purpose
-- Text alignment and justification
-- Headers and subheaders treatment
-- Overall composition balance
-- Brand identity integration
-- Design consistency evaluation
-- Readability assessment
-- Mobile/digital adaptation potential
-
-PRICING:
-- Price presentation style and formatting
-- Price positioning relative to items
-- Price anchoring techniques used
-- Value perception indicators
-- Price clustering analysis
-- Premium item placement
-- Competitive pricing analysis
-- Price psychology implementation
-- Value proposition clarity
-- Price-to-value relationship
-- Upselling opportunities
-- Price bracketing strategy
-
-COLOR:
-- Detailed color palette analysis
-- Primary, secondary, and accent colors
-- Color psychology implications
-- Background/foreground color relationships
-- Color contrast and readability
-- Texture and pattern usage
-- Brand color consistency
-- Color temperature and mood
-- Cultural color considerations
-- Seasonal color adaptability
-- Color accessibility evaluation
-- Emotional impact assessment
-
-VISUAL ELEMENTS:
-- Image usage and quality
-- Icons and symbols
-- Borders and dividers
-- Boxes and containers
-- Decorative flourishes
-- Background elements
-- Logo integration
-- Special callouts or highlights
-- Visual hierarchy effectiveness
-- Negative space utilization
-- Visual flow patterns
-- Brand element consistency
-
-CUSTOMER PSYCHOLOGY:
-- Decision-making triggers
-- Attention flow analysis
-- Choice architecture
-- Psychological pricing effects
-- Visual appetite stimulation
-- Brand perception impact
-- Decision paralysis points
-- Emotional response triggers
-- Trust-building elements
-- Social proof integration
-- Scarcity/urgency indicators
-- Customer journey mapping`
+            content: systemPrompt
           },
           {
             role: "user",

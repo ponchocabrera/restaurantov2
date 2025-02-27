@@ -4,6 +4,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import en from "@/locales/en.json";
 import es from "@/locales/es.json";
 import LanguageToggle from "@/components/LanguageToggle";
+import Link from "next/link";
 
 export default function CTASection() {
   const { language } = useLanguage();
@@ -24,6 +25,14 @@ export default function CTASection() {
           </button>
           <div className="mt-8">
             <LanguageToggle />
+          </div>
+          <div className="mt-4">
+            <Link
+              href="/legal-disclaimer"
+              className="text-gray-300 hover:text-gray-100 text-sm underline"
+            >
+              Legal Disclaimer
+            </Link>
           </div>
         </div>
       </div>

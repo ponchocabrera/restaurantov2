@@ -6,8 +6,18 @@ import StepUpload from './StepUpload';
 import StepAnalysis from './StepAnalysis';
 import StepRecommendations from './StepRecommendations';
 import DashboardLayout from '@/components/shared/DashboardLayout';
+import { useLanguage } from '@/contexts/LanguageContext';
+import en from '@/locales/en.json';
+import es from '@/locales/es.json';
 
 export default function MenuAnalyzer() {
+  const { language } = useLanguage();
+  // t collects all menuAnalyzer translations from the JSON files.
+  const t = language === 'es' ? es.menuAnalyzer : en.menuAnalyzer;
+  // Extra keys that might not be included yet in your JSON files. You can also add these into your locale files.
+  const stepLabel = t.stepLabel || (language === 'es' ? 'Paso' : 'Step');
+  const tipsBestPracticesLabel = t.tipsBestPractices || (language === 'es' ? 'Consejos y mejores prácticas' : 'Tips & Best Practices');
+
   const [currentStep, setCurrentStep] = useState(1);
   const [menuData, setMenuData] = useState(null);
   const [analysis, setAnalysis] = useState(null);
@@ -48,7 +58,11 @@ export default function MenuAnalyzer() {
       const response = await fetch('/api/ai/analyzeMenu', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'image', imageData: menuData })
+        body: JSON.stringify({
+          type: 'image',
+          imageData: menuData,
+          language
+        })
       });
 
       clearInterval(progressInterval);
@@ -156,17 +170,19 @@ export default function MenuAnalyzer() {
     <DashboardLayout>
       <div className="min-h-screen bg-white py-4 sm:py-8">
         <div className="max-w-7xl mx-auto px-4">
-          <h1 className="text-2xl sm:text-5xl font-bold font-libre mb-2 sm:mb-4">Get AI to give you Research based upgrades to your menu</h1>
-          <h2 className="text-2xl font-bold">Menu Analyzer</h2>
+          <h1 className="text-2xl sm:text-5xl font-bold font-libre mb-2 sm:mb-4">
+            {t.mainTitle}
+          </h1>
+          <h2 className="text-2xl font-bold">{t.title}</h2>
           <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-8">
-            Upload your menu and get AI-powered insights and recommendations for your menu.
+            {t.description}
           </p>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6">
             
             {/* Left Sidebar - Wizard Steps */}
             <div className="lg:col-span-4 bg-[#FAFAFA] p-6 rounded-lg">
-              <h3 className="text-lg font-bold mb-4">Discover your Menu's potential</h3>
+              <h3 className="text-lg font-bold mb-4">{t.sidebarTitle}</h3>
               
               {/* Step Buttons - Taller for Desktop */}
               <div className="space-y-4">
@@ -184,11 +200,11 @@ export default function MenuAnalyzer() {
                       {/* Icon Placeholder for each step with larger size */}
                       <img
                         src={`/assets/icons/step${step}.png`}
-                        alt={`Step ${step} icon placeholder`}
+                        alt={`${stepLabel} ${step} icon placeholder`}
                         className="w-8 h-8"
                       />
                       <span>
-                        Step {step}: {getStepDescription(step)}
+                        {stepLabel} {step}: {getStepDescription(step, language)}
                       </span>
                     </div>
                   </button>
@@ -197,9 +213,9 @@ export default function MenuAnalyzer() {
 
               {/* Tips & Best Practices */}
               <div className="mt-6">
-                <h3 className="text-md font-bold font-libre mb-2">Tips & Best Practices</h3>
+                <h3 className="text-md font-bold font-libre mb-2">{tipsBestPracticesLabel}</h3>
                 <ul className="list-disc list-inside text-gray-700 text-sm space-y-1">
-                  {getStepTips(currentStep).map((tip, index) => (
+                  {getStepTips(currentStep, language).map((tip, index) => (
                     <li key={index}>{tip}</li>
                   ))}
                 </ul>
@@ -243,18 +259,38 @@ export default function MenuAnalyzer() {
   );
 }
 
-function getStepDescription(step) {
-  return {
-    1: "Upload your menu for Analysis",
-    2: "Review the detailed Analysis",
-    3: "Get AI powered recommendations"
-  }[step];
+function getStepDescription(step, language) {
+  const translations = {
+    1: {
+      en: "Upload your menu for Analysis",
+      es: "Sube tu menú para el análisis"
+    },
+    2: {
+      en: "Review the detailed Analysis",
+      es: "Revisa el análisis detallado"
+    },
+    3: {
+      en: "Get AI powered recommendations",
+      es: "Obtén recomendaciones impulsadas por IA"
+    }
+  };
+  return translations[step] ? translations[step][language] : "";
 }
 
-function getStepTips(step) {
-  return {
-    1: ["Use clear, high-resolution images", "Ensure all text is readable", "Include complete menu sections"],
-    2: ["Review design recommendations carefully", "Consider psychological factors", "Note suggested improvements"],
-    3: ["Implement high-priority recommendations", "Test changes with customers", "Track impact on sales"]
-  }[step] || [];
+function getStepTips(step, language) {
+  const translations = {
+    1: {
+      en: ["Use clear, high-resolution images", "Ensure all text is readable", "Include complete menu sections"],
+      es: ["Usa imágenes claras y de alta resolución", "Asegúrate de que el texto sea legible", "Incluye todas las secciones del menú"]
+    },
+    2: {
+      en: ["Review design recommendations carefully", "Consider psychological factors", "Note suggested improvements"],
+      es: ["Revisa cuidadosamente las recomendaciones de diseño", "Considera factores psicológicos", "Toma nota de las mejoras sugeridas"]
+    },
+    3: {
+      en: ["Implement high-priority recommendations", "Test changes with customers", "Track impact on sales"],
+      es: ["Implementa las recomendaciones de alta prioridad", "Prueba los cambios con los clientes", "Mide el impacto en las ventas"]
+    }
+  };
+  return translations[step] ? translations[step][language] : [];
 }

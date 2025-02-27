@@ -3,6 +3,9 @@
 import { useState } from 'react';
 import { RefreshCw, ArrowRight, Layout, Palette, DollarSign, Eye, FileText, ChevronDown, ChevronUp, Maximize2 } from 'lucide-react';
 import EnhancedProgressBar from '@/components/shared/EnhancedProgressBar';
+import { useLanguage } from '@/contexts/LanguageContext';
+import en from '@/locales/en.json';
+import es from '@/locales/es.json';
 
 export default function StepAnalysis({ 
   menuData, 
@@ -13,6 +16,14 @@ export default function StepAnalysis({
   onAnalyze,
   onNext
 }) {
+  const { language } = useLanguage();
+  const t = language === 'es' ? es.menuAnalyzer : en.menuAnalyzer;
+
+  // Use new translation keys if available; fallback to our default strings.
+  // (Update your locale files with these keys if required.)
+  const uploadedMenuAlt = t.uploadedMenuAlt || (language === 'es' ? "Menú subido" : "Uploaded menu");
+  const uploadedMenuExpandedAlt = t.uploadedMenuExpandedAlt || (language === 'es' ? "Menú expandido" : "Uploaded menu expanded");
+
   const hasNoData = analysis && Object.values(analysis).every(section => 
     !section || (Array.isArray(section) && section.length === 0)
   );
@@ -28,8 +39,8 @@ export default function StepAnalysis({
     <section className="space-y-6">
       {/* Header Section */}
       <div>
-        <h3 className="text-2xl font-bold text-black">Menu Analysis Results</h3>
-        <p className="text-sm text-gray-600">AI-powered insights for your menu backed by Scientific Research</p>
+        <h3 className="text-2xl font-bold text-black">{t.resultsTitle}</h3>
+        <p className="text-sm text-gray-600">{t.resultsSubtitle}</p>
       </div>
 
       {/* Image + Explanation Section */}
@@ -38,7 +49,7 @@ export default function StepAnalysis({
         <div className="relative bg-gray-100 rounded-lg p-4 w-24 h-24 flex items-center justify-center">
           <img
             src={menuData}
-            alt="Uploaded menu"
+            alt={uploadedMenuAlt}
             className="w-full h-full object-cover rounded-lg cursor-pointer"
             onClick={() => setIsImageExpanded(true)}
           />
@@ -60,7 +71,7 @@ export default function StepAnalysis({
               >
                 ✕
               </button>
-              <img src={menuData} alt="Uploaded menu expanded" className="w-full h-auto rounded-lg" />
+              <img src={menuData} alt={uploadedMenuExpandedAlt} className="w-full h-auto rounded-lg" />
             </div>
           </div>
         )}
@@ -71,15 +82,14 @@ export default function StepAnalysis({
             onClick={() => setIsExplanationOpen(!isExplanationOpen)}
             className="w-full flex justify-between items-center px-4 py-3 bg-[#212350] text-white font-bold rounded-full shadow-lg"
           >
-            How does your Menu get Analyzed?
+            {t.explanationToggleLabel}
             {isExplanationOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
           </button>
 
           {isExplanationOpen && (
             <div className="mt-2 p-4 bg-gray-100 rounded-lg">
               <p className="text-sm text-gray-700">
-                Our AI analyzes your menu using a multi-step process, evaluating design, structure, layout, and
-                readability. Our AI analyzes up to 150 different points from your Menu and give detailed explanations on why this is good or bad for your business. Insights are generated based on scientific research and industry best practices.
+                {t.explanationContent}
               </p>
             </div>
           )}
@@ -94,7 +104,7 @@ export default function StepAnalysis({
         steps={progress?.steps || []}
       />
 
-      {/* Buttons: Analyze Menu & View Recommendations at the same level */}
+      {/* Buttons: Analyze Menu & View Recommendations */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6">
         {/* Analyze Menu Button */}
         <button
@@ -105,10 +115,10 @@ export default function StepAnalysis({
           {isAnalyzing ? (
             <div className="flex items-center gap-2">
               <RefreshCw className="w-4 h-4 animate-spin" />
-              Analyzing...
+              {t.analyzingLabel}
             </div>
           ) : (
-            'Analyze Menu'
+            t.analyzeButton
           )}
         </button>
 
@@ -117,7 +127,7 @@ export default function StepAnalysis({
           onClick={onNext}
           className="px-6 py-3 rounded-full bg-gradient-to-r from-[#222452] to-[#42469F] text-white font-bold hover:opacity-90 transition-opacity flex items-center gap-2"
         >
-          View Recommendations
+          {t.viewRecommendationsButton}
           <ArrowRight className="w-4 h-4" />
         </button>
       </div>
@@ -190,7 +200,7 @@ export default function StepAnalysis({
             onClick={onNext}
             className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition duration-200"
           >
-            Apply Analysis
+            {t.applyAnalysisButton}
           </button>
         </div>
       )}

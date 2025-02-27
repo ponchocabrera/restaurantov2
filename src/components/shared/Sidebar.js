@@ -19,7 +19,7 @@ export default function Sidebar() {
   const [isOpen, setIsOpen] = useState(false);
 
   const menuItems = [
-    { key: "home", href: "/dashboard" },
+    { key: "Home", href: "/dashboard" },
     { key: "yourRestaurant", href: "/my-restaurants" },
     { key: "menuAnalysis", href: "/menu-analyzer" },
     { key: "menuEnhancement", href: "/menu-creator" },

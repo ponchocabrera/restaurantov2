@@ -1,21 +1,25 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState } from "react";
 
 const LanguageContext = createContext();
 
 export const LanguageProvider = ({ children }) => {
-  const [language, setLanguage] = useState("en");
+  // Note: window is not defined during SSR, so you may want to guard this if needed.
+  const getInitialLanguage = () => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("preferredLanguage") || "en";
+    }
+    return "en";
+  };
 
-  // Check for persisted language (optional)
-  useEffect(() => {
-    const saved = localStorage.getItem("preferredLanguage");
-    if (saved) setLanguage(saved);
-  }, []);
+  const [language, setLanguage] = useState(getInitialLanguage);
 
   const toggleLanguage = (lang) => {
     setLanguage(lang);
-    localStorage.setItem("preferredLanguage", lang);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("preferredLanguage", lang);
+    }
   };
 
   return (
