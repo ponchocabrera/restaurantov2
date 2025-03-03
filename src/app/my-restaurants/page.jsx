@@ -7,6 +7,7 @@ import RawMaterialModal from '@/components/RawMaterialModal';
 import Link from 'next/link';
 import ActionableSuggestion from '@/components/ActionableSuggestion';
 import MasterRecommendation from "@/components/MasterRecommendation";
+import ZoneUpdates from '@/components/ZoneUpdates';
 
 // Optional formatting helper if needed
 function formatAnalysis(raw) {
@@ -529,6 +530,16 @@ export default function MyRestaurantsPage() {
               )}
             </>
           )}
+        </section>
+
+        {/* Restaurant Zone Updates */}
+        <section>
+          <h2 className="text-lg sm:text-xl md:text-2xl font-semibold mb-4">Restaurant Zone Updates</h2>
+          <p className="text-gray-600 mb-4">
+            We automatically monitor your restaurant's area weekly to detect changes in ratings, 
+            competitive position, and area trends.
+          </p>
+          <ZoneUpdates />
         </section>
       </main>
     </DashboardLayout>
